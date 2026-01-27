@@ -2,8 +2,16 @@
 import { GoogleGenAI } from "@google/genai";
 import { CustomPage } from "../types";
 
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+const apiKey = typeof process !== 'undefined' && process.env?.API_KEY ? process.env.API_KEY : '';
+
+// Lazy initialization to prevent crashes when API key is missing
+let aiInstance: GoogleGenAI | null = null;
+const getAI = () => {
+  if (!aiInstance && apiKey) {
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 export const generateConciergeResponse = async (
   userMessage: string,
@@ -15,7 +23,7 @@ export const generateConciergeResponse = async (
 
   try {
     const model = 'gemini-3-flash-preview';
-    
+
     // Construct context based on the "Louie Mae" brand persona
     const systemInstruction = `
       You are the "Louie Mae Concierge," a sophisticated, warm, and knowledgeable interior design and fashion assistant.
@@ -33,6 +41,10 @@ export const generateConciergeResponse = async (
       - Do not use markdown symbols like ** or #. Keep text clean.
     `;
 
+    const ai = getAI();
+    if (!ai) {
+      return "I'm sorry, the AI service is not available.";
+    }
     const response = await ai.models.generateContent({
       model,
       contents: [
@@ -58,13 +70,13 @@ export const generatePageStructure = async (
   prompt: string,
   title: string
 ): Promise<Omit<CustomPage, 'id' | 'slug'>> => {
-   if (!apiKey) {
-     throw new Error("API Key missing");
-   }
+  if (!apiKey) {
+    throw new Error("API Key missing");
+  }
 
-   try {
-      const model = 'gemini-3-flash-preview';
-      const systemInstruction = `
+  try {
+    const model = 'gemini-3-flash-preview';
+    const systemInstruction = `
         You are a web architect for "Louie Mae," a high-end lifestyle brand (earthy, minimalist, sophisticated).
         Generate a JSON structure for a new website page based on the user's description.
         
@@ -93,24 +105,26 @@ export const generatePageStructure = async (
         Tone: Elegant, timeless, welcoming, faith-based but subtle.
       `;
 
-      const response = await ai.models.generateContent({
-         model,
-         contents: `Create a page about: ${prompt}. The title should be approximately: ${title}`,
-         config: {
-            systemInstruction,
-            responseMimeType: "application/json"
-         }
-      });
+    const ai = getAI();
+    if (!ai) throw new Error("AI service not available");
+    const response = await ai.models.generateContent({
+      model,
+      contents: `Create a page about: ${prompt}. The title should be approximately: ${title}`,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json"
+      }
+    });
 
-      const text = response.text;
-      if (!text) throw new Error("No response generated");
-      
-      return JSON.parse(text);
+    const text = response.text;
+    if (!text) throw new Error("No response generated");
 
-   } catch (error) {
-      console.error("Gemini Page Gen Error:", error);
-      throw error;
-   }
+    return JSON.parse(text);
+
+  } catch (error) {
+    console.error("Gemini Page Gen Error:", error);
+    throw error;
+  }
 };
 
 export const suggestProductCategory = async (
@@ -122,7 +136,7 @@ export const suggestProductCategory = async (
   try {
     const model = 'gemini-3-flash-preview';
     const validCategories = [
-      'Girls Tops', 'Girls Bottoms', 'Girls Dresses', 'Girls Rompers', 
+      'Girls Tops', 'Girls Bottoms', 'Girls Dresses', 'Girls Rompers',
       'Girls 2-Piece Sets', 'Girls Activewear', 'Girls Accessories', 'Girls Footwear',
       'Boys', 'Toys', 'Nursery Furniture', 'Playroom Furniture'
     ];
@@ -141,6 +155,8 @@ export const suggestProductCategory = async (
       - If unclear, default to 'Toys' or the closest match.
     `;
 
+    const ai = getAI();
+    if (!ai) return '';
     const response = await ai.models.generateContent({
       model,
       contents: `Product: ${productName}. Description: ${productDescription}`,
@@ -177,10 +193,12 @@ export const generateEmailSubject = async (topic: string): Promise<string[]> => 
       Output Format: Return valid JSON array of strings. Example: ["Subject 1", "Subject 2", "Subject 3"]
     `;
 
+    const ai = getAI();
+    if (!ai) return [];
     const response = await ai.models.generateContent({
       model,
       contents: `Topic: ${topic}`,
-      config: { 
+      config: {
         systemInstruction,
         responseMimeType: "application/json"
       }
@@ -212,6 +230,8 @@ export const generateEmailBody = async (topic: string, type: 'newsletter' | 'pro
       - End with a sign-off: "Warmly, Monica".
     `;
 
+    const ai = getAI();
+    if (!ai) return "";
     const response = await ai.models.generateContent({
       model,
       contents: `Write a ${type} email about: ${topic}`,

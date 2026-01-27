@@ -1,5 +1,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
+import { Id } from '../convex/_generated/dataModel';
 import { BlogPost, SiteContent, CustomPage, Product, NavLink, CollectionConfig } from '../types';
 import { BLOG_POSTS as INITIAL_POSTS, INITIAL_SITE_CONTENT, PRODUCTS as INITIAL_PRODUCTS } from '../constants';
 
@@ -36,46 +39,98 @@ interface SiteContextType {
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
 export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize from LocalStorage or Fallback to Constants
-  const [posts, setPosts] = useState<BlogPost[]>(() => {
-     const saved = localStorage.getItem('lm_posts');
-     return saved ? JSON.parse(saved) : INITIAL_POSTS;
-  });
+  // --- Convex Queries ---
+  const convexPosts = useQuery(api.blogPosts.list);
+  const convexProducts = useQuery(api.products.list);
+  const convexSiteContent = useQuery(api.siteContent.get);
+  const convexCustomPages = useQuery(api.customPages.list);
 
-  const [products, setProducts] = useState<Product[]>(() => {
-     const saved = localStorage.getItem('lm_products');
-     return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-  });
+  // --- Convex Mutations ---
+  const createPost = useMutation(api.blogPosts.create);
+  const updatePostMutation = useMutation(api.blogPosts.update);
+  const removePost = useMutation(api.blogPosts.remove);
 
-  const [siteContent, setSiteContent] = useState<SiteContent>(() => {
-     const saved = localStorage.getItem('lm_content');
-     return saved ? JSON.parse(saved) : INITIAL_SITE_CONTENT;
-  });
+  const createProduct = useMutation(api.products.create);
+  const updateProductMutation = useMutation(api.products.update);
+  const removeProduct = useMutation(api.products.remove);
 
+  const updateSiteContentMutation = useMutation(api.siteContent.update);
+  const seedSiteContent = useMutation(api.siteContent.seed);
+
+  const createCustomPage = useMutation(api.customPages.create);
+  const updateCustomPageMutation = useMutation(api.customPages.update);
+  const removeCustomPage = useMutation(api.customPages.remove);
+
+  // --- Auth State (kept in localStorage for simplicity) ---
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-     return localStorage.getItem('lm_auth') === 'true';
+    return localStorage.getItem('lm_auth') === 'true';
   });
 
-  // --- Persistence Effects ---
   useEffect(() => {
-     localStorage.setItem('lm_posts', JSON.stringify(posts));
-  }, [posts]);
-
-  useEffect(() => {
-     localStorage.setItem('lm_products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-     localStorage.setItem('lm_content', JSON.stringify(siteContent));
-  }, [siteContent]);
-
-  useEffect(() => {
-     localStorage.setItem('lm_auth', String(isAuthenticated));
+    localStorage.setItem('lm_auth', String(isAuthenticated));
   }, [isAuthenticated]);
 
+  // --- Seed initial data if Convex is empty ---
+  useEffect(() => {
+    if (convexSiteContent === null) {
+      // No site content exists, seed it
+      seedSiteContent({
+        navLinks: INITIAL_SITE_CONTENT.navLinks,
+        collections: INITIAL_SITE_CONTENT.collections,
+        home: INITIAL_SITE_CONTENT.home,
+        story: INITIAL_SITE_CONTENT.story,
+      });
+    }
+  }, [convexSiteContent, seedSiteContent]);
 
+  useEffect(() => {
+    if (convexProducts !== undefined && convexProducts.length === 0) {
+      // Seed initial products
+      INITIAL_PRODUCTS.forEach(product => {
+        const { id, ...productData } = product;
+        createProduct(productData);
+      });
+    }
+  }, [convexProducts, createProduct]);
+
+  useEffect(() => {
+    if (convexPosts !== undefined && convexPosts.length === 0) {
+      // Seed initial posts
+      INITIAL_POSTS.forEach(post => {
+        const { id, date, ...postData } = post;
+        createPost(postData);
+      });
+    }
+  }, [convexPosts, createPost]);
+
+  // --- Transform Convex data to match existing types ---
+  const posts: BlogPost[] = (convexPosts ?? []).map(p => ({
+    ...p,
+    id: p._id,
+  }));
+
+  const products: Product[] = (convexProducts ?? []).map(p => ({
+    ...p,
+    id: p._id,
+  }));
+
+  const customPages: CustomPage[] = (convexCustomPages ?? []).map(p => ({
+    ...p,
+    id: p._id,
+  }));
+
+  const siteContent: SiteContent = convexSiteContent
+    ? {
+      navLinks: convexSiteContent.navLinks ?? INITIAL_SITE_CONTENT.navLinks,
+      collections: convexSiteContent.collections ?? INITIAL_SITE_CONTENT.collections,
+      home: convexSiteContent.home ?? INITIAL_SITE_CONTENT.home,
+      story: convexSiteContent.story ?? INITIAL_SITE_CONTENT.story,
+      customPages,
+    }
+    : { ...INITIAL_SITE_CONTENT, customPages };
+
+  // --- Auth ---
   const login = (password: string) => {
-    // Mock authentication - In a real app, this would verify with a backend
     if (password === 'louiemae') {
       setIsAuthenticated(true);
       return true;
@@ -89,20 +144,16 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- Blog Actions ---
   const addPost = (newPostData: Omit<BlogPost, 'id' | 'date'>) => {
-    const newPost: BlogPost = {
-      ...newPostData,
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-    };
-    setPosts(prev => [newPost, ...prev]);
+    createPost(newPostData);
   };
 
   const updatePost = (id: string, updatedData: Partial<BlogPost>) => {
-    setPosts(prev => prev.map(post => post.id === id ? { ...post, ...updatedData } : post));
+    const { id: _, date, ...updates } = updatedData as any;
+    updatePostMutation({ id: id as Id<"blogPosts">, ...updates });
   };
 
   const deletePost = (id: string) => {
-    setPosts(prev => prev.filter(post => post.id !== id));
+    removePost({ id: id as Id<"blogPosts"> });
   };
 
   const getPost = (id: string) => {
@@ -111,100 +162,88 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- Product Actions ---
   const addProduct = (newProductData: Omit<Product, 'id'>) => {
-    const newProduct: Product = {
-      ...newProductData,
-      id: Date.now().toString(),
-    };
-    setProducts(prev => [newProduct, ...prev]);
+    createProduct(newProductData);
   };
 
   const updateProduct = (id: string, updatedData: Partial<Product>) => {
-    setProducts(prev => prev.map(prod => prod.id === id ? { ...prod, ...updatedData } : prod));
+    const { id: _, ...updates } = updatedData as any;
+    updateProductMutation({ id: id as Id<"products">, ...updates });
   };
 
   const deleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(prod => prod.id !== id));
+    removeProduct({ id: id as Id<"products"> });
   };
 
   // --- Site Content Actions ---
-  const updateSiteContent = (section: keyof SiteContent, data: Partial<SiteContent[keyof SiteContent]>) => {
-    setSiteContent(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        ...data
-      }
-    }));
+  const updateSiteContentAction = (section: keyof SiteContent, data: Partial<SiteContent[keyof SiteContent]>) => {
+    if (section === 'customPages') return; // Handled separately
+
+    const currentValue = siteContent[section];
+    const updatedValue = { ...currentValue, ...data };
+
+    updateSiteContentMutation({ [section]: updatedValue } as any);
   };
 
   // --- Custom Page Actions ---
   const addCustomPage = (page: CustomPage) => {
-    setSiteContent(prev => ({
-      ...prev,
-      customPages: [...prev.customPages, page]
-    }));
+    const { id, ...pageData } = page;
+    createCustomPage(pageData);
   };
 
-  const updateCustomPage = (id: string, pageData: Partial<CustomPage>) => {
-    setSiteContent(prev => ({
-      ...prev,
-      customPages: prev.customPages.map(p => p.id === id ? { ...p, ...pageData } : p)
-    }));
+  const updateCustomPageAction = (id: string, pageData: Partial<CustomPage>) => {
+    const { id: _, ...updates } = pageData as any;
+    updateCustomPageMutation({ id: id as Id<"customPages">, ...updates });
   };
 
-  const deleteCustomPage = (id: string) => {
-    setSiteContent(prev => ({
-      ...prev,
-      customPages: prev.customPages.filter(p => p.id !== id)
-    }));
+  const deleteCustomPageAction = (id: string) => {
+    removeCustomPage({ id: id as Id<"customPages"> });
   };
 
   const getCustomPage = (slug: string) => {
-    return siteContent.customPages.find(p => p.slug === slug);
+    return customPages.find(p => p.slug === slug);
   };
 
   // --- Navigation & Collection Actions ---
   const updateNavigation = (navLinks: NavLink[]) => {
-    setSiteContent(prev => ({ ...prev, navLinks }));
+    updateSiteContentMutation({ navLinks });
   };
 
   const addCollection = (collection: CollectionConfig) => {
-    setSiteContent(prev => ({ ...prev, collections: [...prev.collections, collection] }));
+    const newCollections = [...siteContent.collections, collection];
+    updateSiteContentMutation({ collections: newCollections });
   };
 
   const updateCollection = (id: string, collectionData: Partial<CollectionConfig>) => {
-    setSiteContent(prev => ({
-      ...prev,
-      collections: prev.collections.map(c => c.id === id ? { ...c, ...collectionData } : c)
-    }));
+    const updatedCollections = siteContent.collections.map(c =>
+      c.id === id ? { ...c, ...collectionData } : c
+    );
+    updateSiteContentMutation({ collections: updatedCollections });
   };
 
   const deleteCollection = (id: string) => {
-    setSiteContent(prev => ({
-      ...prev,
-      collections: prev.collections.filter(c => c.id !== id)
-    }));
+    const filteredCollections = siteContent.collections.filter(c => c.id !== id);
+    updateSiteContentMutation({ collections: filteredCollections });
   };
 
   return (
-    <SiteContext.Provider value={{ 
-      posts, 
+    <SiteContext.Provider value={{
+      posts,
       products,
       siteContent,
-      isAuthenticated, 
-      login, 
-      logout, 
-      addPost, 
-      updatePost, 
+      isAuthenticated,
+      login,
+      logout,
+      addPost,
+      updatePost,
       deletePost,
       getPost,
       addProduct,
       updateProduct,
       deleteProduct,
-      updateSiteContent,
+      updateSiteContent: updateSiteContentAction,
       addCustomPage,
-      updateCustomPage,
-      deleteCustomPage,
+      updateCustomPage: updateCustomPageAction,
+      deleteCustomPage: deleteCustomPageAction,
       getCustomPage,
       updateNavigation,
       addCollection,
