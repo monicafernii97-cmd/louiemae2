@@ -680,81 +680,84 @@ export const AdminPage: React.FC = () => {
 
                   {/* CAMPAIGN EDITOR MODAL */}
                   {editingCampaign && (
-                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-                        <div className="bg-white w-full max-w-6xl h-[90vh] rounded-sm shadow-2xl relative animate-fade-in-up flex overflow-hidden">
+                     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-12 pb-6 px-6 bg-black/40 backdrop-blur-sm overflow-y-auto">
+                        <div className="bg-white w-full max-w-6xl h-[85vh] rounded-sm shadow-2xl relative animate-fade-in-up flex overflow-hidden">
                            {/* Left: Editor */}
-                           <div className="w-1/2 p-8 border-r border-earth/10 overflow-y-auto">
-                              <div className="flex justify-between items-center mb-8">
-                                 <h2 className="font-serif text-3xl text-earth">Compose</h2>
-                                 <button onClick={() => setEditingCampaign(null)} className="text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button>
+                           <div className="w-1/2 flex flex-col border-r border-earth/10">
+                              {/* Scrollable content area */}
+                              <div className="flex-1 overflow-y-auto p-8 pb-4">
+                                 <div className="flex justify-between items-center mb-8">
+                                    <h2 className="font-serif text-3xl text-earth">Compose</h2>
+                                    <button onClick={() => setEditingCampaign(null)} className="text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button>
+                                 </div>
+
+                                 <div className="space-y-6">
+                                    <div>
+                                       <div className="flex justify-between mb-2">
+                                          <label className="block text-[10px] uppercase tracking-widest text-earth/40">Subject Line</label>
+                                          <button onClick={handleGenerateSubject} disabled={aiGenerating === 'subject'} className="text-[10px] uppercase text-bronze hover:text-earth flex items-center gap-1">
+                                             {aiGenerating === 'subject' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                             AI Suggest
+                                          </button>
+                                       </div>
+                                       <input type="text" value={editingCampaign.subject} onChange={(e) => setEditingCampaign({ ...editingCampaign, subject: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-lg" placeholder="Enter subject line..." />
+                                    </div>
+
+                                    <div>
+                                       <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Preview Text</label>
+                                       <input type="text" value={editingCampaign.previewText} onChange={(e) => setEditingCampaign({ ...editingCampaign, previewText: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 text-sm" placeholder="Snippet that appears in inbox..." />
+                                    </div>
+
+                                    <div className="flex gap-4 flex-wrap">
+                                       <button onClick={() => handleGenerateBody('New Collection Launch')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Launch</button>
+                                       <button onClick={() => handleGenerateBody('Weekly Digest')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Digest</button>
+                                       <button onClick={() => handleGenerateBody('Subscriber Exclusive Sale')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Sale</button>
+                                    </div>
+
+                                    <div>
+                                       <div className="flex justify-between mb-2">
+                                          <label className="block text-[10px] uppercase tracking-widest text-earth/40">Content (HTML Supported)</label>
+                                          {aiGenerating === 'body' && <span className="text-[10px] text-bronze flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Writing...</span>}
+                                       </div>
+                                       <textarea value={editingCampaign.content} onChange={(e) => setEditingCampaign({ ...editingCampaign, content: e.target.value })} className="w-full bg-cream/30 p-4 border border-earth/10 h-[300px] font-mono text-sm leading-relaxed resize-y" />
+                                    </div>
+                                 </div>
                               </div>
 
-                              <div className="space-y-6">
-                                 <div>
-                                    <div className="flex justify-between mb-2">
-                                       <label className="block text-[10px] uppercase tracking-widest text-earth/40">Subject Line</label>
-                                       <button onClick={handleGenerateSubject} disabled={aiGenerating === 'subject'} className="text-[10px] uppercase text-bronze hover:text-earth flex items-center gap-1">
-                                          {aiGenerating === 'subject' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                          AI Suggest
-                                       </button>
+                              {/* Right: Preview */}
+                              <div className="w-1/2 bg-[#F2F2F2] p-12 overflow-y-auto flex justify-center">
+                                 <div className="bg-white w-full max-w-md shadow-lg min-h-[600px] flex flex-col">
+                                    {/* Email Header */}
+                                    <div className="p-6 text-center border-b border-gray-100">
+                                       <h1 className="font-serif text-2xl text-earth">Louie Mae</h1>
+                                       <p className="text-[10px] uppercase tracking-[0.2em] text-bronze mt-1">The Letter</p>
                                     </div>
-                                    <input type="text" value={editingCampaign.subject} onChange={(e) => setEditingCampaign({ ...editingCampaign, subject: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-lg" placeholder="Enter subject line..." />
-                                 </div>
 
-                                 <div>
-                                    <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Preview Text</label>
-                                    <input type="text" value={editingCampaign.previewText} onChange={(e) => setEditingCampaign({ ...editingCampaign, previewText: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 text-sm" placeholder="Snippet that appears in inbox..." />
-                                 </div>
+                                    {/* Email Body */}
+                                    <div className="p-8 flex-1">
+                                       <div className="prose prose-sm prose-p:font-sans prose-headings:font-serif prose-headings:font-normal text-earth/80" dangerouslySetInnerHTML={{ __html: editingCampaign.content || '' }}></div>
+                                    </div>
 
+                                    {/* Email Footer */}
+                                    <div className="bg-cream p-6 text-center text-xs text-earth/40">
+                                       <p className="mb-4">Timeless Artistry. Curated Living.</p>
+                                       <div className="flex justify-center gap-4 mb-4">
+                                          <span>Instagram</span>
+                                          <span>Pinterest</span>
+                                          <span>Website</span>
+                                       </div>
+                                       <p>Unsubscribe | Manage Preferences</p>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Actions Footer - Fixed at bottom of left panel */}
+                              <div className="flex-shrink-0 bg-white border-t border-earth/10 p-4 flex justify-between items-center">
+                                 <button onClick={() => setEditingCampaign(null)} className="text-xs uppercase tracking-widest text-earth/50 hover:text-earth">Cancel</button>
                                  <div className="flex gap-4">
-                                    <button onClick={() => handleGenerateBody('New Collection Launch')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Launch</button>
-                                    <button onClick={() => handleGenerateBody('Weekly Digest')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Digest</button>
-                                    <button onClick={() => handleGenerateBody('Subscriber Exclusive Sale')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Sale</button>
+                                    <button onClick={handleSaveCampaign} className="px-6 py-3 border border-earth/20 text-xs uppercase tracking-widest hover:bg-cream">Save Draft</button>
+                                    <button onClick={() => { handleSaveCampaign(); if (editingCampaign.id) sendCampaign(editingCampaign.id); }} className="bg-earth text-cream px-6 py-3 text-xs uppercase tracking-widest hover:bg-bronze">Send Now</button>
                                  </div>
-
-                                 <div>
-                                    <div className="flex justify-between mb-2">
-                                       <label className="block text-[10px] uppercase tracking-widest text-earth/40">Content (HTML Supported)</label>
-                                       {aiGenerating === 'body' && <span className="text-[10px] text-bronze flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Writing...</span>}
-                                    </div>
-                                    <textarea value={editingCampaign.content} onChange={(e) => setEditingCampaign({ ...editingCampaign, content: e.target.value })} className="w-full bg-cream/30 p-4 border border-earth/10 h-[400px] font-mono text-sm leading-relaxed" />
-                                 </div>
-                              </div>
-                           </div>
-
-                           {/* Right: Preview */}
-                           <div className="w-1/2 bg-[#F2F2F2] p-12 overflow-y-auto flex justify-center">
-                              <div className="bg-white w-full max-w-md shadow-lg min-h-[600px] flex flex-col">
-                                 {/* Email Header */}
-                                 <div className="p-6 text-center border-b border-gray-100">
-                                    <h1 className="font-serif text-2xl text-earth">Louie Mae</h1>
-                                    <p className="text-[10px] uppercase tracking-[0.2em] text-bronze mt-1">The Letter</p>
-                                 </div>
-
-                                 {/* Email Body */}
-                                 <div className="p-8 flex-1">
-                                    <div className="prose prose-sm prose-p:font-sans prose-headings:font-serif prose-headings:font-normal text-earth/80" dangerouslySetInnerHTML={{ __html: editingCampaign.content || '' }}></div>
-                                 </div>
-
-                                 {/* Email Footer */}
-                                 <div className="bg-cream p-6 text-center text-xs text-earth/40">
-                                    <p className="mb-4">Timeless Artistry. Curated Living.</p>
-                                    <div className="flex justify-center gap-4 mb-4">
-                                       <span>Instagram</span>
-                                       <span>Pinterest</span>
-                                       <span>Website</span>
-                                    </div>
-                                    <p>Unsubscribe | Manage Preferences</p>
-                                 </div>
-                              </div>
-                           </div>
-
-                           {/* Actions Footer */}
-                           <div className="absolute bottom-0 left-0 w-1/2 bg-white border-t border-earth/10 p-4 flex justify-between items-center">
-                              <button onClick={() => setEditingCampaign(null)} className="text-xs uppercase tracking-widest text-earth/50 hover:text-earth">Cancel</button>
-                              <div className="flex gap-4">
-                                 <button onClick={handleSaveCampaign} className="px-6 py-3 border border-earth/20 text-xs uppercase tracking-widest hover:bg-cream">Save Draft</button>
-                                 <button onClick={() => { handleSaveCampaign(); if (editingCampaign.id) sendCampaign(editingCampaign.id); }} className="bg-earth text-cream px-6 py-3 text-xs uppercase tracking-widest hover:bg-bronze">Send Now</button>
                               </div>
                            </div>
                         </div>
