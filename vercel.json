@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "/#admin"
+    },
+    {
+      "source": "/blog",
+      "destination": "/#blog"
+    },
+    {
+      "source": "/shop",
+      "destination": "/#shop"
+    },
+    {
+      "source": "/story",
+      "destination": "/#story"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
