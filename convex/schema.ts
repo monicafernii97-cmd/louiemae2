@@ -64,4 +64,43 @@ export default defineSchema({
             clicked: v.number(),
         }),
     }),
+
+    // Orders
+    orders: defineTable({
+        stripeSessionId: v.string(),
+        stripePaymentIntentId: v.optional(v.string()),
+        customerEmail: v.string(),
+        customerName: v.optional(v.string()),
+        items: v.array(v.object({
+            productId: v.string(),
+            name: v.string(),
+            price: v.number(),
+            quantity: v.number(),
+            image: v.optional(v.string()),
+        })),
+        subtotal: v.number(),
+        shipping: v.optional(v.number()),
+        tax: v.optional(v.number()),
+        total: v.number(),
+        currency: v.string(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("paid"),
+            v.literal("processing"),
+            v.literal("shipped"),
+            v.literal("delivered"),
+            v.literal("cancelled")
+        ),
+        shippingAddress: v.optional(v.object({
+            line1: v.string(),
+            line2: v.optional(v.string()),
+            city: v.string(),
+            state: v.optional(v.string()),
+            postalCode: v.string(),
+            country: v.string(),
+        })),
+        createdAt: v.string(),
+        updatedAt: v.string(),
+    }).index("by_session", ["stripeSessionId"])
+        .index("by_email", ["customerEmail"]),
 });

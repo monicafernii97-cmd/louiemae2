@@ -131,7 +131,8 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- Auth ---
   const login = (password: string) => {
-    if (password === 'louiemae') {
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'louiemae';
+    if (password === adminPassword) {
       setIsAuthenticated(true);
       return true;
     }

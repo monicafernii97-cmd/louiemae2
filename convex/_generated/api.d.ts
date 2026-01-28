@@ -11,6 +11,9 @@
 import type * as blogPosts from "../blogPosts.js";
 import type * as campaigns from "../campaigns.js";
 import type * as customPages from "../customPages.js";
+import type * as emails from "../emails.js";
+import type * as http from "../http.js";
+import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 import type * as siteContent from "../siteContent.js";
 import type * as subscribers from "../subscribers.js";
@@ -25,6 +28,9 @@ declare const fullApi: ApiFromModules<{
   blogPosts: typeof blogPosts;
   campaigns: typeof campaigns;
   customPages: typeof customPages;
+  emails: typeof emails;
+  http: typeof http;
+  orders: typeof orders;
   products: typeof products;
   siteContent: typeof siteContent;
   subscribers: typeof subscribers;

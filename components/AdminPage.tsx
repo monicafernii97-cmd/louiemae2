@@ -3,9 +3,10 @@ import React, { useState, useRef } from 'react';
 import { useSite } from '../contexts/BlogContext';
 import { useNewsletter } from '../contexts/NewsletterContext';
 import { FadeIn } from './FadeIn';
-import { Plus, Edit3, Trash2, LogOut, Save, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, Box, Shirt, Baby, Sofa, Gamepad2, Bed, Wand2, ChevronDown, List, Layers, Link as LinkIcon, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, TrendingUp, BarChart2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, LogOut, Save, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, Box, Shirt, Baby, Sofa, Gamepad2, Bed, Wand2, ChevronDown, List, Layers, Link as LinkIcon, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, TrendingUp, BarChart2, Package } from 'lucide-react';
 import { BlogPost, SiteContent, CustomPage, PageSection, Product, CollectionType, CollectionConfig, NavLink, SectionItem, EmailCampaign } from '../types';
 import { generatePageStructure, suggestProductCategory, generateEmailSubject, generateEmailBody } from '../services/geminiService';
+import { AdminOrders } from './AdminOrders';
 
 // --- Image Uploader Component ---
 const ImageUploader: React.FC<{
@@ -85,7 +86,7 @@ export const AdminPage: React.FC = () => {
    const [error, setError] = useState('');
 
    // Navigation State
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders'>('dashboard');
    const [newsletterSubTab, setNewsletterSubTab] = useState<'overview' | 'campaigns' | 'subscribers'>('overview');
 
    const [activePageEditor, setActivePageEditor] = useState<'home' | 'story' | string | null>(null);
@@ -427,6 +428,13 @@ export const AdminPage: React.FC = () => {
                </button>
 
                <button
+                  onClick={() => { setActiveTab('orders'); setActivePageEditor(null); }}
+                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'orders' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+               >
+                  <Package className="w-4 h-4" /> Orders
+               </button>
+
+               <button
                   onClick={() => { setActiveTab('structure'); setActivePageEditor(null); }}
                   className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'structure' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
                >
@@ -531,6 +539,13 @@ export const AdminPage: React.FC = () => {
                         <p className="text-xs text-earth/50">Customize site content</p>
                      </div>
                   </div>
+               </FadeIn>
+            )}
+
+            {/* ORDERS TAB */}
+            {activeTab === 'orders' && (
+               <FadeIn>
+                  <AdminOrders />
                </FadeIn>
             )}
 

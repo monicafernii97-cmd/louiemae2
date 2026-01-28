@@ -2,7 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { CustomPage } from "../types";
 
-const apiKey = typeof process !== 'undefined' && process.env?.API_KEY ? process.env.API_KEY : '';
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // Lazy initialization to prevent crashes when API key is missing
 let aiInstance: GoogleGenAI | null = null;
