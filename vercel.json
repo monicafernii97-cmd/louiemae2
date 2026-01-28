@@ -1,23 +1,29 @@
 {
-  "rewrites": [
+  "redirects": [
     {
       "source": "/admin",
-      "destination": "/#admin"
+      "destination": "/#admin",
+      "permanent": false
     },
     {
       "source": "/blog",
-      "destination": "/#blog"
+      "destination": "/#blog",
+      "permanent": false
     },
     {
       "source": "/shop",
-      "destination": "/#shop"
+      "destination": "/#shop",
+      "permanent": false
     },
     {
       "source": "/story",
-      "destination": "/#story"
-    },
+      "destination": "/#story",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api).*)",
       "destination": "/index.html"
     }
   ]
