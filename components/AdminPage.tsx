@@ -680,17 +680,20 @@ export const AdminPage: React.FC = () => {
 
                   {/* CAMPAIGN EDITOR MODAL */}
                   {editingCampaign && (
-                     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-12 pb-6 px-6 bg-black/40 backdrop-blur-sm overflow-y-auto">
+                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-black/40 backdrop-blur-sm">
                         <div className="bg-white w-full max-w-6xl h-[85vh] rounded-sm shadow-2xl relative animate-fade-in-up flex overflow-hidden">
                            {/* Left: Editor */}
                            <div className="w-1/2 flex flex-col border-r border-earth/10">
-                              {/* Scrollable content area */}
-                              <div className="flex-1 overflow-y-auto p-8 pb-4">
-                                 <div className="flex justify-between items-center mb-8">
+                              {/* Fixed Header - doesn't scroll */}
+                              <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-earth/5">
+                                 <div className="flex justify-between items-center">
                                     <h2 className="font-serif text-3xl text-earth">Compose</h2>
                                     <button onClick={() => setEditingCampaign(null)} className="text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button>
                                  </div>
+                              </div>
 
+                              {/* Scrollable content area */}
+                              <div className="flex-1 overflow-y-auto px-8 py-6">
                                  <div className="space-y-6">
                                     <div>
                                        <div className="flex justify-between mb-2">
@@ -719,7 +722,7 @@ export const AdminPage: React.FC = () => {
                                           <label className="block text-[10px] uppercase tracking-widest text-earth/40">Content (HTML Supported)</label>
                                           {aiGenerating === 'body' && <span className="text-[10px] text-bronze flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Writing...</span>}
                                        </div>
-                                       <textarea value={editingCampaign.content} onChange={(e) => setEditingCampaign({ ...editingCampaign, content: e.target.value })} className="w-full bg-cream/30 p-4 border border-earth/10 h-[300px] font-mono text-sm leading-relaxed resize-y" />
+                                       <textarea value={editingCampaign.content} onChange={(e) => setEditingCampaign({ ...editingCampaign, content: e.target.value })} className="w-full bg-cream/30 p-4 border border-earth/10 h-[250px] font-mono text-sm leading-relaxed resize-y" />
                                     </div>
                                  </div>
                               </div>
