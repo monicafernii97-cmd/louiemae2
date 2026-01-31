@@ -390,7 +390,7 @@ export const aliexpressService = {
                     salePrice: p.price,
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
                     seller: { id: '', name: '', rating: 0, feedbackScore: 0 },
-                    variants: [],
+                    variants: p.variants || [],
                     reviewCount: 0,
                     averageRating: p.rating || 0,
                     productUrl: p.url || '',

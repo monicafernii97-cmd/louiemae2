@@ -509,6 +509,13 @@ interface NormalizedProduct {
     rating?: number;
     sales?: number;
     shipping?: string;
+    variants?: Array<{
+        id: string;
+        name: string;
+        image?: string;
+        priceAdjustment: number;
+        inStock: boolean;
+    }>;
 }
 
 // Normalize AliExpress Datahub products
@@ -516,16 +523,73 @@ function normalizeAliExpressDatahub(data: any): NormalizedProduct[] {
     const items = data?.result?.resultList || [];
     return items.map((wrapper: any) => {
         const item = wrapper?.item || wrapper;
+        const basePrice = parseFloat(item.sku?.def?.promotionPrice) || parseFloat(item.sku?.def?.price) || 0;
+
+        // Extract variants from SKU data
+        const variants: NormalizedProduct['variants'] = [];
+        const skuData = item.sku || {};
+        const skuList = skuData.skuList || skuData.list || [];
+        const skuProps = skuData.props || skuData.properties || [];
+
+        // Method 1: Parse from skuList (detailed variant data with prices)
+        if (Array.isArray(skuList) && skuList.length > 0) {
+            skuList.forEach((sku: any, index: number) => {
+                const variantName = sku.propPath || sku.name ||
+                    sku.attributes?.map((a: any) => a.value).join(' / ') ||
+                    `Option ${index + 1}`;
+                const variantPrice = parseFloat(sku.promotionPrice || sku.price || sku.skuVal?.skuCalPrice) || 0;
+                const priceAdjustment = variantPrice ? variantPrice - basePrice : 0;
+
+                let variantImage = sku.image || sku.skuVal?.image || '';
+                if (variantImage && variantImage.startsWith('//')) {
+                    variantImage = `https:${variantImage}`;
+                }
+
+                variants.push({
+                    id: sku.skuId || sku.sku_id || `var_${index}`,
+                    name: variantName,
+                    image: variantImage || undefined,
+                    priceAdjustment: priceAdjustment,
+                    inStock: sku.available !== false && sku.stock !== 0,
+                });
+            });
+        }
+
+        // Method 2: Parse from props/properties (size/color categories)
+        if (variants.length === 0 && Array.isArray(skuProps) && skuProps.length > 0) {
+            skuProps.forEach((prop: any) => {
+                const propName = prop.name || prop.attrName || 'Option';
+                const values = prop.values || prop.attrValues || [];
+
+                values.forEach((val: any, index: number) => {
+                    const valueName = val.name || val.attrValue || val;
+                    let valueImage = val.image || val.skuImage || '';
+                    if (valueImage && valueImage.startsWith('//')) {
+                        valueImage = `https:${valueImage}`;
+                    }
+
+                    variants.push({
+                        id: val.id || val.attrValueId || `${propName}_${index}`,
+                        name: `${propName}: ${valueName}`,
+                        image: valueImage || undefined,
+                        priceAdjustment: 0,
+                        inStock: true,
+                    });
+                });
+            });
+        }
+
         return {
             id: `ae_${item.itemId}`,
             title: item.title || 'Unknown Product',
-            price: parseFloat(item.sku?.def?.promotionPrice) || parseFloat(item.sku?.def?.price) || 0,
+            price: basePrice,
             originalPrice: parseFloat(item.sku?.def?.price) || undefined,
             image: item.image?.startsWith('//') ? `https:${item.image}` : item.image,
             url: item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '',
             source: 'aliexpress' as const,
             rating: item.averageStarRate || undefined,
             sales: item.sales || undefined,
+            variants: variants.length > 0 ? variants : undefined,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
 }
@@ -551,6 +615,48 @@ function normalizeAlibabaDatahub(data: any): NormalizedProduct[] {
         const imageUrl = item.image?.startsWith('//') ? `https:${item.image}` : item.image;
         const itemUrl = item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '';
 
+        // Extract variants from Alibaba SKU data
+        const variants: NormalizedProduct['variants'] = [];
+        const skuData = item.sku || {};
+        const skuProps = skuData.props || skuData.properties || item.skuProps || [];
+
+        // Parse from priceList (quantity-based pricing)
+        if (priceModule?.priceList && Array.isArray(priceModule.priceList)) {
+            priceModule.priceList.forEach((pl: any, index: number) => {
+                const variantPrice = parseFloat(pl.price) || 0;
+                variants.push({
+                    id: `qty_${index}`,
+                    name: pl.quantity ? `Qty: ${pl.quantity}+` : `Option ${index + 1}`,
+                    priceAdjustment: variantPrice - price,
+                    inStock: true,
+                });
+            });
+        }
+
+        // Parse from props/properties (color/size options)
+        if (Array.isArray(skuProps) && skuProps.length > 0) {
+            skuProps.forEach((prop: any) => {
+                const propName = prop.name || prop.attrName || 'Option';
+                const values = prop.values || prop.attrValues || [];
+
+                values.forEach((val: any, index: number) => {
+                    const valueName = val.name || val.attrValue || val;
+                    let valueImage = val.image || '';
+                    if (valueImage && valueImage.startsWith('//')) {
+                        valueImage = `https:${valueImage}`;
+                    }
+
+                    variants.push({
+                        id: val.id || `${propName}_${index}`,
+                        name: `${propName}: ${valueName}`,
+                        image: valueImage || undefined,
+                        priceAdjustment: 0,
+                        inStock: true,
+                    });
+                });
+            });
+        }
+
         return {
             id: `ab_${item.itemId}`,
             title: item.title || 'Unknown Product',
@@ -559,6 +665,7 @@ function normalizeAlibabaDatahub(data: any): NormalizedProduct[] {
             images: item.images?.map((img: string) => img.startsWith('//') ? `https:${img}` : img) || [imageUrl],
             url: itemUrl,
             source: 'alibaba' as const,
+            variants: variants.length > 0 ? variants : undefined,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
 }

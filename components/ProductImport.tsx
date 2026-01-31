@@ -549,6 +549,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             className="w-4 h-4 accent-bronze"
                                         />
                                     </label>
+                                    {/* Variant badge */}
+                                    {product.variants && product.variants.length > 0 && (
+                                        <div className="absolute bottom-2 right-2 bg-bronze/90 text-cream px-2 py-0.5 rounded text-[10px] font-medium shadow">
+                                            {product.variants.length} {product.variants.length === 1 ? 'variant' : 'variants'}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Product Details */}
@@ -656,6 +662,45 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 )}
                                                 AI Enhance
                                             </button>
+                                        </div>
+                                    )}
+
+                                    {/* Variant Options Display */}
+                                    {product.selected && product.variants && product.variants.length > 0 && (
+                                        <div className="pt-3 border-t border-earth/5">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-[10px] uppercase tracking-widest text-earth/60 font-medium">
+                                                    Available Variants ({product.variants.length})
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                                                {product.variants.map((variant, idx) => (
+                                                    <div
+                                                        key={variant.id || idx}
+                                                        className="flex items-center gap-2 px-2 py-1.5 border border-earth/10 rounded text-xs bg-cream/30 hover:bg-cream/50 transition-colors"
+                                                    >
+                                                        {variant.image && (
+                                                            <img
+                                                                src={variant.image}
+                                                                alt={variant.name}
+                                                                className="w-6 h-6 object-cover rounded"
+                                                            />
+                                                        )}
+                                                        <span className="text-earth">{variant.name}</span>
+                                                        {variant.priceAdjustment !== 0 && (
+                                                            <span className={`font-medium ${variant.priceAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                                {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
+                                                            </span>
+                                                        )}
+                                                        {!variant.inStock && (
+                                                            <span className="text-rose-500 text-[10px]">Out of stock</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-earth/40 mt-2 italic">
+                                                All variants will be imported with this product
+                                            </p>
                                         </div>
                                     )}
 
