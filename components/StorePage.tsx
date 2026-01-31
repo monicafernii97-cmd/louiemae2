@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { FadeIn } from './FadeIn';
 import { useSite } from '../contexts/BlogContext';
-import { Product, CollectionType } from '../types';
+import { Product, CollectionType, ProductVariant } from '../types';
 import { ArrowLeft, X, ArrowUpRight } from 'lucide-react';
 import { AddToCartButton } from './cart';
 
@@ -29,6 +29,13 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   // Decoded category from URL
   const selectedCategory = useMemo(() => decodeURIComponent(initialCategory), [initialCategory]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(undefined);
+
+  // Reset variant when changing product
+  const handleSelectProduct = (product: Product | null) => {
+    setSelectedProduct(product);
+    setSelectedVariant(undefined);
+  };
 
   // View State Logic
   const isRootView = selectedCategory === 'All';
@@ -216,11 +223,16 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                     <FadeIn key={product.id} delay={idx * 50} className="group cursor-pointer">
                       <div
                         className="relative aspect-[3/4] overflow-hidden bg-white mb-4 rounded-sm"
-                        onClick={() => setSelectedProduct(product)}
+                        onClick={() => handleSelectProduct(product)}
                       >
                         {product.isNew && (
                           <span className="absolute top-3 left-3 bg-white/90 px-2 py-1 text-[9px] uppercase tracking-widest text-earth z-10 rounded-sm">
                             New
+                          </span>
+                        )}
+                        {product.variants && product.variants.length > 0 && (
+                          <span className="absolute top-3 right-3 bg-bronze/90 px-2 py-1 text-[9px] uppercase tracking-widest text-white z-10 rounded-sm">
+                            Multiple Options
                           </span>
                         )}
                         <img
@@ -257,17 +269,21 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       {/* Product Modal */}
       {selectedProduct && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}></div>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => handleSelectProduct(null)}></div>
 
           <div className="bg-cream w-full max-w-5xl h-[90vh] md:h-auto md:max-h-[85vh] rounded-sm shadow-2xl relative flex flex-col md:flex-row overflow-hidden animate-fade-in-up">
             <button
-              onClick={() => setSelectedProduct(null)}
+              onClick={() => handleSelectProduct(null)}
               className="absolute top-4 right-4 z-20 p-2 bg-white/50 hover:bg-white rounded-full transition-colors"
             >
               <X className="w-5 h-5 text-earth" />
             </button>
             <div className="w-full md:w-1/2 bg-white h-1/2 md:h-auto overflow-hidden relative group">
-              <img src={selectedProduct.images[0]} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              <img
+                src={selectedVariant?.image || selectedProduct.images[0]}
+                alt={selectedProduct.name}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto bg-cream flex flex-col">
               <div className="mb-auto">
@@ -277,8 +293,35 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                   <span>{selectedProduct.category}</span>
                 </div>
                 <h2 className="font-serif text-3xl md:text-5xl text-earth mb-4 leading-tight">{selectedProduct.name}</h2>
-                <p className="font-serif text-2xl italic text-bronze mb-8">${selectedProduct.price}</p>
+                <p className="font-serif text-2xl italic text-bronze mb-8">
+                  ${(selectedProduct.price + (selectedVariant?.priceAdjustment || 0)).toFixed(2)}
+                </p>
                 <div className="h-px w-full bg-earth/10 mb-8"></div>
+
+                {/* Variant Selector */}
+                {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+                  <div className="mb-8">
+                    <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Option</span>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProduct.variants.map(v => (
+                        <button
+                          key={v.id}
+                          onClick={() => setSelectedVariant(v.id === selectedVariant?.id ? undefined : v)}
+                          disabled={!v.inStock}
+                          className={`px-4 py-2 text-xs uppercase tracking-wider border transition-all ${selectedVariant?.id === v.id
+                            ? 'border-earth bg-earth text-cream'
+                            : v.inStock
+                              ? 'border-earth/20 text-earth hover:border-earth'
+                              : 'border-earth/10 text-earth/30 cursor-not-allowed line-through'
+                            }`}
+                        >
+                          {v.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <p className="font-sans text-earth/70 leading-loose mb-8 text-sm">{selectedProduct.description}</p>
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-2 text-xs text-green-700">
@@ -287,7 +330,12 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                   </div>
                 </div>
               </div>
-              <AddToCartButton product={selectedProduct} className="mt-8" />
+              <AddToCartButton
+                product={selectedProduct}
+                selectedVariant={selectedVariant}
+                variantRequired={!!(selectedProduct.variants && selectedProduct.variants.length > 0)}
+                className="mt-8"
+              />
             </div>
           </div>
         </div>

@@ -17,6 +17,7 @@ import { CartProvider } from './contexts/CartContext';
 import { CartIcon, CartDrawer } from './components/cart';
 import { CheckoutSuccess, CheckoutCancel } from './components/checkout';
 import { SearchModal } from './components/SearchModal';
+import AliExpressTest from './components/AliExpressTest';
 
 interface MobileNavLinkProps {
   link: NavLink;
@@ -101,6 +102,7 @@ const AppContent = () => {
       else if (baseHash === '#blog') setActivePage('blog');
       else if (baseHash === '#story') setActivePage('story');
       else if (baseHash === '#shop') setActivePage('shop');
+      else if (baseHash === '#aliexpress-test') setActivePage('aliexpress-test');
       else if (baseHash === '#checkout/success') setActivePage('checkout-success');
       else if (baseHash === '#checkout/cancel') setActivePage('checkout-cancel');
       else if (baseHash.startsWith('#pages/')) setActivePage(baseHash);
@@ -146,6 +148,7 @@ const AppContent = () => {
   else if (activePage === 'blog') CurrentComponent = BlogPage;
   else if (activePage === 'story') CurrentComponent = StoryPage;
   else if (activePage === 'shop') CurrentComponent = ShopLandingPage;
+  else if (activePage === 'aliexpress-test') CurrentComponent = AliExpressTest;
   else if (activePage === 'checkout-success') CurrentComponent = CheckoutSuccess;
   else if (activePage === 'checkout-cancel') CurrentComponent = CheckoutCancel;
   else if (activePage.startsWith('#pages/')) {

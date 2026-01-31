@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { auth } from "./auth";
 
+// Public queries - no auth required
 export const list = query({
     args: {},
     handler: async (ctx) => {
@@ -15,6 +17,7 @@ export const get = query({
     },
 });
 
+// Protected mutations - require authentication
 export const create = mutation({
     args: {
         name: v.string(),
@@ -25,8 +28,20 @@ export const create = mutation({
         collection: v.string(),
         isNew: v.optional(v.boolean()),
         inStock: v.optional(v.boolean()),
+        variants: v.optional(v.array(v.object({
+            id: v.string(),
+            name: v.string(),
+            image: v.optional(v.string()),
+            priceAdjustment: v.number(),
+            inStock: v.boolean(),
+        }))),
     },
     handler: async (ctx, args) => {
+        // Require authentication
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to create products");
+        }
         return await ctx.db.insert("products", args);
     },
 });
@@ -42,8 +57,20 @@ export const update = mutation({
         collection: v.optional(v.string()),
         isNew: v.optional(v.boolean()),
         inStock: v.optional(v.boolean()),
+        variants: v.optional(v.array(v.object({
+            id: v.string(),
+            name: v.string(),
+            image: v.optional(v.string()),
+            priceAdjustment: v.number(),
+            inStock: v.boolean(),
+        }))),
     },
     handler: async (ctx, args) => {
+        // Require authentication
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to update products");
+        }
         const { id, ...updates } = args;
         // Filter out undefined values
         const filteredUpdates = Object.fromEntries(
@@ -56,6 +83,11 @@ export const update = mutation({
 export const remove = mutation({
     args: { id: v.id("products") },
     handler: async (ctx, args) => {
+        // Require authentication
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to delete products");
+        }
         await ctx.db.delete(args.id);
     },
 });

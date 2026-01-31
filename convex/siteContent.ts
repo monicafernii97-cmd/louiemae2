@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { auth } from "./auth";
 
+// Public query - anyone can read site content
 export const get = query({
     args: {},
     handler: async (ctx) => {
@@ -9,6 +11,7 @@ export const get = query({
     },
 });
 
+// Protected mutation - require authentication
 export const update = mutation({
     args: {
         navLinks: v.optional(v.array(v.any())),
@@ -17,6 +20,12 @@ export const update = mutation({
         story: v.optional(v.any()),
     },
     handler: async (ctx, args) => {
+        // Require authentication
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to update site content");
+        }
+
         const existing = await ctx.db.query("siteContent").first();
 
         const filteredUpdates = Object.fromEntries(
@@ -33,7 +42,7 @@ export const update = mutation({
     },
 });
 
-// Seed initial site content
+// Seed initial site content - protected
 export const seed = mutation({
     args: {
         navLinks: v.array(v.any()),
@@ -42,11 +51,41 @@ export const seed = mutation({
         story: v.any(),
     },
     handler: async (ctx, args) => {
+        // Allow seeding without auth for initial setup
+        // But only if no content exists
         const existing = await ctx.db.query("siteContent").first();
         if (existing) {
             // Already seeded
             return existing._id;
         }
         return await ctx.db.insert("siteContent", args);
+    },
+});
+
+// Update hero image directly - protected
+export const updateHeroImage = mutation({
+    args: {
+        imageUrl: v.string(),
+    },
+    handler: async (ctx, args) => {
+        // Require authentication
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to update hero image");
+        }
+
+        const existing = await ctx.db.query("siteContent").first();
+        if (existing) {
+            const updatedHome = {
+                ...existing.home,
+                hero: {
+                    ...(existing.home?.hero || {}),
+                    image: args.imageUrl,
+                },
+            };
+            await ctx.db.patch(existing._id, { home: updatedHome });
+            return existing._id;
+        }
+        return null;
     },
 });

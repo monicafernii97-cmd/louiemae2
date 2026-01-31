@@ -1,13 +1,26 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+import { auth } from "./auth";
 import Stripe from "stripe";
 
 const http = httpRouter();
 
-// Helper for CORS headers
+// Add Convex Auth routes
+auth.addHttpRoutes(http);
+
+// Helper for CORS headers - use environment variable for production domain
+const getAllowedOrigin = () => {
+    const siteUrl = process.env.SITE_URL;
+    if (siteUrl) {
+        return siteUrl;
+    }
+    // Fallback for development
+    return "http://localhost:3000";
+};
+
 const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": getAllowedOrigin(),
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
 };
@@ -88,6 +101,8 @@ http.route({
                 metadata: {
                     items: JSON.stringify(items.map((item: any) => ({
                         productId: item.productId,
+                        variantId: item.variantId,
+                        variantName: item.variantName,
                         name: item.name,
                         price: item.price,
                         quantity: item.quantity,

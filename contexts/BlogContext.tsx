@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import { useQuery, useMutation, useConvexAuth } from 'convex/react';
+import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
 import { BlogPost, SiteContent, CustomPage, Product, NavLink, CollectionConfig } from '../types';
@@ -10,8 +11,10 @@ interface SiteContextType {
   posts: BlogPost[];
   products: Product[];
   siteContent: SiteContent;
+  isLoading: boolean;  // True while Convex data is loading
   isAuthenticated: boolean;
-  login: (password: string) => boolean;
+  isAuthLoading: boolean;  // True while auth state is loading
+  signIn: (email: string, password: string, flow: 'signIn' | 'signUp') => Promise<void>;
   logout: () => void;
   // Blog Actions
   addPost: (post: Omit<BlogPost, 'id' | 'date'>) => void;
@@ -61,14 +64,9 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateCustomPageMutation = useMutation(api.customPages.update);
   const removeCustomPage = useMutation(api.customPages.remove);
 
-  // --- Auth State (kept in localStorage for simplicity) ---
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('lm_auth') === 'true';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('lm_auth', String(isAuthenticated));
-  }, [isAuthenticated]);
+  // --- Auth State (using Convex Auth) ---
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const { signIn: authSignIn, signOut: authSignOut } = useAuthActions();
 
   // --- Seed initial data if Convex is empty ---
   useEffect(() => {
@@ -119,28 +117,60 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     id: p._id,
   }));
 
+  // Deep merge utility for siteContent construction
+  const deepMergeContent = (target: any, source: any): any => {
+    if (!source) return target;
+    const output = { ...target };
+    for (const key of Object.keys(source)) {
+      if (source[key] === undefined || source[key] === null) continue;
+      if (
+        typeof source[key] === 'object' &&
+        !Array.isArray(source[key]) &&
+        target[key] &&
+        typeof target[key] === 'object' &&
+        !Array.isArray(target[key])
+      ) {
+        output[key] = deepMergeContent(target[key], source[key]);
+      } else {
+        output[key] = source[key];
+      }
+    }
+    return output;
+  };
+
   const siteContent: SiteContent = convexSiteContent
     ? {
       navLinks: convexSiteContent.navLinks ?? INITIAL_SITE_CONTENT.navLinks,
       collections: convexSiteContent.collections ?? INITIAL_SITE_CONTENT.collections,
-      home: convexSiteContent.home ?? INITIAL_SITE_CONTENT.home,
-      story: convexSiteContent.story ?? INITIAL_SITE_CONTENT.story,
+      // Deep merge home and story to preserve nested defaults while applying Convex updates
+      // But prioritize Convex hero image directly to avoid showing stale fallback
+      home: {
+        ...deepMergeContent(INITIAL_SITE_CONTENT.home, convexSiteContent.home),
+        hero: {
+          ...deepMergeContent(INITIAL_SITE_CONTENT.home.hero, convexSiteContent.home?.hero),
+          // Use Convex image directly if available, otherwise use default
+          image: convexSiteContent.home?.hero?.image || INITIAL_SITE_CONTENT.home.hero.image,
+        }
+      },
+      story: deepMergeContent(INITIAL_SITE_CONTENT.story, convexSiteContent.story),
       customPages,
     }
     : { ...INITIAL_SITE_CONTENT, customPages };
 
+  // Track loading state - undefined means still loading from Convex
+  const isLoading = convexSiteContent === undefined;
+
   // --- Auth ---
-  const login = (password: string) => {
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'louiemae';
-    if (password === adminPassword) {
-      setIsAuthenticated(true);
-      return true;
-    }
-    return false;
+  const signIn = async (email: string, password: string, flow: 'signIn' | 'signUp') => {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('flow', flow);
+    await authSignIn('password', formData);
   };
 
   const logout = () => {
-    setIsAuthenticated(false);
+    void authSignOut();
   };
 
   // --- Blog Actions ---
@@ -175,12 +205,33 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     removeProduct({ id: id as Id<"products"> });
   };
 
+  // --- Deep merge utility for nested objects ---
+  const deepMerge = (target: any, source: any): any => {
+    const output = { ...target };
+    for (const key of Object.keys(source)) {
+      if (
+        source[key] &&
+        typeof source[key] === 'object' &&
+        !Array.isArray(source[key]) &&
+        target[key] &&
+        typeof target[key] === 'object' &&
+        !Array.isArray(target[key])
+      ) {
+        output[key] = deepMerge(target[key], source[key]);
+      } else {
+        output[key] = source[key];
+      }
+    }
+    return output;
+  };
+
   // --- Site Content Actions ---
   const updateSiteContentAction = (section: keyof SiteContent, data: Partial<SiteContent[keyof SiteContent]>) => {
     if (section === 'customPages') return; // Handled separately
 
     const currentValue = siteContent[section];
-    const updatedValue = { ...currentValue, ...data };
+    // Use deep merge to properly handle nested objects like home.hero, home.categoryImages, etc.
+    const updatedValue = deepMerge(currentValue, data);
 
     updateSiteContentMutation({ [section]: updatedValue } as any);
   };
@@ -231,8 +282,10 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       posts,
       products,
       siteContent,
+      isLoading,
       isAuthenticated,
-      login,
+      isAuthLoading,
+      signIn,
       logout,
       addPost,
       updatePost,

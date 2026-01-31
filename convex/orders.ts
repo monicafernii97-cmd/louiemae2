@@ -10,6 +10,8 @@ export const createOrder = mutation({
         customerName: v.optional(v.string()),
         items: v.array(v.object({
             productId: v.string(),
+            variantId: v.optional(v.string()),
+            variantName: v.optional(v.string()),
             name: v.string(),
             price: v.number(),
             quantity: v.number(),

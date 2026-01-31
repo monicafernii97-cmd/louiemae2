@@ -173,6 +173,256 @@ export const suggestProductCategory = async (
   }
 };
 
+// --- Product AI Functions ---
+
+// Human-first names for products by category - expanded lists for variety
+const PRODUCT_NAME_INSPIRATIONS = {
+  furniture: [
+    // Nordic/Scandinavian feminine names
+    'Olivia', 'Hazel', 'Margot', 'Clara', 'Elodie', 'Nora', 'Astrid', 'Linnea', 'Freya', 'Ingrid',
+    'Saga', 'Elsa', 'Sigrid', 'Maja', 'Liv', 'Freja', 'Signe', 'Alma', 'Elin', 'Thea',
+    'Maren', 'Solveig', 'Ylva', 'Birgitta', 'Karin', 'Ebba', 'Inge', 'Dagny', 'Hedda', 'Greta',
+    // Classic elegant names
+    'Charlotte', 'Eleanor', 'Josephine', 'Adelaide', 'Beatrice', 'Florence', 'Harriet', 'Louisa'
+  ],
+  fashion: [
+    // Nature-inspired names
+    'Maeve', 'Sienna', 'Wren', 'Ivy', 'Juniper', 'Willow', 'Fern', 'Clover', 'Luna', 'Autumn',
+    'Stella', 'Aurora', 'Dahlia', 'Violet', 'Jade', 'Pearl', 'Ruby', 'Coral', 'Amber', 'Olive',
+    'Sage', 'Laurel', 'Briar', 'Heather', 'Iris', 'Lily', 'Rose', 'Daisy', 'Magnolia', 'Jasmine',
+    // Soft feminine names
+    'Amelie', 'Celeste', 'Camille', 'Delphine', 'Estelle', 'Giselle', 'Colette', 'Simone'
+  ],
+  kids: [
+    // Playful and sweet names
+    'Birdie', 'Poppy', 'Rosie', 'Daisy', 'Finley', 'Milo', 'Otto', 'Theo', 'Emmett', 'Bodhi',
+    'Clementine', 'Marigold', 'Blossom', 'Sunny', 'Meadow', 'Willa', 'Nellie', 'Goldie', 'Pippa', 'Lottie',
+    'Bear', 'Fox', 'Wren', 'Robin', 'Sparrow', 'Cricket', 'Fawn', 'Bunny', 'Acorn', 'Maple',
+    // Whimsical names
+    'Story', 'Journey', 'Harbor', 'Sailor', 'Scout', 'West', 'True', 'Brave', 'Noble', 'Rowan'
+  ],
+  decor: [
+    // Nature and earth elements
+    'Haven', 'Ember', 'Meadow', 'Sage', 'Moss', 'Fawn', 'River', 'Stone', 'Dune', 'Pebble',
+    'Cove', 'Glen', 'Dale', 'Heath', 'Brook', 'Reed', 'Clay', 'Slate', 'Terra', 'Opal',
+    'Dawn', 'Dusk', 'Haze', 'Mist', 'Fog', 'Frost', 'Snow', 'Rain', 'Storm', 'Cloud',
+    // Texture and material inspired
+    'Velvet', 'Linen', 'Cotton', 'Wool', 'Silk', 'Canvas', 'Weave', 'Thread', 'Grain', 'Wicker'
+  ],
+  default: [
+    'Aria', 'Nova', 'Luna', 'Stella', 'Aurora', 'Ivy', 'Sage', 'Willow', 'Fern', 'Hazel',
+    'Clara', 'Nora', 'Margot', 'Elodie', 'Freya', 'Astrid', 'Ingrid', 'Linnea', 'Thea', 'Maja',
+    'Sienna', 'Amber', 'Olive', 'Pearl', 'Coral', 'Jade', 'Violet', 'Dahlia', 'Iris', 'Laurel'
+  ]
+};
+
+// Product type simplifications for cleaner names
+const PRODUCT_TYPE_MAPPINGS: Record<string, string> = {
+  'chair': 'Chair',
+  'dining': 'Dining Chair',
+  'accent': 'Accent Chair',
+  'lounge': 'Lounge Chair',
+  'armchair': 'Armchair',
+  'sofa': 'Sofa',
+  'couch': 'Sofa',
+  'table': 'Table',
+  'coffee': 'Coffee Table',
+  'side': 'Side Table',
+  'console': 'Console',
+  'buffet': 'Buffet',
+  'sideboard': 'Sideboard',
+  'cabinet': 'Cabinet',
+  'shelf': 'Shelf',
+  'bookcase': 'Bookcase',
+  'desk': 'Desk',
+  'bed': 'Bed',
+  'dresser': 'Dresser',
+  'nightstand': 'Nightstand',
+  'stool': 'Stool',
+  'bench': 'Bench',
+  'ottoman': 'Ottoman',
+  'mirror': 'Mirror',
+  'lamp': 'Lamp',
+  'rug': 'Rug',
+  'basket': 'Basket',
+  'vase': 'Vase',
+  'planter': 'Planter',
+  'tray': 'Tray',
+  'bowl': 'Bowl',
+  'dress': 'Dress',
+  'top': 'Top',
+  'blouse': 'Blouse',
+  'skirt': 'Skirt',
+  'pants': 'Trousers',
+  'romper': 'Romper',
+  'jumpsuit': 'Jumpsuit',
+  'cardigan': 'Cardigan',
+  'sweater': 'Sweater',
+  'jacket': 'Jacket',
+  'coat': 'Coat',
+};
+
+// Varied fallback descriptions - sophisticated, high-end materials
+const FALLBACK_DESCRIPTIONS = [
+  'Crafted from solid oak with Nordic precision. A timeless silhouette that anchors any room with quiet sophistication.',
+  'Hand-finished walnut meets minimalist design. This piece embodies the art of intentional living.',
+  'Natural rattan woven by artisan hands. Earthy texture meets refined simplicity.',
+  'Solid wood construction with linen upholstery. Scandinavian elegance, effortlessly refined.',
+  'Sustainably sourced hardwood with organic curves. A grounding presence for modern spaces.',
+  'Matte oak finish with handwoven natural fibers. Nordic craftsmanship at its finest.',
+  'Warm walnut tones paired with cream linen. Sophisticated simplicity for curated interiors.',
+  'Natural beechwood with soft organic lines. Minimalist form, maximum presence.',
+  'Solid ash construction with earthy undertones. Built for those who appreciate lasting beauty.',
+  'Artisan-crafted from sustainable teak. A serene addition to any thoughtfully designed space.',
+];
+
+// Helper function to generate fallback product name
+const generateFallbackName = (originalName: string, collection: string): string => {
+  const names = PRODUCT_NAME_INSPIRATIONS[collection as keyof typeof PRODUCT_NAME_INSPIRATIONS]
+    || PRODUCT_NAME_INSPIRATIONS.default;
+  const randomName = names[Math.floor(Math.random() * names.length)];
+
+  // Try to extract a clean product type from the original name
+  const lowerName = originalName.toLowerCase();
+  let productType = 'Chair';
+
+  // Find matching product type from our mappings
+  for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS)) {
+    if (lowerName.includes(keyword)) {
+      productType = cleanName;
+      break;
+    }
+  }
+
+  // Return 2-3 word format: "Aurora Dining Chair" (no "The")
+  return `${randomName} ${productType}`;
+};
+
+export const generateProductName = async (
+  originalName: string,
+  collection: string
+): Promise<string> => {
+  // Use fallback when no API key
+  if (!apiKey) {
+    return generateFallbackName(originalName, collection);
+  }
+
+  try {
+    const model = 'gemini-2.0-flash';
+    const ai = getAI();
+    if (!ai) return generateFallbackName(originalName, collection);
+
+    const systemInstruction = `
+      You are the product naming specialist for "Louie Mae", a sophisticated, Nordic-inspired home & lifestyle brand.
+      
+      NAMING RULES (STRICT):
+      1. Use a feminine first name: Aurora, Olivia, Hazel, Margot, Clara, Astrid, Linnea, Freya, Nora, Ingrid
+      2. Format: "[Name] [Product Type]" - exactly 2-3 words total
+      3. NO "The" prefix - just the name and type
+      4. Product types: Dining Chair, Accent Chair, Console, Side Table, Buffet, Lounge Chair, Stool, Sofa, Bed, Dresser
+      
+      GOOD EXAMPLES:
+      - "Aurora Dining Chair"
+      - "Hazel Console"
+      - "Margot Lounge Chair"
+      - "Astrid Side Table"
+      - "Linnea Stool"
+      - "Freya Sofa"
+      
+      BAD EXAMPLES (NEVER USE):
+      - "The Olivia Accent Chair" (has "The")
+      - "Modern Nordic Wooden Chair" (too generic)
+      - "Olivia Rattan Woven Accent Chair" (too long)
+      
+      Return ONLY the 2-3 word product name, nothing else.
+    `;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: `Original: "${originalName}" | Collection: ${collection} | Generate 2-3 word name.`,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      }
+    });
+
+    let result = response.text?.trim().replace(/^["']|["']$/g, '');
+    // If AI returned empty or same as original, use fallback
+    if (!result || result === originalName) {
+      return generateFallbackName(originalName, collection);
+    }
+    // Remove "The" if AI added it anyway
+    result = result.replace(/^The\s+/i, '');
+    return result;
+  } catch (error) {
+    console.error("Gemini Product Name Error:", error);
+    // Use fallback on error (API quota, network issues, etc.)
+    return generateFallbackName(originalName, collection);
+  }
+};
+
+export const generateProductDescription = async (
+  productName: string,
+  category: string,
+  collection: string
+): Promise<string> => {
+  // Random fallback for variety
+  const getRandomFallback = () => FALLBACK_DESCRIPTIONS[Math.floor(Math.random() * FALLBACK_DESCRIPTIONS.length)];
+
+  if (!apiKey) return getRandomFallback();
+
+  try {
+    const model = 'gemini-2.0-flash';
+    const ai = getAI();
+    if (!ai) return getRandomFallback();
+
+    const systemInstruction = `
+      You are the copywriter for "Louie Mae", a sophisticated, Nordic-inspired luxury home brand.
+      
+      HIGH-END MATERIALS TO MENTION (pick 1-2):
+      - Solid oak, walnut, ash, beechwood, teak
+      - Natural rattan, handwoven fibers
+      - Premium linen, organic cotton, bouclé
+      - Sustainable hardwood, FSC-certified wood
+      
+      SOPHISTICATED VOCABULARY:
+      - Nordic, Scandinavian, minimalist, curated, intentional
+      - Artisan-crafted, hand-finished, sustainably sourced
+      - Timeless, refined, grounding, serene, effortless
+      
+      STRICT RULES:
+      1. Exactly 1-2 sentences (25-40 words)
+      2. MUST mention a specific high-end material (oak, walnut, linen, etc.)
+      3. MUST include one sophisticated descriptor (Nordic, minimalist, artisan)
+      4. Focus on craftsmanship and the feeling it creates
+      5. NO generic phrases: "high quality", "beautiful design", "perfect for"
+      6. Each description should feel UNIQUE - vary sentence structure and word choice
+      
+      VARIETY EXAMPLES:
+      - "Solid walnut with hand-rubbed finish. Nordic restraint meets lasting craftsmanship."
+      - "Artisan-woven rattan on a sustainably sourced ash frame. A grounding presence for curated spaces."
+      - "Premium bouclé over solid oak construction. Scandinavian elegance, effortlessly refined."
+      - "Hand-finished beechwood with organic curves. Minimalist form that speaks to intentional living."
+      
+      Return ONLY the description, no quotes.
+    `;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: `"${productName}" | ${category} | ${collection} collection. Write unique, sophisticated description.`,
+      config: {
+        systemInstruction,
+        temperature: 0.85, // Higher for more variety
+      }
+    });
+
+    return response.text?.trim() || getRandomFallback();
+  } catch (error) {
+    console.error("Gemini Product Description Error:", error);
+    return getRandomFallback();
+  }
+};
+
 // --- Newsletter AI Functions ---
 
 export const generateEmailSubject = async (topic: string): Promise<string[]> => {
@@ -242,5 +492,63 @@ export const generateEmailBody = async (topic: string, type: 'newsletter' | 'pro
   } catch (error) {
     console.error("Gemini Body Gen Error:", error);
     return "";
+  }
+};
+
+export const personalizeTemplate = async (templateId: string, topic: string, objective: string): Promise<any> => {
+  if (!apiKey) return {
+    introduction: "Welcome to our latest update.",
+    main_content: "We have some exciting news to share with you.",
+    conclusion: "Thank you for being part of our journey.",
+    quote: "Simplicity is the ultimate sophistication.",
+    // Showcase fallbacks
+    collection_title: topic || "New Collection",
+    description: "Discover our latest arrivals, curated just for you.",
+    // Exclusive fallbacks
+    discount: "20% OFF",
+    sale_title: topic || "Exclusive Access",
+    details: "Shop our private sale for a limited time."
+  };
+
+  try {
+    const model = 'gemini-1.5-flash';
+    const placeholders = templateId === 'minimalist'
+      ? ['introduction', 'main_content', 'quote', 'conclusion']
+      : templateId === 'showcase'
+        ? ['collection_title', 'description']
+        : ['discount', 'sale_title', 'details'];
+
+    const systemInstruction = `
+      You are an expert copywriter for "Louie Mae" (High-end, earthy, timeless brand).
+      Your task is to generate content for an email template based on a topic.
+      
+      Template Type: ${templateId}
+      Topic: ${topic}
+      Objective: ${objective}
+      
+      Required Output (JSON):
+      Return a JSON object with the following keys: ${placeholders.join(', ')}.
+      
+      Style Guide:
+      - Tone: Sophisticated, warm, minimalist.
+      - avoid "Hey there", usage of emojis, or salesy exclamation marks!!!
+      - For 'discount', return something like "20% OFF" or "PRIVATE SALE".
+    `;
+
+    const ai = getAI();
+    if (!ai) return {};
+    const response = await ai.models.generateContent({
+      model,
+      contents: `Generate content for ${topic}`,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json"
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    console.error("Gemini Template Personalization Error:", error);
+    return {};
   }
 };

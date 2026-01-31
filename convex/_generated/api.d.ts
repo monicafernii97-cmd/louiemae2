@@ -8,10 +8,13 @@
  * @module
  */
 
+import type * as aliexpress from "../aliexpress.js";
+import type * as auth from "../auth.js";
 import type * as blogPosts from "../blogPosts.js";
 import type * as campaigns from "../campaigns.js";
 import type * as customPages from "../customPages.js";
 import type * as emails from "../emails.js";
+import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
@@ -25,10 +28,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  aliexpress: typeof aliexpress;
+  auth: typeof auth;
   blogPosts: typeof blogPosts;
   campaigns: typeof campaigns;
   customPages: typeof customPages;
   emails: typeof emails;
+  files: typeof files;
   http: typeof http;
   orders: typeof orders;
   products: typeof products;

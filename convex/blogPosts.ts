@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { auth } from "./auth";
 
+// Public queries
 export const list = query({
     args: {},
     handler: async (ctx) => {
@@ -15,6 +17,7 @@ export const get = query({
     },
 });
 
+// Protected mutations
 export const create = mutation({
     args: {
         title: v.string(),
@@ -25,6 +28,10 @@ export const create = mutation({
         status: v.union(v.literal("published"), v.literal("draft")),
     },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to create blog posts");
+        }
         const date = new Date().toLocaleDateString('en-US', {
             month: 'long',
             day: 'numeric',
@@ -45,6 +52,10 @@ export const update = mutation({
         status: v.optional(v.union(v.literal("published"), v.literal("draft"))),
     },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to update blog posts");
+        }
         const { id, ...updates } = args;
         const filteredUpdates = Object.fromEntries(
             Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -56,6 +67,10 @@ export const update = mutation({
 export const remove = mutation({
     args: { id: v.id("blogPosts") },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to delete blog posts");
+        }
         await ctx.db.delete(args.id);
     },
 });

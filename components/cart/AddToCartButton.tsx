@@ -1,33 +1,49 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Check } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
-import { Product } from '../../types';
+import { Product, ProductVariant } from '../../types';
 
 interface AddToCartButtonProps {
     product: Product;
+    selectedVariant?: ProductVariant;  // Optional variant selection
+    variantRequired?: boolean;  // True if product has variants and selection is required
     className?: string;
     variant?: 'primary' | 'secondary' | 'icon';
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
     product,
+    selectedVariant,
+    variantRequired = false,
     className = '',
     variant = 'primary'
 }) => {
     const { addToCart } = useCart();
     const [isAdded, setIsAdded] = useState(false);
 
-    const handleClick = () => {
-        if (!product.inStock) return;
+    // Disabled if out of stock OR if variant is required but not selected
+    const needsVariantSelection = variantRequired && !selectedVariant;
+    const isDisabled = !product.inStock || needsVariantSelection;
 
-        addToCart(product);
+    const handleClick = () => {
+        if (isDisabled) return;
+
+        addToCart(product, 1, selectedVariant);
         setIsAdded(true);
 
         // Reset after animation
         setTimeout(() => setIsAdded(false), 1500);
     };
 
-    const isDisabled = !product.inStock;
+    // Determine button text based on state
+    const getButtonText = () => {
+        if (isAdded) return null; // Will show "Added!" with icon
+        if (!product.inStock) return 'Out of Stock';
+        if (needsVariantSelection) return 'Select Option First';
+        return null; // Will show "Add to Cart" with icon
+    };
+
+    const buttonText = getButtonText();
 
     if (variant === 'icon') {
         return (
@@ -35,7 +51,7 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
                 onClick={handleClick}
                 disabled={isDisabled}
                 className={`p-3 bg-earth text-cream hover:bg-bronze transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-                aria-label={isDisabled ? 'Out of Stock' : 'Add to Cart'}
+                aria-label={isDisabled ? (needsVariantSelection ? 'Select Option First' : 'Out of Stock') : 'Add to Cart'}
             >
                 {isAdded ? (
                     <Check className="w-4 h-4" />
@@ -58,8 +74,8 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
                         <Check className="w-4 h-4" />
                         Added!
                     </>
-                ) : isDisabled ? (
-                    'Out of Stock'
+                ) : buttonText ? (
+                    buttonText
                 ) : (
                     <>
                         <ShoppingBag className="w-4 h-4" />
@@ -82,8 +98,8 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
                     <Check className="w-4 h-4" />
                     Added to Cart!
                 </>
-            ) : isDisabled ? (
-                'Out of Stock'
+            ) : buttonText ? (
+                buttonText
             ) : (
                 <>
                     <ShoppingBag className="w-4 h-4" />

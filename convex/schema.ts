@@ -1,7 +1,11 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
+    // Convex Auth tables (users, sessions, accounts, etc.)
+    ...authTables,
+
     // Products table
     products: defineTable({
         name: v.string(),
@@ -12,6 +16,13 @@ export default defineSchema({
         collection: v.string(),
         isNew: v.optional(v.boolean()),
         inStock: v.optional(v.boolean()),
+        variants: v.optional(v.array(v.object({
+            id: v.string(),
+            name: v.string(),
+            image: v.optional(v.string()),
+            priceAdjustment: v.number(),
+            inStock: v.boolean(),
+        }))),
     }),
 
     // Blog posts table
@@ -73,6 +84,8 @@ export default defineSchema({
         customerName: v.optional(v.string()),
         items: v.array(v.object({
             productId: v.string(),
+            variantId: v.optional(v.string()),
+            variantName: v.optional(v.string()),
             name: v.string(),
             price: v.number(),
             quantity: v.number(),
@@ -103,4 +116,53 @@ export default defineSchema({
         updatedAt: v.string(),
     }).index("by_session", ["stripeSessionId"])
         .index("by_email", ["customerEmail"]),
+
+    // AliExpress product cache - stores fetched products for faster access
+    aliexpressCache: defineTable({
+        aliexpressId: v.string(), // Original AliExpress product ID
+        name: v.string(),
+        originalPrice: v.number(),
+        salePrice: v.number(),
+        images: v.array(v.string()),
+        category: v.string(),
+        description: v.optional(v.string()),
+        averageRating: v.number(),
+        reviewCount: v.number(),
+        productUrl: v.optional(v.string()),
+        sellerName: v.optional(v.string()),
+        shippingInfo: v.object({
+            freeShipping: v.boolean(),
+            estimatedDays: v.optional(v.string()),
+            cost: v.optional(v.number()),
+        }),
+        inStock: v.boolean(),
+        lastFetched: v.string(), // ISO timestamp
+        searchQuery: v.optional(v.string()), // Query that found this product
+    }).index("by_aliexpress_id", ["aliexpressId"])
+        .index("by_search_query", ["searchQuery"]),
+
+    // Import history - tracks what was imported and when
+    importHistory: defineTable({
+        aliexpressId: v.string(), // Original AliExpress ID
+        importedProductId: v.id("products"), // Reference to imported product
+        originalName: v.string(),
+        importedName: v.string(),
+        originalPrice: v.number(),
+        importedPrice: v.number(),
+        markup: v.number(), // Percentage or fixed amount
+        markupType: v.union(v.literal("percentage"), v.literal("fixed")),
+        collection: v.string(),
+        aiEnhanced: v.boolean(),
+        importedAt: v.string(), // ISO timestamp
+        importedBy: v.optional(v.string()), // Future: user ID
+    }).index("by_aliexpress_id", ["aliexpressId"])
+        .index("by_imported_at", ["importedAt"])
+        .index("by_collection", ["collection"]),
+
+    // User preferences - stores pricing rules and settings
+    adminPreferences: defineTable({
+        key: v.string(), // e.g., "pricingRule", "defaultCollection"
+        value: v.any(),
+        updatedAt: v.string(),
+    }).index("by_key", ["key"]),
 });

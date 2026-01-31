@@ -1,7 +1,7 @@
 
 import { Product, Category, BlogPost, SiteContent, NavLink, CollectionConfig } from './types';
 
-export const HERO_IMAGE = "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=2000&auto=format&fit=crop"; 
+export const HERO_IMAGE = "/lm3.jpg";
 
 // --- Initial Products ---
 export const PRODUCTS: Product[] = [
@@ -82,8 +82,8 @@ export const BLOG_POSTS: BlogPost[] = [
 const INITIAL_NAV_LINKS: NavLink[] = [
   { label: 'Home', href: '#', children: [{ label: 'Our Story', href: '#story' }] },
   { label: 'Simply By Mae', href: '#', children: [{ label: 'Simply Mae', href: '#blog' }] },
-  { 
-    label: 'Louie Kids & Co.', 
+  {
+    label: 'Louie Kids & Co.',
     href: '#collection/kids',
     children: [
       { label: 'Shop All', href: '#collection/kids' },
@@ -94,8 +94,8 @@ const INITIAL_NAV_LINKS: NavLink[] = [
       { label: 'Playroom Furniture', href: '#collection/kids?cat=Playroom Furniture' },
     ]
   },
-  { 
-    label: 'The Mae Collective', 
+  {
+    label: 'The Mae Collective',
     href: '#collection/fashion',
     children: [
       { label: 'Shop All', href: '#collection/fashion' },
@@ -104,8 +104,8 @@ const INITIAL_NAV_LINKS: NavLink[] = [
       { label: 'Womens Dresses', href: '#collection/fashion?cat=Womens Dresses' },
     ]
   },
-  { 
-    label: 'Furniture', 
+  {
+    label: 'Furniture',
     href: '#collection/furniture',
     children: [
       { label: 'Shop All', href: '#collection/furniture' },
@@ -114,15 +114,15 @@ const INITIAL_NAV_LINKS: NavLink[] = [
       { label: 'Side Storage Cabinets', href: '#collection/furniture?cat=Side Storage Cabinets' },
     ]
   },
-  { 
-    label: 'Home Decor', 
+  {
+    label: 'Home Decor',
     href: '#collection/decor',
     children: [
-        { label: 'Shop All', href: '#collection/decor' },
-        { label: 'Accent Chairs', href: '#collection/furniture?cat=Accent Chairs' }, // Cross-link
-        { label: 'Vases', href: '#collection/decor?cat=Vases' },
-        { label: 'Rugs', href: '#collection/decor?cat=Rugs' },
-    ] 
+      { label: 'Shop All', href: '#collection/decor' },
+      { label: 'Accent Chairs', href: '#collection/furniture?cat=Accent Chairs' }, // Cross-link
+      { label: 'Vases', href: '#collection/decor?cat=Vases' },
+      { label: 'Rugs', href: '#collection/decor?cat=Rugs' },
+    ]
   },
 ];
 
@@ -185,7 +185,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
   collections: INITIAL_COLLECTIONS,
   home: {
     hero: {
-      image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=2000&auto=format&fit=crop",
+      image: "/lm3.jpg",
       pretitle: "Welcome to Louie Mae",
       titleLine1: "Live the life you love.",
       titleLine2: "Love the life you live.",

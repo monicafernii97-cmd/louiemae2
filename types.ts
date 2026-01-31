@@ -7,10 +7,11 @@ export interface Product {
   price: number;
   description: string;
   images: string[];
-  category: string; 
+  category: string;
   collection: CollectionType;
   isNew?: boolean;
   inStock?: boolean;
+  variants?: ProductVariant[];  // Optional - for products with color/size options
 }
 
 export interface Category {
@@ -18,7 +19,7 @@ export interface Category {
   title: string;
   image: string;
   caption?: string;
-  collection?: CollectionType; 
+  collection?: CollectionType;
   redirect?: string; // For cross-linking (e.g. Decor > Accent Chairs -> Furniture)
 }
 
@@ -40,7 +41,7 @@ export interface BlogPost {
   id: string;
   title: string;
   excerpt: string;
-  content: string; 
+  content: string;
   date: string;
   image: string;
   category: string;
@@ -159,4 +160,62 @@ export interface EmailCampaign {
     clicked: number;
   };
   type: 'newsletter' | 'promotion' | 'automation';
+}
+
+// --- AliExpress API Types ---
+
+export interface ProductVariant {
+  id: string;
+  name: string; // e.g., "Color: Cream" or "Size: M"
+  image?: string;
+  priceAdjustment: number; // +/- from base price
+  inStock: boolean;
+}
+
+export interface AliExpressProduct extends Product {
+  aliExpressId: string;
+  originalPrice: number;
+  salePrice: number;
+  shippingInfo: {
+    freeShipping: boolean;
+    estimatedDays: string;
+    cost: number;
+  };
+  seller: {
+    id: string;
+    name: string;
+    rating: number;
+    feedbackScore: number;
+  };
+  variants: ProductVariant[];
+  reviewCount: number;
+  averageRating: number;
+  productUrl: string;
+}
+
+export interface AliExpressSearchOptions {
+  query: string;
+  page?: number;
+  pageSize?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  sortBy?: 'price_asc' | 'price_desc' | 'orders' | 'rating';
+  categoryId?: string;
+}
+
+export interface AliExpressSearchResult {
+  products: AliExpressProduct[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+}
+
+export interface ImportedProduct extends Product {
+  aliExpressId: string;
+  originalCost: number;
+  markup: number;
+  importedAt: string;
+  lastSyncedAt: string;
+  autoSync: boolean;
 }

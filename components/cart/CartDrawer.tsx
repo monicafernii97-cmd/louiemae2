@@ -26,13 +26,23 @@ export const CartDrawer: React.FC = () => {
             const httpUrl = `https://${siteId}.convex.site/stripe/checkout`;
 
             // Prepare cart items for Stripe
-            const checkoutItems = items.map(item => ({
-                productId: item.product.id,
-                name: item.product.name,
-                price: item.product.price,
-                quantity: item.quantity,
-                image: item.product.images[0] || undefined,
-            }));
+            const checkoutItems = items.map(item => {
+                const variantAdjustment = item.selectedVariant?.priceAdjustment || 0;
+                const itemName = item.selectedVariant
+                    ? `${item.product.name} - ${item.selectedVariant.name}`
+                    : item.product.name;
+                const itemImage = item.selectedVariant?.image || item.product.images[0];
+
+                return {
+                    productId: item.product.id,
+                    variantId: item.selectedVariant?.id,
+                    variantName: item.selectedVariant?.name,
+                    name: itemName,
+                    price: item.product.price + variantAdjustment,
+                    quantity: item.quantity,
+                    image: itemImage || undefined,
+                };
+            });
 
             // Create checkout session
             const response = await fetch(httpUrl, {
@@ -115,9 +125,12 @@ export const CartDrawer: React.FC = () => {
                         </div>
                     ) : (
                         <div>
-                            {items.map(item => (
-                                <CartItem key={item.product.id} item={item} />
-                            ))}
+                            {items.map(item => {
+                                const key = item.selectedVariant
+                                    ? `${item.product.id}:${item.selectedVariant.id}`
+                                    : item.product.id;
+                                return <CartItem key={key} item={item} />;
+                            })}
                         </div>
                     )}
                 </div>

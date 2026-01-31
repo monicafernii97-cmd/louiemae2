@@ -8,14 +8,20 @@ interface CartItemProps {
 
 export const CartItem: React.FC<CartItemProps> = ({ item }) => {
     const { updateQuantity, removeFromCart } = useCart();
-    const { product, quantity } = item;
+    const { product, quantity, selectedVariant } = item;
+
+    // Use variant image if available, otherwise product's first image
+    const displayImage = selectedVariant?.image || product.images[0];
+
+    // Calculate price with variant adjustment
+    const displayPrice = product.price + (selectedVariant?.priceAdjustment || 0);
 
     return (
         <div className="flex gap-4 py-4 border-b border-earth/10">
             {/* Product Image */}
             <div className="w-20 h-20 bg-cream flex-shrink-0 overflow-hidden">
                 <img
-                    src={product.images[0]}
+                    src={displayImage}
                     alt={product.name}
                     className="w-full h-full object-cover"
                 />
@@ -24,16 +30,19 @@ export const CartItem: React.FC<CartItemProps> = ({ item }) => {
             {/* Product Details */}
             <div className="flex-1 min-w-0">
                 <h4 className="font-serif text-sm text-earth truncate">{product.name}</h4>
+                {selectedVariant && (
+                    <p className="text-xs text-earth/60 mt-0.5">{selectedVariant.name}</p>
+                )}
                 <p className="text-[10px] uppercase tracking-widest text-earth/50 mt-1">
                     {product.category}
                 </p>
-                <p className="text-sm text-earth mt-1">${product.price.toFixed(2)}</p>
+                <p className="text-sm text-earth mt-1">${displayPrice.toFixed(2)}</p>
             </div>
 
             {/* Quantity Controls */}
             <div className="flex flex-col items-end justify-between">
                 <button
-                    onClick={() => removeFromCart(product.id)}
+                    onClick={() => removeFromCart(product.id, selectedVariant?.id)}
                     className="p-1 text-earth/30 hover:text-red-600 transition-colors"
                     aria-label="Remove item"
                 >
@@ -42,7 +51,7 @@ export const CartItem: React.FC<CartItemProps> = ({ item }) => {
 
                 <div className="flex items-center gap-2 border border-earth/10">
                     <button
-                        onClick={() => updateQuantity(product.id, quantity - 1)}
+                        onClick={() => updateQuantity(product.id, quantity - 1, selectedVariant?.id)}
                         className="p-1 hover:bg-earth/5 transition-colors"
                         aria-label="Decrease quantity"
                     >
@@ -50,7 +59,7 @@ export const CartItem: React.FC<CartItemProps> = ({ item }) => {
                     </button>
                     <span className="text-sm text-earth w-6 text-center">{quantity}</span>
                     <button
-                        onClick={() => updateQuantity(product.id, quantity + 1)}
+                        onClick={() => updateQuantity(product.id, quantity + 1, selectedVariant?.id)}
                         className="p-1 hover:bg-earth/5 transition-colors"
                         aria-label="Increase quantity"
                     >

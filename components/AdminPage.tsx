@@ -5,8 +5,11 @@ import { useNewsletter } from '../contexts/NewsletterContext';
 import { FadeIn } from './FadeIn';
 import { Plus, Edit3, Trash2, LogOut, Save, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, Box, Shirt, Baby, Sofa, Gamepad2, Bed, Wand2, ChevronDown, List, Layers, Link as LinkIcon, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, TrendingUp, BarChart2, Package } from 'lucide-react';
 import { BlogPost, SiteContent, CustomPage, PageSection, Product, CollectionType, CollectionConfig, NavLink, SectionItem, EmailCampaign } from '../types';
-import { generatePageStructure, suggestProductCategory, generateEmailSubject, generateEmailBody } from '../services/geminiService';
+import { generatePageStructure, suggestProductCategory, generateEmailSubject, generateEmailBody, generateProductName, generateProductDescription } from '../services/geminiService';
 import { AdminOrders } from './AdminOrders';
+import { NewsletterStudio } from './NewsletterStudio';
+import { ProductStudio } from './ProductStudio';
+import { ProductImport } from './ProductImport';
 
 // --- Image Uploader Component ---
 const ImageUploader: React.FC<{
@@ -79,14 +82,17 @@ const ImageUploader: React.FC<{
 };
 
 export const AdminPage: React.FC = () => {
-   const { isAuthenticated, login, logout, posts, addPost, updatePost, deletePost, siteContent, updateSiteContent, addCustomPage, updateCustomPage, deleteCustomPage, products, addProduct, updateProduct, deleteProduct, addCollection, updateCollection, deleteCollection, updateNavigation } = useSite();
+   const { isAuthenticated, isAuthLoading, signIn, logout, posts, addPost, updatePost, deletePost, siteContent, updateSiteContent, addCustomPage, updateCustomPage, deleteCustomPage, products, addProduct, updateProduct, deleteProduct, addCollection, updateCollection, deleteCollection, updateNavigation } = useSite();
    const { subscribers, campaigns, createCampaign, updateCampaign, sendCampaign, deleteCampaign, stats } = useNewsletter();
 
+   const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [error, setError] = useState('');
+   const [isSigningIn, setIsSigningIn] = useState(false);
+   const [authFlow, setAuthFlow] = useState<'signIn' | 'signUp'>('signIn');
 
    // Navigation State
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders' | 'import'>('dashboard');
    const [newsletterSubTab, setNewsletterSubTab] = useState<'overview' | 'campaigns' | 'subscribers'>('overview');
 
    const [activePageEditor, setActivePageEditor] = useState<'home' | 'story' | string | null>(null);
@@ -122,12 +128,17 @@ export const AdminPage: React.FC = () => {
    const [showSectionPicker, setShowSectionPicker] = useState(false);
 
    // Login Handler
-   const handleLogin = (e: React.FormEvent) => {
+   const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (login(password)) {
-         setError('');
-      } else {
-         setError('Incorrect password. Please try again.');
+      setError('');
+      setIsSigningIn(true);
+      try {
+         await signIn(email, password, authFlow);
+         // Auth state will update automatically via useConvexAuth
+      } catch (err: any) {
+         setError(err.message || 'Authentication failed. Please try again.');
+      } finally {
+         setIsSigningIn(false);
       }
    };
 
@@ -371,6 +382,13 @@ export const AdminPage: React.FC = () => {
 
    // --- LOGIN SCREEN ---
    if (!isAuthenticated) {
+      if (isAuthLoading) {
+         return (
+            <div className="min-h-screen bg-cream flex items-center justify-center">
+               <Loader2 className="w-8 h-8 text-bronze animate-spin" />
+            </div>
+         );
+      }
       return (
          <div className="min-h-screen bg-cream flex items-center justify-center px-6">
             <FadeIn className="w-full max-w-md">
@@ -378,22 +396,44 @@ export const AdminPage: React.FC = () => {
                   <span className="text-bronze text-[10px] uppercase tracking-[0.3em] mb-4 block">Restricted Access</span>
                   <h1 className="font-serif text-4xl text-earth mb-2">The Atelier</h1>
                   <p className="text-earth/50 text-xs uppercase tracking-widest mb-10">Backend Management</p>
-                  <form onSubmit={handleLogin} className="space-y-8">
+                  <form onSubmit={handleLogin} className="space-y-6">
+                     <div className="relative">
+                        <input
+                           type="email"
+                           value={email}
+                           onChange={(e) => setEmail(e.target.value)}
+                           placeholder="Email Address"
+                           className="w-full text-center border-b border-earth/20 py-3 text-earth placeholder:text-earth/20 focus:outline-none focus:border-bronze transition-colors font-serif text-xl bg-transparent"
+                           required
+                        />
+                     </div>
                      <div className="relative">
                         <input
                            type="password"
                            value={password}
                            onChange={(e) => setPassword(e.target.value)}
-                           placeholder="Enter Passkey"
+                           placeholder="Password"
                            className="w-full text-center border-b border-earth/20 py-3 text-earth placeholder:text-earth/20 focus:outline-none focus:border-bronze transition-colors font-serif text-xl bg-transparent"
+                           required
                         />
                      </div>
                      {error && <p className="text-red-800 text-xs tracking-widest uppercase">{error}</p>}
-                     <button type="submit" className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.25em] hover:bg-bronze transition-all duration-500">
-                        Enter Studio
+                     <button
+                        type="submit"
+                        disabled={isSigningIn}
+                        className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.25em] hover:bg-bronze transition-all duration-500 disabled:opacity-50 flex items-center justify-center gap-2"
+                     >
+                        {isSigningIn && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {authFlow === 'signIn' ? 'Enter Studio' : 'Create Account'}
                      </button>
                   </form>
-                  <button onClick={handleReturnToSite} className="mt-8 text-[10px] uppercase tracking-[0.2em] text-earth/30 hover:text-earth transition-colors">
+                  <button
+                     onClick={() => setAuthFlow(authFlow === 'signIn' ? 'signUp' : 'signIn')}
+                     className="mt-4 text-[10px] uppercase tracking-[0.2em] text-earth/50 hover:text-earth transition-colors"
+                  >
+                     {authFlow === 'signIn' ? 'Create new account' : 'Already have an account? Sign in'}
+                  </button>
+                  <button onClick={handleReturnToSite} className="mt-4 block w-full text-[10px] uppercase tracking-[0.2em] text-earth/30 hover:text-earth transition-colors">
                      Return to Site
                   </button>
                </div>
@@ -439,6 +479,13 @@ export const AdminPage: React.FC = () => {
                   className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'structure' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
                >
                   <Layers className="w-4 h-4" /> Site Structure
+               </button>
+
+               <button
+                  onClick={() => { setActiveTab('import'); setActivePageEditor(null); }}
+                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'import' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+               >
+                  <Upload className="w-4 h-4" /> Import Products
                </button>
 
                <div className="px-4 pt-4 pb-2">
@@ -546,6 +593,23 @@ export const AdminPage: React.FC = () => {
             {activeTab === 'orders' && (
                <FadeIn>
                   <AdminOrders />
+               </FadeIn>
+            )}
+
+            {/* IMPORT TAB */}
+            {activeTab === 'import' && (
+               <FadeIn>
+                  <ProductImport
+                     collections={siteContent.collections}
+                     onImportProducts={(productsToImport) => {
+                        // Import each product
+                        productsToImport.forEach(product => {
+                           addProduct(product);
+                        });
+                        // Show success message
+                        alert(`Successfully imported ${productsToImport.length} products!`);
+                     }}
+                  />
                </FadeIn>
             )}
 
@@ -678,94 +742,24 @@ export const AdminPage: React.FC = () => {
                      </div>
                   )}
 
-                  {/* CAMPAIGN EDITOR MODAL */}
-                  {editingCampaign && (
-                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-black/40 backdrop-blur-sm">
-                        <div className="bg-white w-full max-w-6xl h-[85vh] rounded-sm shadow-2xl relative animate-fade-in-up flex overflow-hidden">
-                           {/* Left: Editor */}
-                           <div className="w-1/2 flex flex-col border-r border-earth/10">
-                              {/* Fixed Header - doesn't scroll */}
-                              <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-earth/5">
-                                 <div className="flex justify-between items-center">
-                                    <h2 className="font-serif text-3xl text-earth">Compose</h2>
-                                    <button onClick={() => setEditingCampaign(null)} className="text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button>
-                                 </div>
-                              </div>
-
-                              {/* Scrollable content area */}
-                              <div className="flex-1 overflow-y-auto px-8 py-6">
-                                 <div className="space-y-6">
-                                    <div>
-                                       <div className="flex justify-between mb-2">
-                                          <label className="block text-[10px] uppercase tracking-widest text-earth/40">Subject Line</label>
-                                          <button onClick={handleGenerateSubject} disabled={aiGenerating === 'subject'} className="text-[10px] uppercase text-bronze hover:text-earth flex items-center gap-1">
-                                             {aiGenerating === 'subject' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                             AI Suggest
-                                          </button>
-                                       </div>
-                                       <input type="text" value={editingCampaign.subject} onChange={(e) => setEditingCampaign({ ...editingCampaign, subject: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-lg" placeholder="Enter subject line..." />
-                                    </div>
-
-                                    <div>
-                                       <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Preview Text</label>
-                                       <input type="text" value={editingCampaign.previewText} onChange={(e) => setEditingCampaign({ ...editingCampaign, previewText: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 text-sm" placeholder="Snippet that appears in inbox..." />
-                                    </div>
-
-                                    <div className="flex gap-4 flex-wrap">
-                                       <button onClick={() => handleGenerateBody('New Collection Launch')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Launch</button>
-                                       <button onClick={() => handleGenerateBody('Weekly Digest')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Digest</button>
-                                       <button onClick={() => handleGenerateBody('Subscriber Exclusive Sale')} className="text-xs bg-cream border border-earth/10 px-3 py-1 text-earth/60 hover:text-earth">Template: Sale</button>
-                                    </div>
-
-                                    <div>
-                                       <div className="flex justify-between mb-2">
-                                          <label className="block text-[10px] uppercase tracking-widest text-earth/40">Content (HTML Supported)</label>
-                                          {aiGenerating === 'body' && <span className="text-[10px] text-bronze flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Writing...</span>}
-                                       </div>
-                                       <textarea value={editingCampaign.content} onChange={(e) => setEditingCampaign({ ...editingCampaign, content: e.target.value })} className="w-full bg-cream/30 p-4 border border-earth/10 h-[250px] font-mono text-sm leading-relaxed resize-y" />
-                                    </div>
-                                 </div>
-                              </div>
-
-                              {/* Right: Preview */}
-                              <div className="w-1/2 bg-[#F2F2F2] p-12 overflow-y-auto flex justify-center">
-                                 <div className="bg-white w-full max-w-md shadow-lg min-h-[600px] flex flex-col">
-                                    {/* Email Header */}
-                                    <div className="p-6 text-center border-b border-gray-100">
-                                       <h1 className="font-serif text-2xl text-earth">Louie Mae</h1>
-                                       <p className="text-[10px] uppercase tracking-[0.2em] text-bronze mt-1">The Letter</p>
-                                    </div>
-
-                                    {/* Email Body */}
-                                    <div className="p-8 flex-1">
-                                       <div className="prose prose-sm prose-p:font-sans prose-headings:font-serif prose-headings:font-normal text-earth/80" dangerouslySetInnerHTML={{ __html: editingCampaign.content || '' }}></div>
-                                    </div>
-
-                                    {/* Email Footer */}
-                                    <div className="bg-cream p-6 text-center text-xs text-earth/40">
-                                       <p className="mb-4">Timeless Artistry. Curated Living.</p>
-                                       <div className="flex justify-center gap-4 mb-4">
-                                          <span>Instagram</span>
-                                          <span>Pinterest</span>
-                                          <span>Website</span>
-                                       </div>
-                                       <p>Unsubscribe | Manage Preferences</p>
-                                    </div>
-                                 </div>
-                              </div>
-
-                              {/* Actions Footer - Fixed at bottom of left panel */}
-                              <div className="flex-shrink-0 bg-white border-t border-earth/10 p-4 flex justify-between items-center">
-                                 <button onClick={() => setEditingCampaign(null)} className="text-xs uppercase tracking-widest text-earth/50 hover:text-earth">Cancel</button>
-                                 <div className="flex gap-4">
-                                    <button onClick={handleSaveCampaign} className="px-6 py-3 border border-earth/20 text-xs uppercase tracking-widest hover:bg-cream">Save Draft</button>
-                                    <button onClick={() => { handleSaveCampaign(); if (editingCampaign.id) sendCampaign(editingCampaign.id); }} className="bg-earth text-cream px-6 py-3 text-xs uppercase tracking-widest hover:bg-bronze">Send Now</button>
-                                 </div>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                  )}
+                  {/* CAMPAIGN STUDIO */}
+                  <NewsletterStudio
+                     isOpen={!!editingCampaign}
+                     onClose={() => setEditingCampaign(null)}
+                     initialCampaign={editingCampaign}
+                     onSave={(campaign) => {
+                        if (campaign.id) {
+                           updateCampaign(campaign.id, campaign);
+                        } else {
+                           createCampaign(campaign as any);
+                        }
+                        // If status is sent, trigger send logic
+                        if (campaign.status === 'sent' && campaign.id) {
+                           sendCampaign(campaign.id);
+                        }
+                        setEditingCampaign(null);
+                     }}
+                  />
                </FadeIn>
             )}
 
@@ -1441,98 +1435,22 @@ export const AdminPage: React.FC = () => {
                );
             })()}
 
-            {/* PRODUCT EDITOR MODAL */}
-            {isEditingProduct && editingProduct && (
-               <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-                  <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 rounded-sm shadow-2xl relative animate-fade-in-up">
-                     <button onClick={() => setIsEditingProduct(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
-                     <div className="flex justify-between items-start mb-8">
-                        <h2 className="font-serif text-3xl text-earth">{editingProduct.id ? 'Edit Product' : 'New Product'}</h2>
-                        {editingProduct.name && (
-                           <button onClick={handleAutoCategorize} disabled={isCategorizing} className="text-[10px] uppercase tracking-widest flex items-center gap-2 text-bronze hover:text-earth disabled:opacity-50">
-                              {isCategorizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                              Suggest Category
-                           </button>
-                        )}
-                     </div>
-
-                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                           <div>
-                              <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Product Name</label>
-                              <input type="text" value={editingProduct.name} onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-lg" />
-                           </div>
-
-                           <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                 <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Price ($)</label>
-                                 <input type="number" value={editingProduct.price} onChange={(e) => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })} className="w-full bg-cream/30 p-3 border border-earth/10" />
-                              </div>
-                              <div>
-                                 <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Collection</label>
-                                 <select value={editingProduct.collection} onChange={(e) => setEditingProduct({ ...editingProduct, collection: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 text-sm">
-                                    {siteContent.collections.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                 </select>
-                              </div>
-                           </div>
-
-                           <div>
-                              <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Category</label>
-                              <input type="text" value={editingProduct.category} onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10" placeholder="e.g. Accent Chairs" />
-                           </div>
-
-                           <div>
-                              <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Description</label>
-                              <textarea value={editingProduct.description} onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-32 text-sm leading-relaxed" />
-                           </div>
-
-                           <div className="flex gap-8 pt-4">
-                              <label className="flex items-center gap-3 cursor-pointer">
-                                 <input type="checkbox" checked={editingProduct.isNew} onChange={(e) => setEditingProduct({ ...editingProduct, isNew: e.target.checked })} className="accent-earth w-4 h-4" />
-                                 <span className="text-xs uppercase tracking-widest text-earth/70">New Arrival</span>
-                              </label>
-                              <label className="flex items-center gap-3 cursor-pointer">
-                                 <input type="checkbox" checked={editingProduct.inStock} onChange={(e) => setEditingProduct({ ...editingProduct, inStock: e.target.checked })} className="accent-earth w-4 h-4" />
-                                 <span className="text-xs uppercase tracking-widest text-earth/70">In Stock</span>
-                              </label>
-                           </div>
-                        </div>
-
-                        <div className="space-y-6">
-                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Product Images</label>
-                           {editingProduct.images?.map((img, idx) => (
-                              <div key={idx} className="relative group">
-                                 <ImageUploader
-                                    currentImage={img}
-                                    onImageChange={(val) => {
-                                       const newImages = [...(editingProduct.images || [])];
-                                       newImages[idx] = val;
-                                       setEditingProduct({ ...editingProduct, images: newImages });
-                                    }}
-                                    aspectRatio="aspect-square"
-                                    label={`Image ${idx + 1}`}
-                                 />
-                                 {idx > 0 && (
-                                    <button onClick={() => {
-                                       const newImages = editingProduct.images?.filter((_, i) => i !== idx);
-                                       setEditingProduct({ ...editingProduct, images: newImages });
-                                    }} className="absolute top-0 right-0 p-2 text-red-800 bg-white/80 hover:bg-red-50 rounded-bl-sm"><Trash2 className="w-4 h-4" /></button>
-                                 )}
-                              </div>
-                           ))}
-                           <button onClick={() => setEditingProduct({ ...editingProduct, images: [...(editingProduct.images || []), ''] })} className="w-full py-3 border border-dashed border-earth/20 text-xs uppercase tracking-widest text-earth/50 hover:text-earth hover:border-earth/40 transition-colors">
-                              + Add Another Image
-                           </button>
-                        </div>
-                     </div>
-
-                     <div className="mt-8 pt-8 border-t border-earth/10 flex justify-end gap-4">
-                        <button onClick={() => setIsEditingProduct(false)} className="px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-earth/50 hover:text-earth transition-colors">Cancel</button>
-                        <button onClick={handleSaveProduct} className="bg-earth text-cream px-8 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors">Save Product</button>
-                     </div>
-                  </div>
-               </div>
-            )}
+            {/* --- Product Studio --- */}
+            <ProductStudio
+               isOpen={isEditingProduct}
+               onClose={() => { setIsEditingProduct(false); setEditingProduct(null); }}
+               initialProduct={editingProduct}
+               onSave={(prod) => {
+                  if (prod.id) {
+                     updateProduct(prod.id, prod);
+                  } else {
+                     addProduct(prod as Omit<Product, 'id'>);
+                  }
+                  setIsEditingProduct(false);
+                  setEditingProduct(null);
+               }}
+               siteContent={siteContent}
+            />
 
             {/* POST EDITOR MODAL */}
             {isEditingPost && editingPost && (
