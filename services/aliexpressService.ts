@@ -19,9 +19,9 @@ export type { AliExpressProduct, AliExpressSearchOptions, AliExpressSearchResult
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════
 
-const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY || '';
-const RAPIDAPI_HOST = import.meta.env.VITE_RAPIDAPI_HOST || 'aliexpress-datahub.p.rapidapi.com';
-const BASE_URL = `https://${RAPIDAPI_HOST}`;
+// Use Convex HTTP proxy for API calls (handles CORS and keeps API key secure)
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || '';
+const CONVEX_SITE_URL = CONVEX_URL.replace('.convex.cloud', '.convex.site');
 
 // Collection to AliExpress category mapping
 const CATEGORY_MAPPING: Record<string, string> = {
@@ -80,24 +80,21 @@ const rateLimitedFetch = async (url: string, options: RequestInit): Promise<Resp
 // API HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const getHeaders = (): HeadersInit => ({
-    'X-RapidAPI-Key': RAPIDAPI_KEY,
-    'X-RapidAPI-Host': RAPIDAPI_HOST,
-    'Content-Type': 'application/json',
-});
-
 const handleApiError = async (response: Response): Promise<never> => {
-    const errorText = await response.text();
-    console.error('AliExpress API Error:', response.status, errorText);
+    let errorMessage = 'API Error';
+    try {
+        const data = await response.json();
+        errorMessage = data.error || `API Error: ${response.status}`;
+    } catch {
+        errorMessage = `API Error: ${response.status}`;
+    }
+    console.error('AliExpress API Error:', response.status, errorMessage);
 
     if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please try again later.');
     }
-    if (response.status === 401 || response.status === 403) {
-        throw new Error('API authentication failed. Check your RapidAPI key.');
-    }
 
-    throw new Error(`API Error: ${response.status} - ${errorText}`);
+    throw new Error(errorMessage);
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -277,37 +274,39 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
 
 export const aliexpressService = {
     /**
-     * Check if the API is configured
+     * Check if the API is configured (always true when using Convex proxy)
      */
     isConfigured(): boolean {
-        return Boolean(RAPIDAPI_KEY && RAPIDAPI_KEY !== 'your_rapidapi_key_here');
+        return Boolean(CONVEX_SITE_URL);
     },
 
     /**
-     * Search for products on AliExpress
+     * Search for products on AliExpress via Convex proxy
      */
     async searchProducts(options: AliExpressSearchOptions): Promise<AliExpressSearchResult> {
         const { query, page = 1, pageSize = 40, minPrice, maxPrice, sortBy } = options;
 
-        // Clear cache entry to ensure fresh data during debugging
+        // Check cache first
         const cacheKey = `search:${JSON.stringify(options)}`;
-        cache.delete(cacheKey); // Force fresh fetch during testing
-
-        // Build query params - using RapidAPI AliExpress Datahub format
-        const params = new URLSearchParams({
-            q: query,
-            page: String(page),
-            limit: String(pageSize), // Pass page size to get more results
-        });
-
-        if (minPrice) params.append('startPrice', String(minPrice));
-        if (maxPrice) params.append('endPrice', String(maxPrice));
-        if (sortBy) params.append('sort', sortBy === 'price_asc' ? 'price_asc' : sortBy === 'price_desc' ? 'price_desc' : 'default');
+        const cached = getCached<AliExpressSearchResult>(cacheKey);
+        if (cached) return cached;
 
         try {
+            // Call Convex HTTP proxy endpoint
             const response = await rateLimitedFetch(
-                `${BASE_URL}/item_search_3?${params.toString()}`,
-                { method: 'GET', headers: getHeaders() }
+                `${CONVEX_SITE_URL}/aliexpress/search`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        page,
+                        pageSize,
+                        minPrice,
+                        maxPrice,
+                        sortBy: sortBy === 'price_asc' ? 'price_asc' : sortBy === 'price_desc' ? 'price_desc' : 'default'
+                    })
+                }
             );
 
             if (!response.ok) {
@@ -339,7 +338,7 @@ export const aliexpressService = {
     },
 
     /**
-     * Get detailed product information
+     * Get detailed product information via Convex proxy
      */
     async getProductDetails(productId: string): Promise<AliExpressProduct | null> {
         // Remove ali_ prefix if present
@@ -351,9 +350,14 @@ export const aliexpressService = {
         if (cached) return cached;
 
         try {
+            // Call Convex HTTP proxy endpoint
             const response = await rateLimitedFetch(
-                `${BASE_URL}/item_detail_3?itemId=${cleanId}`,
-                { method: 'GET', headers: getHeaders() }
+                `${CONVEX_SITE_URL}/aliexpress/product`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId: cleanId })
+                }
             );
 
             if (!response.ok) {

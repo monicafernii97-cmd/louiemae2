@@ -244,4 +244,218 @@ http.route({
     }),
 });
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ALIEXPRESS API PROXY ROUTES
+// Proxies API calls to RapidAPI to avoid CORS issues and keep API key secure
+// ═══════════════════════════════════════════════════════════════════════════
+
+const RAPIDAPI_HOST = "aliexpress-datahub.p.rapidapi.com";
+
+// Search products on AliExpress
+http.route({
+    path: "/aliexpress/search",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        const rapidApiKey = process.env.RAPIDAPI_KEY;
+
+        if (!rapidApiKey) {
+            return new Response(
+                JSON.stringify({ error: "RapidAPI key not configured. Please set RAPIDAPI_KEY in Convex dashboard." }),
+                {
+                    status: 500,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...corsHeaders,
+                    }
+                }
+            );
+        }
+
+        try {
+            const body = await request.json();
+            const { query, page = 1, pageSize = 20, minPrice, maxPrice, sortBy } = body;
+
+            // Build query params
+            const params = new URLSearchParams({
+                q: query,
+                page: String(page),
+                limit: String(pageSize),
+            });
+
+            if (minPrice) params.append("startPrice", String(minPrice));
+            if (maxPrice) params.append("endPrice", String(maxPrice));
+            if (sortBy && sortBy !== "default") params.append("sort", sortBy);
+
+            const response = await fetch(
+                `https://${RAPIDAPI_HOST}/item_search_3?${params.toString()}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "X-RapidAPI-Key": rapidApiKey,
+                        "X-RapidAPI-Host": RAPIDAPI_HOST,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("AliExpress API Error:", response.status, errorText);
+                return new Response(
+                    JSON.stringify({ error: `API Error: ${response.status}` }),
+                    {
+                        status: response.status,
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...corsHeaders,
+                        }
+                    }
+                );
+            }
+
+            const data = await response.json();
+
+            return new Response(
+                JSON.stringify(data),
+                {
+                    status: 200,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...corsHeaders,
+                    }
+                }
+            );
+        } catch (error: any) {
+            console.error("AliExpress search error:", error);
+            return new Response(
+                JSON.stringify({ error: error.message || "Search failed" }),
+                {
+                    status: 500,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...corsHeaders,
+                    }
+                }
+            );
+        }
+    }),
+});
+
+// CORS preflight for search
+http.route({
+    path: "/aliexpress/search",
+    method: "OPTIONS",
+    handler: httpAction(async () => {
+        return new Response(null, {
+            status: 204,
+            headers: corsHeaders,
+        });
+    }),
+});
+
+// Get product details by ID
+http.route({
+    path: "/aliexpress/product",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        const rapidApiKey = process.env.RAPIDAPI_KEY;
+
+        if (!rapidApiKey) {
+            return new Response(
+                JSON.stringify({ error: "RapidAPI key not configured. Please set RAPIDAPI_KEY in Convex dashboard." }),
+                {
+                    status: 500,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...corsHeaders,
+                    }
+                }
+            );
+        }
+
+        try {
+            const body = await request.json();
+            const { productId } = body;
+
+            if (!productId) {
+                return new Response(
+                    JSON.stringify({ error: "Product ID is required" }),
+                    {
+                        status: 400,
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...corsHeaders,
+                        }
+                    }
+                );
+            }
+
+            const response = await fetch(
+                `https://${RAPIDAPI_HOST}/item_detail_3?itemId=${productId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "X-RapidAPI-Key": rapidApiKey,
+                        "X-RapidAPI-Host": RAPIDAPI_HOST,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("AliExpress API Error:", response.status, errorText);
+                return new Response(
+                    JSON.stringify({ error: `API Error: ${response.status}` }),
+                    {
+                        status: response.status,
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...corsHeaders,
+                        }
+                    }
+                );
+            }
+
+            const data = await response.json();
+
+            return new Response(
+                JSON.stringify(data),
+                {
+                    status: 200,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...corsHeaders,
+                    }
+                }
+            );
+        } catch (error: any) {
+            console.error("AliExpress product detail error:", error);
+            return new Response(
+                JSON.stringify({ error: error.message || "Failed to get product details" }),
+                {
+                    status: 500,
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...corsHeaders,
+                    }
+                }
+            );
+        }
+    }),
+});
+
+// CORS preflight for product details
+http.route({
+    path: "/aliexpress/product",
+    method: "OPTIONS",
+    handler: httpAction(async () => {
+        return new Response(null, {
+            status: 204,
+            headers: corsHeaders,
+        });
+    }),
+});
+
 export default http;
