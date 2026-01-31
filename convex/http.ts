@@ -600,13 +600,16 @@ http.route({
 
         try {
             const body = await request.json();
-            const { query, page = 1, pageSize = 20, sources = ['aliexpress', 'alibaba'] } = body;
+            const { query, page = 1, pageSize = 60, sources = ['aliexpress', 'alibaba'] } = body;
+
+            // Number of pages to fetch per API for maximum products
+            const pagesPerApi = 5; // ~60 products per page × 5 = ~300 per API
 
             const results: NormalizedProduct[] = [];
             const errors: string[] = [];
 
-            // Helper to fetch with timeout
-            const fetchWithTimeout = async (url: string, host: string, timeoutMs = 10000) => {
+            // Helper to fetch with timeout (extended for multi-page)
+            const fetchWithTimeout = async (url: string, host: string, timeoutMs = 20000) => {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), timeoutMs);
                 try {
@@ -627,51 +630,57 @@ http.route({
                 }
             };
 
-            // Build all fetch promises
+            // Build all fetch promises - fetch multiple pages per API in parallel
             const fetchPromises: Promise<void>[] = [];
 
-            // AliExpress Datahub
+            // AliExpress Datahub - fetch multiple pages
             if (sources.includes('aliexpress')) {
-                const params = new URLSearchParams({ q: query, page: String(page), limit: String(pageSize) });
-                fetchPromises.push(
-                    fetchWithTimeout(
-                        `https://aliexpress-datahub.p.rapidapi.com/item_search_3?${params}`,
-                        "aliexpress-datahub.p.rapidapi.com"
-                    )
-                        .then(data => { results.push(...normalizeAliExpressDatahub(data)); })
-                        .catch(e => { errors.push(`AliExpress: ${e.message}`); })
-                );
+                for (let p = 1; p <= pagesPerApi; p++) {
+                    const params = new URLSearchParams({ q: query, page: String(p), limit: '60' });
+                    fetchPromises.push(
+                        fetchWithTimeout(
+                            `https://aliexpress-datahub.p.rapidapi.com/item_search_3?${params}`,
+                            "aliexpress-datahub.p.rapidapi.com"
+                        )
+                            .then(data => { results.push(...normalizeAliExpressDatahub(data)); })
+                            .catch(e => { if (p === 1) errors.push(`AliExpress: ${e.message}`); })
+                    );
+                }
             }
 
-            // Alibaba Datahub
+            // Alibaba Datahub - fetch multiple pages
             if (sources.includes('alibaba')) {
-                const params = new URLSearchParams({ q: query, page: String(page) });
-                fetchPromises.push(
-                    fetchWithTimeout(
-                        `https://alibaba-datahub.p.rapidapi.com/item_search?${params}`,
-                        "alibaba-datahub.p.rapidapi.com"
-                    )
-                        .then(data => { results.push(...normalizeAlibabaDatahub(data)); })
-                        .catch(e => { errors.push(`Alibaba: ${e.message}`); })
-                );
+                for (let p = 1; p <= pagesPerApi; p++) {
+                    const params = new URLSearchParams({ q: query, page: String(p) });
+                    fetchPromises.push(
+                        fetchWithTimeout(
+                            `https://alibaba-datahub.p.rapidapi.com/item_search?${params}`,
+                            "alibaba-datahub.p.rapidapi.com"
+                        )
+                            .then(data => { results.push(...normalizeAlibabaDatahub(data)); })
+                            .catch(e => { if (p === 1) errors.push(`Alibaba: ${e.message}`); })
+                    );
+                }
             }
 
-            // AliExpress True API (uses different search endpoint)
+            // AliExpress True API - fetch multiple pages
             if (sources.includes('aliexpress-true')) {
-                const params = new URLSearchParams({
-                    keywords: query,
-                    page: String(page),
-                    target_currency: 'USD',
-                    target_language: 'EN',
-                });
-                fetchPromises.push(
-                    fetchWithTimeout(
-                        `https://aliexpress-true-api.p.rapidapi.com/api/v3/search?${params}`,
-                        "aliexpress-true-api.p.rapidapi.com"
-                    )
-                        .then(data => { results.push(...normalizeAliExpressTrueApi(data)); })
-                        .catch(e => { errors.push(`AliExpress True: ${e.message}`); })
-                );
+                for (let p = 1; p <= pagesPerApi; p++) {
+                    const params = new URLSearchParams({
+                        keywords: query,
+                        page: String(p),
+                        target_currency: 'USD',
+                        target_language: 'EN',
+                    });
+                    fetchPromises.push(
+                        fetchWithTimeout(
+                            `https://aliexpress-true-api.p.rapidapi.com/api/v3/search?${params}`,
+                            "aliexpress-true-api.p.rapidapi.com"
+                        )
+                            .then(data => { results.push(...normalizeAliExpressTrueApi(data)); })
+                            .catch(e => { if (p === 1) errors.push(`AliExpress True: ${e.message}`); })
+                    );
+                }
             }
 
             // Wait for all to complete (with individual error handling)
