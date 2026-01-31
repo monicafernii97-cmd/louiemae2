@@ -69,7 +69,7 @@ export const sendOrderConfirmation = internalAction({
             ` : '';
 
             const { data, error } = await resend.emails.send({
-                from: "Louie Mae <onboarding@resend.dev>", // Using Resend's test domain
+                from: "Louie Mae <withlove@louiemae.com>",
                 to: customerEmail,
                 subject: `Order Confirmed - ${orderId}`,
                 html: `
