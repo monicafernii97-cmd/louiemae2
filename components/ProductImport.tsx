@@ -99,19 +99,20 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         try {
             // Use aggregated search to get products from both AliExpress and Alibaba
+            // Maximum products per search - APIs return ~60 each, so ~120 combined
             const result = await aliexpressService.searchAllSources({
                 query: searchQuery,
                 page,
-                pageSize: 50, // Increased from 20 for more product selection
+                pageSize: 100, // Maximum - will get up to 60 from each API
                 minPrice: minPrice ? parseFloat(minPrice) : undefined,
                 maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
                 sortBy: sortBy === 'default' ? undefined : sortBy,
                 sources: ['aliexpress', 'alibaba'], // Fetch from both sources
             });
 
-            // Filter by minimum rating and transform to ImportableProduct
+            // Transform to ImportableProduct (relaxed rating filter - show all products)
             const filteredProducts = result.products
-                .filter(p => p.averageRating >= minRating)
+                .filter(p => minRating === 0 || (p.averageRating || 0) >= minRating)
                 .map(p => ({
                     ...p,
                     selected: false,
