@@ -535,12 +535,29 @@ function normalizeAlibabaDatahub(data: any): NormalizedProduct[] {
     const items = data?.result?.resultList || [];
     return items.map((wrapper: any) => {
         const item = wrapper?.item || wrapper;
+
+        // Alibaba prices are often ranges like "59.8-63.6" - take the first price
+        let price = 0;
+        const priceModule = item.sku?.def?.priceModule;
+        if (priceModule?.price) {
+            // Handle price range format like "59.8-63.6"
+            const priceStr = String(priceModule.price);
+            const firstPrice = priceStr.split('-')[0];
+            price = parseFloat(firstPrice) || 0;
+        } else if (priceModule?.priceList?.[0]?.price) {
+            price = parseFloat(priceModule.priceList[0].price) || 0;
+        }
+
+        const imageUrl = item.image?.startsWith('//') ? `https:${item.image}` : item.image;
+        const itemUrl = item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '';
+
         return {
             id: `ab_${item.itemId}`,
             title: item.title || 'Unknown Product',
-            price: parseFloat(item.price?.value) || parseFloat(item.price) || 0,
-            image: item.image?.startsWith('//') ? `https:${item.image}` : item.image,
-            url: item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '',
+            price: price,
+            image: imageUrl,
+            images: item.images?.map((img: string) => img.startsWith('//') ? `https:${img}` : img) || [imageUrl],
+            url: itemUrl,
             source: 'alibaba' as const,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
