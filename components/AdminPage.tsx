@@ -427,12 +427,6 @@ export const AdminPage: React.FC = () => {
                         {authFlow === 'signIn' ? 'Enter Studio' : 'Create Account'}
                      </button>
                   </form>
-                  <button
-                     onClick={() => setAuthFlow(authFlow === 'signIn' ? 'signUp' : 'signIn')}
-                     className="mt-4 text-[10px] uppercase tracking-[0.2em] text-earth/50 hover:text-earth transition-colors"
-                  >
-                     {authFlow === 'signIn' ? 'Create new account' : 'Already have an account? Sign in'}
-                  </button>
                   <button onClick={handleReturnToSite} className="mt-4 block w-full text-[10px] uppercase tracking-[0.2em] text-earth/30 hover:text-earth transition-colors">
                      Return to Site
                   </button>
