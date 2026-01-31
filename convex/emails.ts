@@ -31,7 +31,7 @@ export const sendOrderConfirmation = internalAction({
         const resendApiKey = process.env.RESEND_API_KEY;
 
         if (!resendApiKey) {
-            console.log("RESEND_API_KEY not configured - skipping email");
+            // Email service not configured - skip silently
             return { success: false, error: "Email service not configured" };
         }
 
@@ -137,7 +137,6 @@ export const sendOrderConfirmation = internalAction({
                 return { success: false, error: error.message };
             }
 
-            console.log("Order confirmation sent:", data?.id);
             return { success: true, emailId: data?.id };
         } catch (error: any) {
             console.error("Email action error:", error);

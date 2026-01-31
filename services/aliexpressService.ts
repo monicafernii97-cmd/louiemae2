@@ -265,7 +265,6 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
             rating: parseFloat(raw.shopRating || raw.seller_rating || raw.store_rating || '0'),
             feedbackScore: parseInt(raw.feedbackScore || raw.feedback_score || '0', 10),
         },
-        variants: variants.length > 0 ? variants : [],
         reviewCount: parseInt(raw.sales || raw.totalOrders || raw.orders || '0', 10),
         averageRating: parseFloat(raw.averageStarRate || raw.evaluate || raw.rating || '0'),
         productUrl: productUrl,
@@ -317,18 +316,8 @@ export const aliexpressService = {
 
             const data = await response.json();
 
-            // Debug: log raw API response to understand structure
-            console.log('AliExpress API Raw Response Keys:', Object.keys(data));
-            console.log('AliExpress API result keys:', data.result ? Object.keys(data.result) : 'no result');
-
             // The API returns data in .result.resultList format
             const items = data.result?.resultList || data.result?.items || data.items || data.resultList || [];
-
-            // Log first item to see field names
-            if (items.length > 0) {
-                console.log('First item keys:', Object.keys(items[0]));
-                console.log('First item sample:', JSON.stringify(items[0], null, 2).slice(0, 2000));
-            }
 
             const result: AliExpressSearchResult = {
                 products: items.map((item: any) =>

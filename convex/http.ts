@@ -213,8 +213,6 @@ http.route({
                 shippingAddress,
             });
 
-            console.log("Order created for session:", session.id);
-
             // Send confirmation email via internal action
             if (session.customer_details?.email) {
                 try {
@@ -232,7 +230,6 @@ http.route({
                         total: (session.amount_total || 0) / 100,
                         shippingAddress,
                     });
-                    console.log("Confirmation email sent");
                 } catch (emailError: any) {
                     console.error("Failed to send email:", emailError.message);
                     // Don't fail the webhook if email fails

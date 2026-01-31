@@ -96,12 +96,6 @@ export const NewsletterProvider: React.FC<{ children: ReactNode }> = ({ children
   const addSubscriber = async (email: string, firstName?: string): Promise<boolean> => {
     const result = await createSubscriber({ email, firstName });
     if (result === null) return false; // Already exists
-
-    // Simulate Welcome Automation
-    setTimeout(() => {
-      console.log(`[Automation] Sending Welcome Email to ${email}`);
-    }, 2000);
-
     return true;
   };
 

@@ -33,10 +33,8 @@ const AliExpressTest: React.FC = () => {
                 pageSize: 10,
             });
             setProducts(result.products);
-            console.log('Search result:', result);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Search failed');
-            console.error('Search error:', err);
         } finally {
             setLoading(false);
         }

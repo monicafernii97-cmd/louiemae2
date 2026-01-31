@@ -240,7 +240,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             }
 
             const productId = urlMatch[1];
-            console.log('Fetching product:', productId);
 
             // Fetch product details from API
             const product = await aliexpressService.getProductDetails(productId);
