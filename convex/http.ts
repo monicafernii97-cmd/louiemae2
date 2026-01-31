@@ -607,9 +607,11 @@ http.route({
             const synonyms: Record<string, string> = { 'sofa': 'couch', 'couch': 'sofa', 'lamp': 'light', 'chair': 'seat', 'desk': 'table', 'rug': 'carpet' };
             const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !fillerWords.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
+
+            // Use primary + synonym query for maximum variety
             const synQuery = words.map((w: string) => synonyms[w] || w).join(' ');
             const allQueries = query !== synQuery ? [query, synQuery] : [query];
-            const pagesPerApi = allQueries.length > 1 ? 3 : 5;
+            const pagesPerApi = 5; // Full 5 pages - requires upgraded RapidAPI plan for high volume
 
             const results: NormalizedProduct[] = [];
             const errors: string[] = [];
