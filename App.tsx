@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, X, Instagram, Facebook, Twitter, ChevronDown, ArrowRight, ChevronRight } from 'lucide-react';
+import { Menu, Search, X, Instagram, Facebook, Twitter, ChevronDown, ArrowRight, ChevronRight, ChevronLeft } from 'lucide-react';
 import { AiConcierge } from './components/AiConcierge';
 import { NavLink } from './types';
 import { HomePage } from './components/HomePage';
@@ -277,15 +277,34 @@ const AppContent = () => {
                                   {/* Level 2 Flyout (Nested) */}
                                   {child.children && (
                                     <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/nested:opacity-100 group-hover/nested:visible transition-all duration-300 ease-out transform origin-left -translate-x-1 group-hover/nested:translate-x-0">
-                                      <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-3 px-2 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[160px] flex flex-col gap-1">
+                                      <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-3 px-2 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[180px] flex flex-col gap-1">
                                         {child.children.map(subChild => (
-                                          <button
-                                            key={subChild.label}
-                                            onClick={(e) => { e.stopPropagation(); handleNavigation(subChild.href); }}
-                                            className="relative z-10 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-earth/70 hover:text-bronze transition-all duration-300 whitespace-nowrap py-2 px-3 hover:bg-white/50 rounded-md"
-                                          >
-                                            {subChild.label.replace(child.label + ' ', '')}
-                                          </button>
+                                          <div key={subChild.label} className="group/deepnested relative w-full">
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); handleNavigation(subChild.href); }}
+                                              className="relative z-10 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-earth/70 hover:text-bronze transition-all duration-300 whitespace-nowrap py-2 px-3 hover:bg-white/50 rounded-md flex items-center justify-between"
+                                            >
+                                              <span>{subChild.label}</span>
+                                              {subChild.children && <ChevronRight className="w-2.5 h-2.5 opacity-50" />}
+                                            </button>
+
+                                            {/* Level 3 Flyout (Deep Nested) */}
+                                            {subChild.children && (
+                                              <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/deepnested:opacity-100 group-hover/deepnested:visible transition-all duration-300 ease-out transform origin-left -translate-x-1 group-hover/deepnested:translate-x-0">
+                                                <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-3 px-2 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[180px] flex flex-col gap-1">
+                                                  {subChild.children.map(deepChild => (
+                                                    <button
+                                                      key={deepChild.label}
+                                                      onClick={(e) => { e.stopPropagation(); handleNavigation(deepChild.href); }}
+                                                      className="relative z-10 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-earth/70 hover:text-bronze transition-all duration-300 whitespace-nowrap py-2 px-3 hover:bg-white/50 rounded-md"
+                                                    >
+                                                      {deepChild.label}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
                                         ))}
                                       </div>
                                     </div>
@@ -319,10 +338,10 @@ const AppContent = () => {
                           {link.children && <ChevronDown className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />}
                         </button>
 
-                        {/* Level 1 Dropdown */}
+                        {/* Level 1 Dropdown - Stacked vertical layout */}
                         {link.children && (
                           <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-out transform origin-top translate-y-1 group-hover:translate-y-0">
-                            <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-3 px-2 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[160px] flex flex-col gap-1 relative overflow-visible">
+                            <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-3 px-2 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[200px] flex flex-col gap-1 relative max-h-[70vh] overflow-y-auto">
                               <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent pointer-events-none rounded-lg"></div>
                               {link.children.map(child => (
                                 <div key={child.label} className="group/nested relative w-full">
@@ -334,23 +353,38 @@ const AppContent = () => {
                                     className="relative z-10 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-earth/70 hover:text-bronze transition-all duration-300 whitespace-nowrap py-2 px-3 hover:bg-white/50 rounded-md flex items-center justify-between"
                                   >
                                     <span>{child.label}</span>
-                                    {child.children && <ChevronRight className="w-2.5 h-2.5 opacity-50" />}
+                                    {child.children && <ChevronDown className="w-2.5 h-2.5 opacity-50 group-hover/nested:rotate-180 transition-transform" />}
                                   </button>
 
-                                  {/* Level 2 Flyout (Nested) */}
+                                  {/* Level 2 - Opens DOWNWARD (stacked) */}
                                   {child.children && (
-                                    <div className="absolute top-0 left-full ml-1 pt-0 opacity-0 invisible group-hover/nested:opacity-100 group-hover/nested:visible transition-all duration-300 ease-out transform origin-left -translate-x-1 group-hover/nested:translate-x-0">
-                                      <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-3 px-2 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[160px] flex flex-col gap-1">
-                                        {child.children.map(subChild => (
+                                    <div className="max-h-0 overflow-hidden group-hover/nested:max-h-[500px] transition-all duration-300 ease-out ml-3 border-l border-bronze/20">
+                                      {child.children.map(subChild => (
+                                        <div key={subChild.label} className="group/deepnested relative w-full">
                                           <button
-                                            key={subChild.label}
                                             onClick={(e) => { e.stopPropagation(); handleNavigation(subChild.href); }}
-                                            className="relative z-10 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-earth/70 hover:text-bronze transition-all duration-300 whitespace-nowrap py-2 px-3 hover:bg-white/50 rounded-md"
+                                            className="relative z-10 w-full text-left text-[0.55rem] uppercase tracking-[0.15em] text-earth/60 hover:text-bronze transition-all duration-300 whitespace-nowrap py-1.5 px-3 hover:bg-white/50 rounded-md flex items-center justify-between"
                                           >
-                                            {subChild.label.replace(child.label + ' ', '')}
+                                            <span>{subChild.label}</span>
+                                            {subChild.children && <ChevronDown className="w-2 h-2 opacity-50 group-hover/deepnested:rotate-180 transition-transform" />}
                                           </button>
-                                        ))}
-                                      </div>
+
+                                          {/* Level 3 - Opens DOWNWARD (stacked) */}
+                                          {subChild.children && (
+                                            <div className="max-h-0 overflow-hidden group-hover/deepnested:max-h-[300px] transition-all duration-300 ease-out ml-3 border-l border-bronze/10">
+                                              {subChild.children.map(deepChild => (
+                                                <button
+                                                  key={deepChild.label}
+                                                  onClick={(e) => { e.stopPropagation(); handleNavigation(deepChild.href); }}
+                                                  className="relative z-10 w-full text-left text-[0.5rem] uppercase tracking-[0.1em] text-earth/50 hover:text-bronze transition-all duration-300 whitespace-nowrap py-1.5 px-3 hover:bg-white/50 rounded-md"
+                                                >
+                                                  {deepChild.label}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                 </div>

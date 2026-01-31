@@ -163,13 +163,13 @@ export const migrateToNewMenuStructure = mutation({
                                 label: 'Furniture',
                                 href: '#collection/kids?cat=Nursery Furniture',
                                 children: [
-                                    { label: 'Cribs & Sleep Solutions', href: '#collection/kids?cat=Cribs & Sleep Solutions' },
-                                    { label: 'Dressers & Changing Tables', href: '#collection/kids?cat=Dressers & Changing Tables' },
-                                    { label: 'Side Tables & Nightstands', href: '#collection/kids?cat=Nursery Side Tables' },
+                                    { label: 'Cribs & Bassinets', href: '#collection/kids?cat=Cribs & Bassinets' },
+                                    { label: 'Dressers', href: '#collection/kids?cat=Nursery Dressers' },
+                                    { label: 'Side Tables', href: '#collection/kids?cat=Nursery Side Tables' },
                                 ]
                             },
                             {
-                                label: 'Storage & Organization',
+                                label: 'Storage & Organization Solutions',
                                 href: '#collection/kids?cat=Nursery Storage',
                                 children: [
                                     { label: 'Storage Units', href: '#collection/kids?cat=Nursery Storage Units' },
@@ -203,7 +203,7 @@ export const migrateToNewMenuStructure = mutation({
                                 ]
                             },
                             {
-                                label: 'Storage & Organization',
+                                label: 'Storage & Organization Solutions',
                                 href: '#collection/kids?cat=Playroom Storage',
                                 children: [
                                     { label: 'Toy Storage & Organization', href: '#collection/kids?cat=Toy Storage' },
@@ -292,13 +292,13 @@ export const migrateToNewMenuStructure = mutation({
                                 label: 'Furniture',
                                 href: '#collection/furniture?cat=Nursery Furniture',
                                 children: [
-                                    { label: 'Cribs & Sleep Solutions', href: '#collection/furniture?cat=Cribs & Sleep Solutions' },
-                                    { label: 'Dressers & Changing Tables', href: '#collection/furniture?cat=Dressers & Changing Tables' },
-                                    { label: 'Side Tables & Nightstands', href: '#collection/furniture?cat=Nursery Side Tables' },
+                                    { label: 'Cribs & Bassinets', href: '#collection/furniture?cat=Cribs & Bassinets' },
+                                    { label: 'Dressers', href: '#collection/furniture?cat=Nursery Dressers' },
+                                    { label: 'Side Tables', href: '#collection/furniture?cat=Nursery Side Tables' },
                                 ]
                             },
                             {
-                                label: 'Storage & Organization',
+                                label: 'Storage & Organization Solutions',
                                 href: '#collection/furniture?cat=Nursery Storage',
                                 children: [
                                     { label: 'Storage Units', href: '#collection/furniture?cat=Nursery Storage Units' },
@@ -332,7 +332,7 @@ export const migrateToNewMenuStructure = mutation({
                                 ]
                             },
                             {
-                                label: 'Storage & Organization',
+                                label: 'Storage & Organization Solutions',
                                 href: '#collection/furniture?cat=Playroom Storage',
                                 children: [
                                     { label: 'Toy Storage & Organization', href: '#collection/furniture?cat=Toy Storage' },
