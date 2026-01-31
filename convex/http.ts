@@ -600,10 +600,16 @@ http.route({
 
         try {
             const body = await request.json();
-            const { query, page = 1, pageSize = 60, sources = ['aliexpress', 'alibaba'] } = body;
+            const { query: rawQuery, page = 1, pageSize = 60, sources = ['aliexpress', 'alibaba'] } = body;
 
-            // Number of pages to fetch per API for maximum products
-            const pagesPerApi = 5; // ~60 products per page × 5 = ~300 per API
+            // ═══ QUERY OPTIMIZATION - Remove filler words, extract key terms ═══
+            const fillerWords = new Set(['the', 'a', 'an', 'and', 'or', 'for', 'with', 'in', 'on', 'to', 'of', 'that', 'this', 'is', 'i', 'my', 'me', 'need', 'want', 'looking', 'find', 'search', 'good', 'best', 'cheap', 'please', 'help']);
+            const synonyms: Record<string, string> = { 'sofa': 'couch', 'couch': 'sofa', 'lamp': 'light', 'chair': 'seat', 'desk': 'table', 'rug': 'carpet' };
+            const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !fillerWords.has(w)).slice(0, 4);
+            const query = words.length > 0 ? words.join(' ') : rawQuery;
+            const synQuery = words.map((w: string) => synonyms[w] || w).join(' ');
+            const allQueries = query !== synQuery ? [query, synQuery] : [query];
+            const pagesPerApi = allQueries.length > 1 ? 3 : 5;
 
             const results: NormalizedProduct[] = [];
             const errors: string[] = [];
@@ -633,33 +639,37 @@ http.route({
             // Build all fetch promises - fetch multiple pages per API in parallel
             const fetchPromises: Promise<void>[] = [];
 
-            // AliExpress Datahub - fetch multiple pages
+            // AliExpress Datahub - fetch multiple pages for each query variation
             if (sources.includes('aliexpress')) {
-                for (let p = 1; p <= pagesPerApi; p++) {
-                    const params = new URLSearchParams({ q: query, page: String(p), limit: '60' });
-                    fetchPromises.push(
-                        fetchWithTimeout(
-                            `https://aliexpress-datahub.p.rapidapi.com/item_search_3?${params}`,
-                            "aliexpress-datahub.p.rapidapi.com"
-                        )
-                            .then(data => { results.push(...normalizeAliExpressDatahub(data)); })
-                            .catch(e => { if (p === 1) errors.push(`AliExpress: ${e.message}`); })
-                    );
+                for (const q of allQueries) {
+                    for (let p = 1; p <= pagesPerApi; p++) {
+                        const params = new URLSearchParams({ q: q, page: String(p), limit: '60' });
+                        fetchPromises.push(
+                            fetchWithTimeout(
+                                `https://aliexpress-datahub.p.rapidapi.com/item_search_3?${params}`,
+                                "aliexpress-datahub.p.rapidapi.com"
+                            )
+                                .then(data => { results.push(...normalizeAliExpressDatahub(data)); })
+                                .catch(e => { if (p === 1 && q === allQueries[0]) errors.push(`AliExpress: ${e.message}`); })
+                        );
+                    }
                 }
             }
 
-            // Alibaba Datahub - fetch multiple pages
+            // Alibaba Datahub - fetch multiple pages for each query variation
             if (sources.includes('alibaba')) {
-                for (let p = 1; p <= pagesPerApi; p++) {
-                    const params = new URLSearchParams({ q: query, page: String(p) });
-                    fetchPromises.push(
-                        fetchWithTimeout(
-                            `https://alibaba-datahub.p.rapidapi.com/item_search?${params}`,
-                            "alibaba-datahub.p.rapidapi.com"
-                        )
-                            .then(data => { results.push(...normalizeAlibabaDatahub(data)); })
-                            .catch(e => { if (p === 1) errors.push(`Alibaba: ${e.message}`); })
-                    );
+                for (const q of allQueries) {
+                    for (let p = 1; p <= pagesPerApi; p++) {
+                        const params = new URLSearchParams({ q: q, page: String(p) });
+                        fetchPromises.push(
+                            fetchWithTimeout(
+                                `https://alibaba-datahub.p.rapidapi.com/item_search?${params}`,
+                                "alibaba-datahub.p.rapidapi.com"
+                            )
+                                .then(data => { results.push(...normalizeAlibabaDatahub(data)); })
+                                .catch(e => { if (p === 1 && q === allQueries[0]) errors.push(`Alibaba: ${e.message}`); })
+                        );
+                    }
                 }
             }
 
@@ -686,15 +696,24 @@ http.route({
             // Wait for all to complete (with individual error handling)
             await Promise.all(fetchPromises);
 
+            // Deduplicate results (same product may appear in multiple query variations)
+            const seen = new Set<string>();
+            const uniqueResults = results.filter(p => {
+                if (seen.has(p.id)) return false;
+                seen.add(p.id);
+                return true;
+            });
+
             // Sort by price (optional: could add other sort options)
-            results.sort((a, b) => a.price - b.price);
+            uniqueResults.sort((a, b) => a.price - b.price);
 
             return new Response(
                 JSON.stringify({
-                    products: results,
-                    totalCount: results.length,
+                    products: uniqueResults,
+                    totalCount: uniqueResults.length,
                     currentPage: page,
                     sources: sources,
+                    queriesUsed: allQueries, // Show what queries were actually searched
                     errors: errors.length > 0 ? errors : undefined,
                 }),
                 { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
