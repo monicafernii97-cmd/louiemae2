@@ -14,11 +14,8 @@ interface State {
  * Error Boundary component to catch JavaScript errors in child components
  * and display a fallback UI instead of crashing the whole app.
  */
-export class ErrorBoundary extends Component<Props, State> {
-    constructor(props: Props) {
-        super(props);
-        this.state = { hasError: false, error: null };
-    }
+class ErrorBoundary extends Component<Props, State> {
+    state: State = { hasError: false, error: null };
 
     static getDerivedStateFromError(error: Error): State {
         return { hasError: true, error };
@@ -88,4 +85,5 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 }
 
+export { ErrorBoundary };
 export default ErrorBoundary;
