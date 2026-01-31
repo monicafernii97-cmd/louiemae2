@@ -9,19 +9,27 @@ const http = httpRouter();
 // Add Convex Auth routes
 auth.addHttpRoutes(http);
 
-// Helper for CORS headers - use environment variable for production domain
-const getAllowedOrigin = () => {
-    const siteUrl = process.env.SITE_URL;
-    if (siteUrl) {
-        return siteUrl;
+// Helper for CORS headers - allow both production and development origins
+const ALLOWED_ORIGINS = [
+    "https://louiemae.com",
+    "https://www.louiemae.com",
+    "http://localhost:3000",
+    "http://localhost:5173",
+];
+
+const getAllowedOrigin = (requestOrigin?: string | null) => {
+    // If request origin is in allowed list, return it (for proper CORS)
+    if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+        return requestOrigin;
     }
-    // Fallback for development
-    return "http://localhost:3000";
+    // Fallback to production or development default
+    return process.env.SITE_URL || "http://localhost:3000";
 };
 
+// Default CORS headers (will be overridden with request-specific origin)
 const corsHeaders = {
-    "Access-Control-Allow-Origin": getAllowedOrigin(),
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Origin": "*", // Will be set dynamically in handlers
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
 };
 
@@ -391,39 +399,65 @@ http.route({
                 );
             }
 
-            const response = await fetch(
+            // Try multiple API versions with fallback for resilience
+            const endpoints = [
+                `https://${RAPIDAPI_HOST}/item_detail_2?itemId=${productId}`,
                 `https://${RAPIDAPI_HOST}/item_detail_3?itemId=${productId}`,
-                {
-                    method: "GET",
-                    headers: {
-                        "X-RapidAPI-Key": rapidApiKey,
-                        "X-RapidAPI-Host": RAPIDAPI_HOST,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+                `https://${RAPIDAPI_HOST}/item_detail?itemId=${productId}`,
+            ];
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("AliExpress API Error:", response.status, errorText);
-                return new Response(
-                    JSON.stringify({ error: `API Error: ${response.status}` }),
-                    {
-                        status: response.status,
+            let lastError = null;
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: "GET",
                         headers: {
+                            "X-RapidAPI-Key": rapidApiKey,
+                            "X-RapidAPI-Host": RAPIDAPI_HOST,
                             "Content-Type": "application/json",
-                            ...corsHeaders,
-                        }
+                        },
+                    });
+
+                    if (!response.ok) {
+                        lastError = `API Error: ${response.status}`;
+                        console.log(`Endpoint ${endpoint} failed with ${response.status}, trying next...`);
+                        continue; // Try next endpoint
                     }
-                );
+
+                    const data = await response.json();
+
+                    // Check if the response indicates an error (some APIs return 200 with error in body)
+                    if (data.result?.status?.data === "error") {
+                        lastError = data.result?.status?.msg?.["internal-error"] || "API returned error";
+                        console.log(`Endpoint ${endpoint} returned error in body, trying next...`);
+                        continue; // Try next endpoint
+                    }
+
+                    // Success! Return the data
+                    return new Response(
+                        JSON.stringify(data),
+                        {
+                            status: 200,
+                            headers: {
+                                "Content-Type": "application/json",
+                                ...corsHeaders,
+                            }
+                        }
+                    );
+                } catch (fetchError: any) {
+                    lastError = fetchError.message;
+                    console.log(`Endpoint ${endpoint} threw error: ${fetchError.message}, trying next...`);
+                    continue; // Try next endpoint
+                }
             }
 
-            const data = await response.json();
-
+            // All endpoints failed
+            console.error("All AliExpress product detail endpoints failed:", lastError);
             return new Response(
-                JSON.stringify(data),
+                JSON.stringify({ error: lastError || "All API endpoints unavailable" }),
                 {
-                    status: 200,
+                    status: 503,
                     headers: {
                         "Content-Type": "application/json",
                         ...corsHeaders,
@@ -455,6 +489,206 @@ http.route({
             status: 204,
             headers: corsHeaders,
         });
+    }),
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AGGREGATED MULTI-SOURCE PRODUCT SEARCH
+// Searches AliExpress, Alibaba, and more in parallel and combines results
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface NormalizedProduct {
+    id: string;
+    title: string;
+    price: number;
+    originalPrice?: number;
+    image: string;
+    images?: string[];
+    url: string;
+    source: 'aliexpress' | 'alibaba' | 'aliexpress-true' | 'temu';
+    rating?: number;
+    sales?: number;
+    shipping?: string;
+}
+
+// Normalize AliExpress Datahub products
+function normalizeAliExpressDatahub(data: any): NormalizedProduct[] {
+    const items = data?.result?.resultList || [];
+    return items.map((wrapper: any) => {
+        const item = wrapper?.item || wrapper;
+        return {
+            id: `ae_${item.itemId}`,
+            title: item.title || 'Unknown Product',
+            price: parseFloat(item.sku?.def?.promotionPrice) || parseFloat(item.sku?.def?.price) || 0,
+            originalPrice: parseFloat(item.sku?.def?.price) || undefined,
+            image: item.image?.startsWith('//') ? `https:${item.image}` : item.image,
+            url: item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '',
+            source: 'aliexpress' as const,
+            rating: item.averageStarRate || undefined,
+            sales: item.sales || undefined,
+        };
+    }).filter((p: NormalizedProduct) => p.title && p.price > 0);
+}
+
+// Normalize Alibaba Datahub products
+function normalizeAlibabaDatahub(data: any): NormalizedProduct[] {
+    const items = data?.result?.resultList || [];
+    return items.map((wrapper: any) => {
+        const item = wrapper?.item || wrapper;
+        return {
+            id: `ab_${item.itemId}`,
+            title: item.title || 'Unknown Product',
+            price: parseFloat(item.price?.value) || parseFloat(item.price) || 0,
+            image: item.image?.startsWith('//') ? `https:${item.image}` : item.image,
+            url: item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '',
+            source: 'alibaba' as const,
+        };
+    }).filter((p: NormalizedProduct) => p.title && p.price > 0);
+}
+
+// Normalize AliExpress True API products (search response)
+function normalizeAliExpressTrueApi(data: any): NormalizedProduct[] {
+    // True API returns array directly or in different structures
+    const items = Array.isArray(data) ? data : (data?.products || data?.items || []);
+    return items.map((item: any) => {
+        const price = parseFloat(item.target_sale_price) || parseFloat(item.sale_price) || parseFloat(item.original_price) || 0;
+        const images = item.product_small_image_urls?.string || [];
+        return {
+            id: `aet_${item.product_id || item.itemId}`,
+            title: item.product_title || item.title || 'Unknown Product',
+            price: price,
+            originalPrice: parseFloat(item.original_price) || undefined,
+            image: images[0] || item.product_main_image_url || '',
+            images: images,
+            url: item.product_detail_url || '',
+            source: 'aliexpress-true' as const,
+            rating: item.evaluate_rate ? parseFloat(item.evaluate_rate) : undefined,
+        };
+    }).filter((p: NormalizedProduct) => p.title && p.price > 0);
+}
+
+// Aggregated search endpoint
+http.route({
+    path: "/products/search",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        const rapidApiKey = process.env.RAPIDAPI_KEY;
+
+        if (!rapidApiKey) {
+            return new Response(
+                JSON.stringify({ error: "RapidAPI key not configured" }),
+                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+        }
+
+        try {
+            const body = await request.json();
+            const { query, page = 1, pageSize = 20, sources = ['aliexpress', 'alibaba'] } = body;
+
+            const results: NormalizedProduct[] = [];
+            const errors: string[] = [];
+
+            // Helper to fetch with timeout
+            const fetchWithTimeout = async (url: string, host: string, timeoutMs = 10000) => {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), timeoutMs);
+                try {
+                    const response = await fetch(url, {
+                        method: "GET",
+                        headers: {
+                            "X-RapidAPI-Key": rapidApiKey,
+                            "X-RapidAPI-Host": host,
+                        },
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timeout);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
+                } catch (e) {
+                    clearTimeout(timeout);
+                    throw e;
+                }
+            };
+
+            // Build all fetch promises
+            const fetchPromises: Promise<void>[] = [];
+
+            // AliExpress Datahub
+            if (sources.includes('aliexpress')) {
+                const params = new URLSearchParams({ q: query, page: String(page), limit: String(pageSize) });
+                fetchPromises.push(
+                    fetchWithTimeout(
+                        `https://aliexpress-datahub.p.rapidapi.com/item_search_3?${params}`,
+                        "aliexpress-datahub.p.rapidapi.com"
+                    )
+                        .then(data => { results.push(...normalizeAliExpressDatahub(data)); })
+                        .catch(e => { errors.push(`AliExpress: ${e.message}`); })
+                );
+            }
+
+            // Alibaba Datahub
+            if (sources.includes('alibaba')) {
+                const params = new URLSearchParams({ q: query, page: String(page) });
+                fetchPromises.push(
+                    fetchWithTimeout(
+                        `https://alibaba-datahub.p.rapidapi.com/item_search?${params}`,
+                        "alibaba-datahub.p.rapidapi.com"
+                    )
+                        .then(data => { results.push(...normalizeAlibabaDatahub(data)); })
+                        .catch(e => { errors.push(`Alibaba: ${e.message}`); })
+                );
+            }
+
+            // AliExpress True API (uses different search endpoint)
+            if (sources.includes('aliexpress-true')) {
+                const params = new URLSearchParams({
+                    keywords: query,
+                    page: String(page),
+                    target_currency: 'USD',
+                    target_language: 'EN',
+                });
+                fetchPromises.push(
+                    fetchWithTimeout(
+                        `https://aliexpress-true-api.p.rapidapi.com/api/v3/search?${params}`,
+                        "aliexpress-true-api.p.rapidapi.com"
+                    )
+                        .then(data => { results.push(...normalizeAliExpressTrueApi(data)); })
+                        .catch(e => { errors.push(`AliExpress True: ${e.message}`); })
+                );
+            }
+
+            // Wait for all to complete (with individual error handling)
+            await Promise.all(fetchPromises);
+
+            // Sort by price (optional: could add other sort options)
+            results.sort((a, b) => a.price - b.price);
+
+            return new Response(
+                JSON.stringify({
+                    products: results,
+                    totalCount: results.length,
+                    currentPage: page,
+                    sources: sources,
+                    errors: errors.length > 0 ? errors : undefined,
+                }),
+                { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+        } catch (error: any) {
+            console.error("Aggregated search error:", error);
+            return new Response(
+                JSON.stringify({ error: error.message || "Search failed" }),
+                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+        }
+    }),
+});
+
+// CORS preflight for aggregated search
+http.route({
+    path: "/products/search",
+    method: "OPTIONS",
+    handler: httpAction(async () => {
+        return new Response(null, { status: 204, headers: corsHeaders });
     }),
 });
 

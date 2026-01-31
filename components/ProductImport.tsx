@@ -98,13 +98,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         setError(null);
 
         try {
-            const result: AliExpressSearchResult = await aliexpressService.searchProducts({
+            // Use aggregated search to get products from both AliExpress and Alibaba
+            const result = await aliexpressService.searchAllSources({
                 query: searchQuery,
                 page,
-                pageSize: 20,
+                pageSize: 50, // Increased from 20 for more product selection
                 minPrice: minPrice ? parseFloat(minPrice) : undefined,
                 maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-                sortBy: sortBy === 'default' ? undefined : sortBy
+                sortBy: sortBy === 'default' ? undefined : sortBy,
+                sources: ['aliexpress', 'alibaba'], // Fetch from both sources
             });
 
             // Filter by minimum rating and transform to ImportableProduct
@@ -610,7 +612,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 className="flex items-center gap-1 hover:text-bronze ml-auto"
                                             >
                                                 <ExternalLink className="w-3 h-3" />
-                                                View on AliExpress
+                                                View on {product.source === 'alibaba' ? 'Alibaba' : product.source === 'aliexpress-true' ? 'AliExpress' : 'AliExpress'}
                                             </a>
                                         )}
                                     </div>

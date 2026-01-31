@@ -191,6 +191,7 @@ export interface AliExpressProduct extends Product {
   reviewCount: number;
   averageRating: number;
   productUrl: string;
+  source?: 'aliexpress' | 'alibaba' | 'aliexpress-true' | 'temu'; // Which API the product came from
 }
 
 export interface AliExpressSearchOptions {

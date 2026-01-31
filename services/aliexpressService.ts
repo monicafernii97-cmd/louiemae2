@@ -338,6 +338,82 @@ export const aliexpressService = {
     },
 
     /**
+     * Search for products from multiple sources (AliExpress, Alibaba, etc.)
+     * Returns combined results from all sources in parallel
+     */
+    async searchAllSources(options: AliExpressSearchOptions & {
+        sources?: Array<'aliexpress' | 'alibaba' | 'aliexpress-true' | 'temu'>
+    }): Promise<AliExpressSearchResult & { sources?: string[], errors?: string[] }> {
+        const { query, page = 1, pageSize = 40, minPrice, maxPrice, sortBy, sources = ['aliexpress', 'alibaba'] } = options;
+
+        // Check cache first
+        const cacheKey = `aggregated:${JSON.stringify(options)}`;
+        const cached = getCached<AliExpressSearchResult>(cacheKey);
+        if (cached) return cached;
+
+        try {
+            // Call Convex HTTP proxy aggregated endpoint
+            const response = await rateLimitedFetch(
+                `${CONVEX_SITE_URL}/products/search`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        page,
+                        pageSize,
+                        sources,
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                await handleApiError(response);
+            }
+
+            const data = await response.json();
+
+            // Transform normalized products to AliExpressProduct format
+            const result: AliExpressSearchResult & { sources?: string[], errors?: string[] } = {
+                products: (data.products || []).map((p: any) => ({
+                    // Product base properties
+                    id: p.id,
+                    name: p.title, // Product uses 'name', API returns 'title'
+                    price: p.price,
+                    description: '', // Not provided by API
+                    images: p.images || [p.image],
+                    category: '',
+                    collection: 'decor' as const,
+                    // AliExpressProduct extensions
+                    aliExpressId: p.id.replace(/^(ae_|ab_|aet_)/, ''),
+                    originalPrice: p.originalPrice || p.price,
+                    salePrice: p.price,
+                    shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
+                    seller: { id: '', name: '', rating: 0, feedbackScore: 0 },
+                    variants: [],
+                    reviewCount: 0,
+                    averageRating: p.rating || 0,
+                    productUrl: p.url || '',
+                    source: p.source,
+                } as AliExpressProduct)),
+                totalCount: data.totalCount || data.products?.length || 0,
+                currentPage: page,
+                totalPages: Math.ceil((data.totalCount || data.products?.length || 1) / pageSize),
+                sources: data.sources,
+                errors: data.errors,
+            };
+
+            // Cache for 10 minutes (shorter since it's from multiple sources)
+            setCache(cacheKey, result, 10 * 60 * 1000);
+
+            return result;
+        } catch (error) {
+            console.error('Aggregated search failed:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Get detailed product information via Convex proxy
      */
     async getProductDetails(productId: string): Promise<AliExpressProduct | null> {
@@ -386,31 +462,17 @@ export const aliexpressService = {
         const cached = getCached<AliExpressProduct[]>(cacheKey);
         if (cached) return cached;
 
-        const mappedCategory = category ? CATEGORY_MAPPING[category] : undefined;
-
         try {
-            const params = new URLSearchParams({
-                limit: String(limit),
-                sort: 'orders', // Sort by orders for "hot" products
+            // Use the aggregated search with a generic query for the category
+            const query = category || 'trending home decor';
+            const result = await this.searchProducts({
+                query,
+                page: 1,
+                pageSize: limit,
+                sortBy: 'orders' as any, // Sort by orders for "hot" products
             });
 
-            if (mappedCategory) {
-                params.append('category', mappedCategory);
-            }
-
-            const response = await rateLimitedFetch(
-                `${BASE_URL}/item_search_3?${params.toString()}`,
-                { method: 'GET', headers: getHeaders() }
-            );
-
-            if (!response.ok) {
-                await handleApiError(response);
-            }
-
-            const data = await response.json();
-            const products = (data.result?.items || data.items || [])
-                .slice(0, limit)
-                .map((item: any) => transformProduct(item, category as CollectionType));
+            const products = result.products.slice(0, limit);
 
             // Cache for 1 hour
             setCache(cacheKey, products, 60 * 60 * 1000);
