@@ -283,34 +283,34 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 .animate-float-delay { animation: float-delay 8s ease-in-out infinite 1s; }
                 .animate-glow { animation: glow 4s ease-in-out infinite; }
                 .glass-card {
-                    background: rgba(255, 255, 255, 0.7);
+                    background: rgba(255, 255, 255, 0.85); /* Increased opacity for contrast */
                     backdrop-filter: blur(20px);
-                    border: 1px solid rgba(255, 255, 255, 0.5);
-                    box-shadow: 0 8px 32px 0 rgba(74, 59, 50, 0.05);
+                    border: 1px solid rgba(166, 124, 82, 0.1); /* Slight bronze tint to border */
+                    box-shadow: 0 8px 32px 0 rgba(74, 59, 50, 0.1);
                 }
                 .glass-card:hover {
-                    background: rgba(255, 255, 255, 0.9);
-                    border-color: rgba(166, 124, 82, 0.2);
+                    background: rgba(255, 255, 255, 0.95);
+                    border-color: rgba(166, 124, 82, 0.3);
                     transform: translateY(-5px);
-                    box-shadow: 0 15px 40px -10px rgba(166, 124, 82, 0.15);
+                    box-shadow: 0 20px 40px -10px rgba(166, 124, 82, 0.2);
                 }
             `}</style>
 
-            {/* Background Ambience */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-bronze/5 to-transparent rounded-full blur-[100px] opacity-40 animate-float" />
-                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-earth/5 to-transparent rounded-full blur-[80px] opacity-30 animate-float-delay" />
+            {/* Background Ambience - Slightly darker for contrast */}
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#F9F7F2]/30">
+                <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-bronze/10 to-transparent rounded-full blur-[100px] opacity-40 animate-float" />
+                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-earth/10 to-transparent rounded-full blur-[80px] opacity-30 animate-float-delay" />
             </div>
 
             {/* Content Container */}
             <div className="relative z-10 space-y-12">
 
                 {/* Header Section */}
-                <div className="flex items-end justify-between border-b border-earth/5 pb-8">
+                <div className="flex items-end justify-between border-b border-earth/10 pb-8">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="w-8 h-[1px] bg-bronze/50 inline-block"></span>
-                            <span className="text-bronze text-[10px] uppercase tracking-[0.4em]">Global Sourcing</span>
+                            <span className="w-8 h-[1px] bg-bronze inline-block"></span>
+                            <span className="text-bronze text-[10px] uppercase tracking-[0.4em] font-bold">Global Sourcing</span>
                         </div>
                         <h1 className="font-serif text-5xl text-earth tracking-tight">
                             Import & <span className="text-bronze italic">Curate</span>
@@ -320,51 +320,51 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                 {/* Hero Search Module */}
                 <FadeIn>
-                    <div className="glass-card rounded-[2rem] p-10 relative group transition-all duration-700">
-                        {/* Search Input */}
+                    <div className="glass-card rounded-[2rem] p-10 relative group transition-all duration-700 shadow-xl border border-white/50">
+                        {/* Search Input - High Contrast */}
                         <div className="relative mb-8">
-                            <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-earth/30 group-hover:text-bronze transition-colors duration-500" />
+                            <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-earth group-hover:text-bronze transition-colors duration-500" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 placeholder="Discover premium products..."
-                                className="w-full pl-20 pr-8 py-6 bg-white/40 border border-white/60 rounded-2xl text-2xl font-serif text-earth placeholder:text-earth/20 focus:outline-none focus:bg-white/80 focus:shadow-xl transition-all duration-500"
+                                className="w-full pl-20 pr-8 py-6 bg-white border border-earth/10 rounded-2xl text-2xl font-serif text-earth placeholder:text-earth/40 focus:outline-none focus:ring-2 focus:ring-bronze/20 focus:border-bronze/50 transition-all shadow-sm"
                             />
                             <button
                                 onClick={() => handleSearch()}
                                 disabled={isSearching || !searchQuery.trim()}
-                                className="absolute right-3 top-3 bottom-3 bg-earth text-cream px-10 rounded-xl text-xs uppercase tracking-[0.25em] hover:bg-bronze hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:scale-100 shadow-lg"
+                                className="absolute right-3 top-3 bottom-3 bg-earth text-cream px-10 rounded-xl text-xs uppercase tracking-[0.25em] font-bold hover:bg-bronze hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-earth/20"
                             >
                                 {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
                             </button>
                         </div>
 
-                        {/* Floating Filters */}
+                        {/* Floating Filters - High Contrast Pills */}
                         <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white/30 rounded-full border border-white/40 backdrop-blur-sm">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-cream text-earth rounded-full border border-earth/10">
                                 <Filter className="w-3 h-3 text-bronze" />
-                                <span className="text-[10px] uppercase tracking-widest text-earth/50">Filter By</span>
+                                <span className="text-[10px] uppercase tracking-widest font-bold opacity-70">Filter By</span>
                             </div>
 
                             {/* Price */}
-                            <div className="group/price relative flex items-center gap-2 px-6 py-3 bg-white/40 hover:bg-white rounded-full border border-white/20 hover:border-bronze/20 transition-all cursor-pointer">
-                                <DollarSign className="w-3 h-3 text-earth/40 group-hover/price:text-bronze transition-colors" />
+                            <div className="group/price relative flex items-center gap-2 px-6 py-3 bg-white hover:bg-cream rounded-full border border-earth/10 hover:border-bronze/50 transition-all cursor-pointer shadow-sm">
+                                <DollarSign className="w-3 h-3 text-earth/60 group-hover/price:text-bronze transition-colors" />
                                 <input
                                     type="number"
                                     value={minPrice}
                                     onChange={(e) => setMinPrice(e.target.value)}
                                     placeholder="Min"
-                                    className="w-12 bg-transparent text-xs text-center border-b border-earth/10 focus:border-bronze focus:outline-none"
+                                    className="w-12 bg-transparent text-xs text-center font-medium text-earth placeholder:text-earth/30 border-b border-earth/10 focus:border-bronze focus:outline-none"
                                 />
-                                <span className="text-earth/20">-</span>
+                                <span className="text-earth/40">-</span>
                                 <input
                                     type="number"
                                     value={maxPrice}
                                     onChange={(e) => setMaxPrice(e.target.value)}
                                     placeholder="Max"
-                                    className="w-12 bg-transparent text-xs text-center border-b border-earth/10 focus:border-bronze focus:outline-none"
+                                    className="w-12 bg-transparent text-xs text-center font-medium text-earth placeholder:text-earth/30 border-b border-earth/10 focus:border-bronze focus:outline-none"
                                 />
                             </div>
 
@@ -373,13 +373,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <select
                                     value={minRating}
                                     onChange={(e) => setMinRating(parseFloat(e.target.value))}
-                                    className="appearance-none pl-4 pr-10 py-3 bg-white/40 hover:bg-white rounded-full border border-white/20 hover:border-bronze/20 text-xs text-earth/60 cursor-pointer focus:outline-none transition-all"
+                                    className="appearance-none pl-4 pr-10 py-3 bg-white hover:bg-cream rounded-full border border-earth/10 hover:border-bronze/50 text-xs font-medium text-earth cursor-pointer focus:outline-none transition-all shadow-sm"
                                 >
                                     <option value={0}>Any Rating</option>
                                     <option value={4.0}>4.0+ Stars</option>
                                     <option value={4.5}>4.5+ Stars</option>
                                 </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-earth/30 pointer-events-none group-hover/rating:text-bronze transition-colors" />
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-earth/50 pointer-events-none group-hover/rating:text-bronze transition-colors" />
                             </div>
 
                             {/* Sort */}
@@ -387,19 +387,19 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value as any)}
-                                    className="appearance-none pl-4 pr-10 py-3 bg-white/40 hover:bg-white rounded-full border border-white/20 hover:border-bronze/20 text-xs text-earth/60 cursor-pointer focus:outline-none transition-all"
+                                    className="appearance-none pl-4 pr-10 py-3 bg-white hover:bg-cream rounded-full border border-earth/10 hover:border-bronze/50 text-xs font-medium text-earth cursor-pointer focus:outline-none transition-all shadow-sm"
                                 >
                                     <option value="default">Best Match</option>
                                     <option value="price_asc">Price: Low to High</option>
                                     <option value="price_desc">Price: High to Low</option>
                                     <option value="orders">Popularity</option>
                                 </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-earth/30 pointer-events-none group-hover/sort:text-bronze transition-colors" />
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-earth/50 pointer-events-none group-hover/sort:text-bronze transition-colors" />
                             </div>
 
                             <button
                                 onClick={() => setImportUrl(importUrl ? '' : 'https://')}
-                                className="ml-auto flex items-center gap-2 text-[10px] uppercase tracking-widest text-bronze hover:bg-bronze/5 px-4 py-2 rounded-full transition-colors"
+                                className="ml-auto flex items-center gap-2 text-[10px] uppercase tracking-widest text-bronze hover:bg-bronze/10 px-4 py-2 rounded-full transition-colors font-bold"
                             >
                                 <Plus className="w-3 h-3" />
                                 Import by URL
@@ -408,23 +408,23 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                         {/* URL Import Panel */}
                         {importUrl !== '' && (
-                            <FadeIn className="mt-6 pt-6 border-t border-earth/5">
-                                <div className="flex gap-4 items-center animate-glow p-1 rounded-xl">
+                            <FadeIn className="mt-6 pt-6 border-t border-earth/10">
+                                <div className="flex gap-4 items-center animate-glow p-1 rounded-xl bg-white/50">
                                     <div className="flex-1 relative">
-                                        <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/40" />
+                                        <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/60" />
                                         <input
                                             type="text"
                                             value={importUrl}
                                             onChange={(e) => setImportUrl(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleImportByUrl()}
                                             placeholder="Paste external product link..."
-                                            className="w-full pl-10 pr-4 py-3 bg-white/60 border border-white/40 rounded-xl text-sm focus:outline-none focus:ring-2 ring-bronze/20 transition-all shadow-inner"
+                                            className="w-full pl-10 pr-4 py-3 bg-white border border-earth/10 rounded-xl text-sm text-earth focus:outline-none focus:ring-2 ring-bronze/20 transition-all shadow-inner"
                                         />
                                     </div>
                                     <button
                                         onClick={handleImportByUrl}
                                         disabled={isImportingUrl}
-                                        className="bg-bronze text-cream px-8 py-3 rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-lg shadow-bronze/20"
+                                        className="bg-bronze text-cream px-8 py-3 rounded-xl text-xs uppercase tracking-widest font-bold hover:scale-105 transition-transform shadow-lg shadow-bronze/20"
                                     >
                                         Import
                                     </button>
@@ -437,18 +437,18 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 {/* Results Section */}
                 {searchResults.length > 0 && (
                     <div className="space-y-8">
-                        {/* Floating Toolbar */}
-                        <div className="sticky top-4 z-50 glass-card rounded-full px-6 py-3 flex items-center justify-between mb-8 animate-float-delay">
+                        {/* Floating Toolbar - High Contrast */}
+                        <div className="sticky top-4 z-50 bg-earth text-cream rounded-full px-6 py-3 flex items-center justify-between mb-8 shadow-2xl animate-float-delay border border-white/10">
                             <div className="flex items-center gap-6">
                                 <label className="flex items-center gap-3 cursor-pointer group">
-                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-300 ${selectAll ? 'bg-bronze border-bronze scale-110' : 'border-earth/20 group-hover:border-bronze'}`}>
+                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-300 ${selectAll ? 'bg-bronze border-bronze scale-110' : 'border-white/40 group-hover:border-white'}`}>
                                         {selectAll && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                     <input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="hidden" />
-                                    <span className="text-xs uppercase tracking-widest text-earth/60 group-hover:text-earth transition-colors">Select All</span>
+                                    <span className="text-xs uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">Select All</span>
                                 </label>
-                                <div className="h-4 w-px bg-earth/10"></div>
-                                <span className="text-xs text-earth/40 font-medium">
+                                <div className="h-4 w-px bg-white/20"></div>
+                                <span className="text-xs text-white/60 font-medium">
                                     {searchResults.length} Products Found
                                 </span>
                             </div>
@@ -460,15 +460,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         setTargetCollection(e.target.value);
                                         setTargetSubcategory('');
                                     }}
-                                    className="bg-transparent text-xs text-earth hover:text-bronze focus:outline-none cursor-pointer transition-colors"
+                                    className="bg-transparent text-xs text-white/90 hover:text-white focus:outline-none cursor-pointer transition-colors border-none"
                                 >
-                                    {collections.map(c => <option key={c.id} value={c.id}>To: {c.title}</option>)}
+                                    {collections.map(c => <option key={c.id} value={c.id} className="text-earth">To: {c.title}</option>)}
                                 </select>
 
                                 <button
                                     onClick={enhanceAllSelected}
                                     disabled={selectedCount === 0}
-                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors disabled:opacity-20"
+                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white hover:text-purple-600 transition-colors disabled:opacity-20"
                                     title="Auto-Enhance Selected"
                                 >
                                     <Sparkles className="w-4 h-4" />
@@ -477,7 +477,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <button
                                     onClick={handleImport}
                                     disabled={selectedCount === 0}
-                                    className="bg-earth text-white px-6 py-2 rounded-full text-xs uppercase tracking-widest hover:bg-bronze hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
+                                    className="bg-cream text-earth px-6 py-2 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
                                 >
                                     Import {selectedCount > 0 ? `(${selectedCount})` : ''}
                                 </button>
@@ -489,25 +489,25 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {searchResults.map((product, idx) => (
                                 <FadeIn key={product.id} delay={idx * 50}>
                                     <div
-                                        className={`glass-card rounded-2xl overflow-hidden transition-all duration-500 relative group
-                                        ${product.selected ? 'ring-2 ring-bronze shadow-2xl scale-[1.02]' : 'hover:scale-[1.01]'}
+                                        className={`glass-card rounded-2xl overflow-hidden transition-all duration-500 relative group bg-white
+                                        ${product.selected ? 'ring-2 ring-bronze shadow-2xl scale-[1.02]' : 'hover:scale-[1.01] hover:shadow-xl'}
                                     `}
                                     >
                                         {/* Action Overlay (Glass) */}
-                                        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex flex-col justify-center items-center gap-3">
+                                        <div className="absolute inset-0 bg-earth/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex flex-col justify-center items-center gap-3">
                                             <button
                                                 onClick={() => toggleProductSelection(product.id)}
-                                                className={`px-6 py-2 rounded-full text-xs uppercase tracking-widest transition-all transform hover:scale-105 shadow-lg ${product.selected ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-earth text-white hover:bg-bronze'}`}
+                                                className={`px-8 py-3 rounded-full text-xs uppercase tracking-widest font-bold transition-all transform hover:scale-105 shadow-lg ${product.selected ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-cream text-earth hover:bg-white'}`}
                                             >
                                                 {product.selected ? 'Deselect' : 'Select Product'}
                                             </button>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); enhanceProductWithAI(product.id); }}
-                                                    className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-purple-500 hover:text-purple-600 shadow-md hover:scale-110 transition-transform"
+                                                    className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-purple-600 hover:text-purple-700 shadow-md hover:scale-110 transition-transform"
                                                     title="AI Enhance"
                                                 >
-                                                    <Sparkles className="w-4 h-4" />
+                                                    <Sparkles className="w-5 h-5" />
                                                 </button>
                                                 {product.productUrl && (
                                                     <a
@@ -515,9 +515,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-earth/60 hover:text-bronze shadow-md hover:scale-110 transition-transform"
+                                                        className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-earth hover:text-bronze shadow-md hover:scale-110 transition-transform"
                                                     >
-                                                        <ExternalLink className="w-4 h-4" />
+                                                        <ExternalLink className="w-5 h-5" />
                                                     </a>
                                                 )}
                                             </div>
@@ -525,11 +525,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                                         {/* Visible Content */}
                                         <div className="relative">
-                                            <div className="h-64 overflow-hidden">
+                                            <div className="h-72 overflow-hidden bg-cream/10">
                                                 <img
                                                     src={product.images[0] || 'https://via.placeholder.com/160'}
                                                     alt={product.name}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:blur-[2px]"
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                 />
                                             </div>
 
@@ -541,35 +541,45 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             )}
                                         </div>
 
-                                        <div className="p-6 relative z-0 bg-white/40">
+                                        <div className="p-6 relative z-0 bg-white">
                                             {product.selected ? (
                                                 <div className="mb-4 space-y-2">
                                                     <input
                                                         type="text"
                                                         value={product.customName || product.name}
                                                         onChange={(e) => updateProductField(product.id, 'customName', e.target.value)}
-                                                        className="w-full bg-transparent border-b border-earth/10 focus:border-bronze font-serif text-lg text-earth pb-1 focus:outline-none"
+                                                        className="w-full bg-transparent border-b border-earth/20 focus:border-bronze font-serif text-lg text-earth pb-1 focus:outline-none font-medium"
                                                         placeholder="Product Name"
                                                     />
                                                 </div>
                                             ) : (
-                                                <h3 className="font-serif text-xl text-earth mb-2 line-clamp-2 leading-tight">
+                                                <h3 className="font-serif text-xl text-earth mb-2 line-clamp-2 leading-tight font-medium">
                                                     {product.name}
                                                 </h3>
                                             )}
 
-                                            <div className="flex items-center justify-between mt-4">
+                                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-earth/5">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] uppercase tracking-widest text-earth/40">Price</span>
-                                                    <span className="font-serif text-2xl text-bronze">
+                                                    <span className="text-[9px] uppercase tracking-widest text-earth/50 font-bold">Price</span>
+                                                    <span className="font-serif text-2xl text-bronze font-bold">
                                                         ${(product.customPrice || calculateFinalPrice(product.salePrice || product.price)).toFixed(2)}
                                                     </span>
                                                 </div>
                                                 <div className="flex flex-col items-end">
-                                                    <span className="text-[9px] uppercase tracking-widest text-earth/40">Cost</span>
-                                                    <span className="text-sm text-earth/40 line-through">
+                                                    <span className="text-[9px] uppercase tracking-widest text-earth/50 font-bold">Cost</span>
+                                                    <span className="text-sm text-earth/40 line-through font-medium">
                                                         ${(product.salePrice || product.price).toFixed(2)}
                                                     </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 flex items-center justify-between text-xs text-earth/60">
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="w-3 h-3 text-bronze fill-bronze" />
+                                                    <span className="font-medium">{product.averageRating.toFixed(1)}</span>
+                                                </div>
+                                                <div className="bg-earth/5 px-2 py-1 rounded-md text-[10px] uppercase tracking-wider font-semibold text-earth/60">
+                                                    {product.category || 'Item'}
                                                 </div>
                                             </div>
                                         </div>
@@ -584,17 +594,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <button
                                     onClick={() => handleSearch(currentPage - 1)}
                                     disabled={currentPage === 1}
-                                    className="w-12 h-12 rounded-full glass-card flex items-center justify-center text-earth/40 hover:text-bronze hover:scale-110 transition-all disabled:opacity-20 disabled:scale-100"
+                                    className="w-12 h-12 rounded-full glass-card flex items-center justify-center text-earth/60 hover:text-bronze hover:scale-110 transition-all disabled:opacity-20 disabled:scale-100 border border-earth/10"
                                 >
                                     <ChevronLeft className="w-5 h-5" />
                                 </button>
-                                <span className="font-serif text-2xl text-earth/80">
-                                    {currentPage} <span className="text-earth/20 mx-2">/</span> {totalPages}
+                                <span className="font-serif text-2xl text-earth font-medium">
+                                    {currentPage} <span className="text-earth/30 mx-2">/</span> {totalPages}
                                 </span>
                                 <button
                                     onClick={() => handleSearch(currentPage + 1)}
                                     disabled={currentPage >= totalPages}
-                                    className="w-12 h-12 rounded-full glass-card flex items-center justify-center text-earth/40 hover:text-bronze hover:scale-110 transition-all disabled:opacity-20 disabled:scale-100"
+                                    className="w-12 h-12 rounded-full glass-card flex items-center justify-center text-earth/60 hover:text-bronze hover:scale-110 transition-all disabled:opacity-20 disabled:scale-100 border border-earth/10"
                                 >
                                     <ChevronRight className="w-5 h-5" />
                                 </button>
@@ -603,14 +613,24 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     </div>
                 )}
 
-                {/* Empty State / Welcome */}
+                {/* Empty State / Welcome - Moved and Toned Down */}
                 {!isSearching && searchResults.length === 0 && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                        <FadeIn delay={200}>
-                            <div className="w-[400px] h-[400px] bg-gradient-to-t from-white/20 to-transparent rounded-full blur-3xl absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 animate-pulse"></div>
-                            <Globe className="w-24 h-24 mx-auto mb-6 text-earth/10 animate-float-delay" strokeWidth={0.5} />
-                            <h2 className="font-serif text-3xl text-earth/30">Start Your Collection</h2>
-                        </FadeIn>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-60 mt-12">
+                        <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
+                            <Globe className="w-8 h-8 mx-auto mb-3 text-bronze" />
+                            <h4 className="font-serif text-lg text-earth">Global Search</h4>
+                            <p className="text-xs text-earth/60 mt-1">Access millions of products worldwide.</p>
+                        </div>
+                        <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
+                            <Sparkles className="w-8 h-8 mx-auto mb-3 text-purple-600/60" />
+                            <h4 className="font-serif text-lg text-earth">AI Curation</h4>
+                            <p className="text-xs text-earth/60 mt-1">Enhance descriptions and titles instantly.</p>
+                        </div>
+                        <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
+                            <DollarSign className="w-8 h-8 mx-auto mb-3 text-green-600/60" />
+                            <h4 className="font-serif text-lg text-earth">Smart Pricing</h4>
+                            <p className="text-xs text-earth/60 mt-1">Automated markups and rounding rules.</p>
+                        </div>
                     </div>
                 )}
             </div>
