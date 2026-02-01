@@ -10,6 +10,7 @@ import { AdminOrders } from './AdminOrders';
 import { NewsletterStudio } from './NewsletterStudio';
 import { ProductStudio } from './ProductStudio';
 import { ProductImport } from './ProductImport';
+import { CJSettings } from './CJSettings';
 
 // --- Image Uploader Component ---
 const ImageUploader: React.FC<{
@@ -92,7 +93,7 @@ export const AdminPage: React.FC = () => {
    const [authFlow, setAuthFlow] = useState<'signIn' | 'signUp'>('signIn');
 
    // Navigation State
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders' | 'import'>('dashboard');
+   const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders' | 'import' | 'cj-settings'>('dashboard');
    const [newsletterSubTab, setNewsletterSubTab] = useState<'overview' | 'campaigns' | 'subscribers'>('overview');
 
    const [activePageEditor, setActivePageEditor] = useState<'home' | 'story' | string | null>(null);
@@ -482,6 +483,13 @@ export const AdminPage: React.FC = () => {
                   <Upload className="w-4 h-4" /> Import Products
                </button>
 
+               <button
+                  onClick={() => { setActiveTab('cj-settings'); setActivePageEditor(null); }}
+                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'cj-settings' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+               >
+                  <Settings className="w-4 h-4" /> CJ Settings
+               </button>
+
                <div className="px-4 pt-4 pb-2">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-semibold">Collections</span>
                </div>
@@ -604,6 +612,13 @@ export const AdminPage: React.FC = () => {
                         alert(`Successfully imported ${productsToImport.length} products!`);
                      }}
                   />
+               </FadeIn>
+            )}
+
+            {/* CJ SETTINGS TAB */}
+            {activeTab === 'cj-settings' && (
+               <FadeIn>
+                  <CJSettings />
                </FadeIn>
             )}
 
