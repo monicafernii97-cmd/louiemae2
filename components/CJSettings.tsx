@@ -231,8 +231,8 @@ export const CJSettings: React.FC = () => {
                         {/* Pending Products - Glass Panel */}
                         <FadeIn delay={300} className="h-full">
                             <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl h-full flex flex-col relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Clock className="w-24 h-24 rotate-12" />
+                                <div className="absolute top-2 right-2 p-3 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                                    <Clock className="w-12 h-12 -rotate-12" />
                                 </div>
 
                                 <div className="flex items-center justify-between mb-6 relative">
@@ -250,13 +250,26 @@ export const CJSettings: React.FC = () => {
                                 ) : (
                                     <div className="space-y-3 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                                         {pendingProducts.map((product) => (
-                                            <div key={product._id} className="group/item flex items-center justify-between bg-white/40 hover:bg-white/60 border border-white/40 p-4 rounded-xl transition-all hover:shadow-md hover:scale-[1.02]">
-                                                <div className="flex-1 min-w-0 mr-4">
-                                                    <h4 className="font-medium text-earth text-sm truncate font-serif">{product.name}</h4>
-                                                    <p className="text-[10px] uppercase tracking-wider text-earth/40 mt-1 flex items-center gap-1">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                                                        Awaiting CJ Approval
-                                                    </p>
+                                            <div key={product._id} className="group/item flex items-center justify-between bg-white/40 hover:bg-white/60 border border-white/40 p-3 rounded-xl transition-all hover:shadow-md hover:scale-[1.01]">
+                                                <div className="flex items-center flex-1 min-w-0 mr-4">
+                                                    {/* Image Preview */}
+                                                    <div className="h-10 w-10 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 overflow-hidden flex-shrink-0 mr-3 relative shadow-sm">
+                                                        {product.images && product.images[0] ? (
+                                                            <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center text-earth/20">
+                                                                <Package className="w-4 h-4" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="min-w-0">
+                                                        <h4 className="font-medium text-earth text-sm truncate font-serif leading-tight">{product.name}</h4>
+                                                        <p className="text-[10px] uppercase tracking-wider text-earth/40 mt-0.5 flex items-center gap-1">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                                            Awaiting CJ
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 <button
                                                     onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
@@ -283,8 +296,8 @@ export const CJSettings: React.FC = () => {
                             {/* Approved - Glass Panel */}
                             <FadeIn delay={400}>
                                 <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <CheckCircle className="w-20 h-20 rotate-12" />
+                                    <div className="absolute top-2 right-2 p-3 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                                        <CheckCircle className="w-12 h-12 -rotate-12" />
                                     </div>
 
                                     <div className="flex items-center justify-between mb-6 relative">
@@ -317,8 +330,8 @@ export const CJSettings: React.FC = () => {
                             {/* Rejected - Glass Panel */}
                             <FadeIn delay={500}>
                                 <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <AlertTriangle className="w-20 h-20 rotate-12" />
+                                    <div className="absolute top-2 right-2 p-3 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                                        <AlertTriangle className="w-12 h-12 -rotate-12" />
                                     </div>
 
                                     <div className="flex items-center justify-between mb-6 relative">
