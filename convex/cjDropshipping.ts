@@ -20,17 +20,17 @@ let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Get CJ API access token using email/password authentication
- * Tokens last 15 days, we cache them in memory
+ * Get CJ API access token using API Key authentication
+ * Per CJ docs: use apiKey to get accessToken (15 day life)
+ * Tokens are cached in memory
  */
 export const getAccessToken = internalAction({
     args: {},
     handler: async (ctx): Promise<string | null> => {
-        const email = process.env.CJ_API_EMAIL;
-        const password = process.env.CJ_API_PASSWORD;
+        const apiKey = process.env.CJ_API_KEY;
 
-        if (!email || !password) {
-            console.error("CJ API credentials not configured. Set CJ_API_EMAIL and CJ_API_PASSWORD in Convex.");
+        if (!apiKey) {
+            console.error("CJ API Key not configured. Set CJ_API_KEY in Convex environment variables.");
             return null;
         }
 
@@ -43,7 +43,7 @@ export const getAccessToken = internalAction({
             const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ apiKey }),
             });
 
             const data = await response.json();
