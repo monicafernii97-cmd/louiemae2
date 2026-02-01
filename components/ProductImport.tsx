@@ -880,7 +880,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             value={importUrl}
                                             onChange={(e) => setImportUrl(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleImportByUrl()}
-                                            placeholder="Paste AliExpress product URL..."
+                                            placeholder="Paste any product URL..."
                                             className="flex-1 bg-white border border-earth/10 rounded-xl px-4 py-3 text-sm text-earth placeholder:text-earth/30 focus:outline-none focus:ring-2 focus:ring-bronze/20 focus:border-bronze shadow-inner"
                                         />
                                         <button
