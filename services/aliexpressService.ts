@@ -170,14 +170,80 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
     const skuList = skuData.skuList || skuData.sku_list || skuData.list || [];
     const skuProps = skuData.props || skuData.properties || [];
 
+    // Build a mapping of propId:valueId -> { name, image } from skuProps
+    // This lets us decode propPath codes like "201336100:28320" into readable names
+    const propValueMap: Record<string, { propName: string; valueName: string; image?: string }> = {};
+
+    if (Array.isArray(skuProps) && skuProps.length > 0) {
+        skuProps.forEach((prop: any) => {
+            const propId = prop.id || prop.attrNameId || prop.pid || '';
+            const propName = prop.name || prop.attrName || 'Option';
+            const values = prop.values || prop.attrValues || [];
+
+            values.forEach((val: any) => {
+                const valueId = val.id || val.attrValueId || val.vid || '';
+                const valueName = val.name || val.attrValue || val.value || val;
+                let valueImage = val.image || val.skuImage || val.img || '';
+                if (valueImage && valueImage.startsWith('//')) {
+                    valueImage = `https:${valueImage}`;
+                }
+
+                // Create lookup keys to handle different API formats
+                const key1 = `${propId}:${valueId}`;
+                const key2 = `${propId}#${valueId}`;
+                const mapValue = { propName, valueName: String(valueName), image: valueImage || undefined };
+
+                if (propId && valueId) {
+                    propValueMap[key1] = mapValue;
+                    propValueMap[key2] = mapValue;
+                }
+            });
+        });
+    }
+
     // Method 1: Parse from skuList (detailed variant data)
     if (Array.isArray(skuList) && skuList.length > 0) {
         skuList.forEach((sku: any, index: number) => {
-            const variantName = sku.propPath || sku.name || sku.attributes?.map((a: any) => a.value).join(' / ') || `Option ${index + 1}`;
+            // Try to decode propPath using our mapping
+            let variantName = '';
+            let variantImage = sku.image || sku.skuVal?.image || '';
+
+            const propPath = sku.propPath || sku.skuAttr || '';
+            if (propPath) {
+                // propPath format: "propId:valueId;propId2:valueId2" or "propId:valueId,propId2:valueId2"
+                const propPairs = propPath.split(/[;,]/);
+                const decodedParts: string[] = [];
+
+                propPairs.forEach((pair: string) => {
+                    const [propId, valueId] = pair.split(':');
+                    const key = `${propId}:${valueId}`;
+                    const mapped = propValueMap[key];
+
+                    if (mapped) {
+                        decodedParts.push(`${mapped.propName}: ${mapped.valueName}`);
+                        // Use the mapped image if we don't have one yet
+                        if (!variantImage && mapped.image) {
+                            variantImage = mapped.image;
+                        }
+                    }
+                });
+
+                if (decodedParts.length > 0) {
+                    variantName = decodedParts.join(' / ');
+                }
+            }
+
+            // Fallback to other name sources
+            if (!variantName) {
+                variantName = sku.name ||
+                    sku.attributes?.map((a: any) => `${a.name || 'Option'}: ${a.value}`).join(' / ') ||
+                    sku.skuAttr ||
+                    `Option ${index + 1}`;
+            }
+
             const variantPrice = parsePrice(sku.promotionPrice || sku.price || sku.skuVal?.skuCalPrice);
             const priceAdjustment = variantPrice ? variantPrice - salePrice : 0;
 
-            let variantImage = sku.image || sku.skuVal?.image || '';
             if (variantImage && variantImage.startsWith('//')) {
                 variantImage = `https:${variantImage}`;
             }
@@ -192,7 +258,7 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         });
     }
 
-    // Method 2: Parse from props/properties (size/color categories)
+    // Method 2: Fallback - parse from props/properties directly (size/color categories)
     if (variants.length === 0 && Array.isArray(skuProps) && skuProps.length > 0) {
         skuProps.forEach((prop: any) => {
             const propName = prop.name || prop.attrName || 'Option';
