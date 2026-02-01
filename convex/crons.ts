@@ -12,4 +12,13 @@ crons.interval(
     {}
 );
 
+// Check CJ product sourcing status every 2 hours
+// This checks if pending products have been approved by CJ
+crons.interval(
+    "check-cj-sourcing",
+    { hours: 2 },
+    internal.cjDropshipping.checkSourcingStatus,
+    {}
+);
+
 export default crons;

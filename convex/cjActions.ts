@@ -2,6 +2,7 @@
 
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { v } from "convex/values";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC CJ ACTIONS
@@ -105,3 +106,34 @@ export const configureWebhooks = action({
     },
 });
 
+/**
+ * Check CJ sourcing status for pending products
+ * Can be called manually from admin dashboard
+ */
+export const checkSourcingStatus = action({
+    args: {},
+    handler: async (ctx): Promise<{ checked: number; approved: number; rejected: number }> => {
+        const result = await ctx.runAction(internal.cjDropshipping.checkSourcingStatus, {});
+        return result;
+    },
+});
+
+/**
+ * Submit a product for CJ sourcing
+ * Called when importing products from AliExpress/other sources
+ */
+export const submitProductForSourcing = action({
+    args: {
+        productId: v.id("products"),
+        productUrl: v.string(),
+        productName: v.string(),
+    },
+    handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+        const result = await ctx.runAction(internal.cjDropshipping.submitForSourcing, {
+            productId: args.productId,
+            productUrl: args.productUrl,
+            productName: args.productName,
+        });
+        return result;
+    },
+});

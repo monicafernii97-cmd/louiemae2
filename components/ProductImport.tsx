@@ -214,7 +214,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 collection: productCollection as CollectionType,
                 isNew: true,
                 inStock: p.inStock,
-                variants: p.variants // Pass through any variants (sizes, colors)
+                variants: p.variants, // Pass through any variants (sizes, colors)
+                // CJ Sourcing fields - set to pending so CJ can source the product
+                sourceUrl: p.productUrl || '',
+                cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
             };
         });
 

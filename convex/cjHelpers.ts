@@ -215,3 +215,107 @@ export const handleCjLogisticsUpdate = internalMutation({
         console.log(`CJ Logistics: Updated order ${order._id} with tracking ${args.trackingNumber}, status ${args.cjStatus}`);
     },
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCT SOURCING HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Update product CJ sourcing status
+ */
+export const updateProductSourcingStatus = internalMutation({
+    args: {
+        productId: v.id("products"),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("approved"),
+            v.literal("rejected"),
+            v.literal("none")
+        ),
+        sourcingId: v.optional(v.string()),
+        cjProductId: v.optional(v.string()),
+        cjVariantId: v.optional(v.string()),
+        cjSku: v.optional(v.string()),
+        error: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const updateData: Record<string, any> = {
+            cjSourcingStatus: args.status,
+        };
+
+        if (args.sourcingId) {
+            updateData.cjSourcingId = args.sourcingId;
+        }
+        if (args.cjProductId) {
+            updateData.cjProductId = args.cjProductId;
+        }
+        if (args.cjVariantId) {
+            updateData.cjVariantId = args.cjVariantId;
+        }
+        if (args.cjSku) {
+            updateData.cjSku = args.cjSku;
+        }
+        if (args.error) {
+            updateData.cjSourcingError = args.error;
+        }
+        if (args.status === "approved") {
+            updateData.cjApprovedAt = new Date().toISOString();
+        }
+
+        await ctx.db.patch(args.productId, updateData);
+    },
+});
+
+/**
+ * Get products pending CJ sourcing approval
+ */
+export const getProductsPendingSourcing = internalQuery({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "pending"))
+            .collect();
+    },
+});
+
+/**
+ * Get recently approved products for admin notifications
+ */
+export const getRecentlyApprovedProducts = internalQuery({
+    args: {},
+    handler: async (ctx) => {
+        // Get products approved in the last 7 days
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        const approvedProducts = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "approved"))
+            .collect();
+
+        // Filter to only recently approved ones
+        return approvedProducts.filter(p =>
+            p.cjApprovedAt && p.cjApprovedAt >= sevenDaysAgo
+        );
+    },
+});
+
+/**
+ * Get products pending or rejected (for admin view)
+ */
+export const getProductsWithSourcingIssues = internalQuery({
+    args: {},
+    handler: async (ctx) => {
+        const pending = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "pending"))
+            .collect();
+
+        const rejected = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
+            .collect();
+
+        return { pending, rejected };
+    },
+});

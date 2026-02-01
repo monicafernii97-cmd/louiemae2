@@ -23,7 +23,21 @@ export default defineSchema({
             priceAdjustment: v.number(),
             inStock: v.boolean(),
         }))),
-    }),
+        // CJ Dropshipping Sourcing Fields
+        cjSourcingStatus: v.optional(v.union(
+            v.literal("pending"),     // Submitted to CJ, awaiting approval
+            v.literal("approved"),    // CJ approved, has vid/sku
+            v.literal("rejected"),    // CJ rejected the product
+            v.literal("none")         // Not submitted to CJ (manual product)
+        )),
+        cjSourcingId: v.optional(v.string()),    // CJ sourcing request ID
+        cjVariantId: v.optional(v.string()),     // CJ vid (after approval)
+        cjSku: v.optional(v.string()),           // CJ SKU (after approval)
+        cjProductId: v.optional(v.string()),     // CJ product ID
+        cjSourcingError: v.optional(v.string()), // Rejection reason
+        sourceUrl: v.optional(v.string()),       // Original AliExpress/source URL
+        cjApprovedAt: v.optional(v.string()),    // When CJ approved the product
+    }).index("by_cj_sourcing_status", ["cjSourcingStatus"]),
 
     // Blog posts table
     blogPosts: defineTable({

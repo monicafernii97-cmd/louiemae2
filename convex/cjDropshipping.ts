@@ -401,3 +401,139 @@ function buildTrackingUrl(trackingNumber: string, carrier?: string): string {
     // Default to 17track for international shipments
     return `https://t.17track.net/en#nums=${trackingNumber}`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCT SOURCING
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Submit a product URL (e.g. AliExpress) to CJ for sourcing
+ * CJ will add it to their catalog and provide a vid/sku
+ */
+export const submitForSourcing = internalAction({
+    args: {
+        productId: v.id("products"),
+        productUrl: v.string(),
+        productName: v.string(),
+    },
+    handler: async (ctx, args): Promise<{ success: boolean; sourcingId?: string; error?: string }> => {
+        const token = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
+        if (!token) {
+            return { success: false, error: "Failed to authenticate with CJ API" };
+        }
+
+        try {
+            // Submit sourcing request to CJ
+            const response = await fetch(`${CJ_API_BASE}/product/sourcing/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "CJ-Access-Token": token,
+                },
+                body: JSON.stringify({
+                    productUrl: args.productUrl,
+                    productName: args.productName,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.result && data.data?.sourcingId) {
+                // Update product with sourcing ID
+                await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                    productId: args.productId,
+                    status: "pending",
+                    sourcingId: data.data.sourcingId,
+                });
+
+                console.log(`CJ Sourcing submitted for product ${args.productId}: ${data.data.sourcingId}`);
+                return { success: true, sourcingId: data.data.sourcingId };
+            } else {
+                const errorMsg = data.message || "Unknown error submitting to CJ";
+                await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                    productId: args.productId,
+                    status: "rejected",
+                    error: errorMsg,
+                });
+                return { success: false, error: errorMsg };
+            }
+        } catch (error: any) {
+            console.error("CJ Sourcing error:", error.message);
+            return { success: false, error: error.message };
+        }
+    },
+});
+
+/**
+ * Check the status of pending sourcing requests
+ * Called by cron job every 2 hours
+ */
+export const checkSourcingStatus = internalAction({
+    args: {},
+    handler: async (ctx): Promise<{ checked: number; approved: number; rejected: number }> => {
+        const token = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
+        if (!token) {
+            console.error("CJ: Cannot check sourcing status - auth failed");
+            return { checked: 0, approved: 0, rejected: 0 };
+        }
+
+        // Get products pending sourcing approval
+        const pendingProducts = await ctx.runQuery(internal.cjHelpers.getProductsPendingSourcing, {});
+
+        let approved = 0;
+        let rejected = 0;
+
+        for (const product of pendingProducts) {
+            if (!product.cjSourcingId) continue;
+
+            try {
+                // Query CJ for sourcing status
+                const response = await fetch(`${CJ_API_BASE}/product/sourcing/query?sourcingId=${product.cjSourcingId}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "CJ-Access-Token": token,
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.result && data.data) {
+                    const sourcing = data.data;
+
+                    // Check if sourcing is complete
+                    if (sourcing.status === "completed" || sourcing.cjProductId) {
+                        // Approved! Update product with CJ IDs
+                        await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                            productId: product._id,
+                            status: "approved",
+                            cjProductId: sourcing.cjProductId,
+                            cjVariantId: sourcing.cjVariantId,
+                            cjSku: sourcing.cjVariantSku,
+                        });
+                        approved++;
+                        console.log(`CJ Sourcing approved for ${product.name}: vid=${sourcing.cjVariantId}`);
+                    } else if (sourcing.status === "failed" || sourcing.failReason) {
+                        // Rejected
+                        await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                            productId: product._id,
+                            status: "rejected",
+                            error: sourcing.failReason || "Sourcing request was rejected",
+                        });
+                        rejected++;
+                        console.log(`CJ Sourcing rejected for ${product.name}: ${sourcing.failReason}`);
+                    }
+                    // If still pending, leave it as is
+                }
+            } catch (error: any) {
+                console.error(`Error checking sourcing for ${product.name}:`, error.message);
+            }
+
+            // Small delay to avoid rate limits
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        console.log(`CJ Sourcing check: ${pendingProducts.length} checked, ${approved} approved, ${rejected} rejected`);
+        return { checked: pendingProducts.length, approved, rejected };
+    },
+});

@@ -12,6 +12,11 @@ export interface Product {
   isNew?: boolean;
   inStock?: boolean;
   variants?: ProductVariant[];  // Optional - for products with color/size options
+  // CJ Sourcing fields
+  sourceUrl?: string;
+  cjSourcingStatus?: 'pending' | 'approved' | 'rejected' | 'none';
+  cjVariantId?: string;
+  cjSku?: string;
 }
 
 export interface Category {

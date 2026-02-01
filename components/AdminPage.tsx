@@ -603,13 +603,25 @@ export const AdminPage: React.FC = () => {
                <FadeIn>
                   <ProductImport
                      collections={siteContent.collections}
-                     onImportProducts={(productsToImport) => {
-                        // Import each product
-                        productsToImport.forEach(product => {
-                           addProduct(product);
-                        });
-                        // Show success message
-                        alert(`Successfully imported ${productsToImport.length} products!`);
+                     onImportProducts={async (productsToImport) => {
+                        // Import each product and submit for CJ sourcing
+                        const results = await Promise.all(
+                           productsToImport.map(async (product) => {
+                              const productId = await addProduct(product);
+                              // If product has source URL and was created successfully, submit for CJ sourcing
+                              if (productId && product.sourceUrl && product.cjSourcingStatus === 'pending') {
+                                 // CJ sourcing will be triggered by the cron job or manual check
+                                 // The product is already marked as pending in the database
+                                 return { id: productId, pending: true };
+                              }
+                              return { id: productId, pending: false };
+                           })
+                        );
+                        const pendingCount = results.filter(r => r.pending).length;
+                        const successMessage = pendingCount > 0
+                           ? `Successfully imported ${productsToImport.length} products! ${pendingCount} products submitted for CJ sourcing.`
+                           : `Successfully imported ${productsToImport.length} products!`;
+                        alert(successMessage);
                      }}
                   />
                </FadeIn>

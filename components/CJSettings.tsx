@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
-import { useAction } from 'convex/react';
+import { useAction, useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
-import { Wifi, WifiOff, RefreshCw, Settings, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle } from 'lucide-react';
 
 export const CJSettings: React.FC = () => {
     const testConnection = useAction(api.cjActions.testConnection);
     const configureWebhooks = useAction(api.cjActions.configureWebhooks);
     const syncTracking = useAction(api.cjActions.syncTracking);
+    const checkSourcing = useAction(api.cjActions.checkSourcingStatus);
+
+    // Product sourcing queries
+    const pendingProducts = useQuery(api.products.getPendingSourcing) || [];
+    const recentlyApproved = useQuery(api.products.getRecentlyApproved) || [];
+    const rejectedProducts = useQuery(api.products.getRejectedProducts) || [];
 
     const [testing, setTesting] = useState(false);
     const [configuring, setConfiguring] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [checkingSourcing, setCheckingSourcing] = useState(false);
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
     const handleTestConnection = async () => {
@@ -55,6 +62,22 @@ export const CJSettings: React.FC = () => {
         }
     };
 
+    const handleCheckSourcing = async () => {
+        setCheckingSourcing(true);
+        setResult(null);
+        try {
+            const res = await checkSourcing({});
+            setResult({
+                success: true,
+                message: `Checked ${res.checked} products: ${res.approved} approved, ${res.rejected} rejected`
+            });
+        } catch (error: any) {
+            setResult({ success: false, message: error.message });
+        } finally {
+            setCheckingSourcing(false);
+        }
+    };
+
     return (
         <div className="p-8">
             {/* Header */}
@@ -64,7 +87,7 @@ export const CJSettings: React.FC = () => {
             </div>
 
             {/* Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 {/* Test Connection */}
                 <div className="bg-white rounded-lg border border-earth/10 p-6">
                     <div className="flex items-center gap-3 mb-4">
@@ -123,7 +146,7 @@ export const CJSettings: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="font-medium text-earth">Tracking Sync</h3>
-                            <p className="text-xs text-earth/50">Fetch latest tracking info</p>
+                            <p className="text-xs text-earth/50">Fetch latest tracking</p>
                         </div>
                     </div>
                     <button
@@ -139,13 +162,38 @@ export const CJSettings: React.FC = () => {
                         {syncing ? 'Syncing...' : 'Sync Now'}
                     </button>
                 </div>
+
+                {/* Check Sourcing */}
+                <div className="bg-white rounded-lg border border-earth/10 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                            <Package className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-earth">Check Sourcing</h3>
+                            <p className="text-xs text-earth/50">Check pending products</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleCheckSourcing}
+                        disabled={checkingSourcing}
+                        className="w-full py-2 px-4 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                    >
+                        {checkingSourcing ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Package className="w-4 h-4" />
+                        )}
+                        {checkingSourcing ? 'Checking...' : 'Check Now'}
+                    </button>
+                </div>
             </div>
 
             {/* Result Message */}
             {result && (
-                <div className={`p-4 rounded-lg flex items-center gap-3 ${result.success
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'
+                <div className={`p-4 rounded-lg flex items-center gap-3 mb-8 ${result.success
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
                     }`}>
                     {result.success ? (
                         <CheckCircle className="w-5 h-5 flex-shrink-0" />
@@ -156,26 +204,113 @@ export const CJSettings: React.FC = () => {
                 </div>
             )}
 
+            {/* Product Sourcing Status */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Pending Products */}
+                <div className="bg-white rounded-lg border border-earth/10 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <Clock className="w-5 h-5 text-amber-500" />
+                        <h3 className="font-medium text-earth">Pending Sourcing</h3>
+                        <span className="ml-auto bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full">
+                            {pendingProducts.length}
+                        </span>
+                    </div>
+                    {pendingProducts.length === 0 ? (
+                        <p className="text-sm text-earth/50">No products pending approval</p>
+                    ) : (
+                        <ul className="space-y-2 max-h-40 overflow-y-auto">
+                            {pendingProducts.slice(0, 5).map((product: any) => (
+                                <li key={product._id} className="flex items-center gap-2 text-sm">
+                                    {product.images?.[0] && (
+                                        <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
+                                    )}
+                                    <span className="truncate">{product.name}</span>
+                                </li>
+                            ))}
+                            {pendingProducts.length > 5 && (
+                                <li className="text-xs text-earth/50">+{pendingProducts.length - 5} more</li>
+                            )}
+                        </ul>
+                    )}
+                </div>
+
+                {/* Recently Approved */}
+                <div className="bg-white rounded-lg border border-earth/10 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <h3 className="font-medium text-earth">Recently Approved</h3>
+                        <span className="ml-auto bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">
+                            {recentlyApproved.length}
+                        </span>
+                    </div>
+                    {recentlyApproved.length === 0 ? (
+                        <p className="text-sm text-earth/50">No recently approved products</p>
+                    ) : (
+                        <ul className="space-y-2 max-h-40 overflow-y-auto">
+                            {recentlyApproved.slice(0, 5).map((product: any) => (
+                                <li key={product._id} className="flex items-center gap-2 text-sm">
+                                    {product.images?.[0] && (
+                                        <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <span className="truncate block">{product.name}</span>
+                                        <span className="text-xs text-green-600">CJ: {product.cjVariantId || product.cjSku}</span>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                {/* Rejected Products */}
+                <div className="bg-white rounded-lg border border-earth/10 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                        <h3 className="font-medium text-earth">Rejected</h3>
+                        <span className="ml-auto bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+                            {rejectedProducts.length}
+                        </span>
+                    </div>
+                    {rejectedProducts.length === 0 ? (
+                        <p className="text-sm text-earth/50">No rejected products</p>
+                    ) : (
+                        <ul className="space-y-2 max-h-40 overflow-y-auto">
+                            {rejectedProducts.slice(0, 5).map((product: any) => (
+                                <li key={product._id} className="flex items-center gap-2 text-sm">
+                                    {product.images?.[0] && (
+                                        <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <span className="truncate block">{product.name}</span>
+                                        <span className="text-xs text-red-600">{product.cjSourcingError || 'Rejected'}</span>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </div>
+
             {/* Info Box */}
-            <div className="mt-8 p-6 bg-cream/30 rounded-lg border border-earth/10">
+            <div className="p-6 bg-cream/30 rounded-lg border border-earth/10">
                 <h4 className="font-medium text-earth mb-3">How It Works</h4>
                 <ul className="space-y-2 text-sm text-earth/70">
                     <li className="flex items-start gap-2">
                         <span className="font-medium text-earth">1.</span>
-                        <span><strong>Test Connection</strong> - Verify your CJ API credentials are working</span>
+                        <span><strong>Import Products</strong> - Products from AliExpress are auto-submitted to CJ for sourcing</span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="font-medium text-earth">2.</span>
-                        <span><strong>Configure Webhooks</strong> - Enable real-time order updates (requires verified store)</span>
+                        <span><strong>Pending</strong> - Products stay hidden from customers while awaiting CJ approval</span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="font-medium text-earth">3.</span>
-                        <span><strong>Sync Tracking</strong> - Manually fetch tracking info (also runs automatically every 4 hours)</span>
+                        <span><strong>Approved</strong> - Once CJ approves, the product appears on your store and can be fulfilled</span>
                     </li>
                 </ul>
-                <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200 text-amber-700 text-sm">
-                    <strong>Note:</strong> Your CJ store needs to be verified before the API will work.
-                    Contact CJ support via their online chat if you see authentication errors.
+                <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200 text-blue-700 text-sm">
+                    <strong>Auto-check:</strong> Sourcing status is checked every 2 hours automatically.
+                    Click "Check Now" to check immediately.
                 </div>
             </div>
         </div>

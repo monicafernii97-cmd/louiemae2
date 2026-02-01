@@ -35,6 +35,14 @@ export const create = mutation({
             priceAdjustment: v.number(),
             inStock: v.boolean(),
         }))),
+        // CJ Sourcing fields
+        sourceUrl: v.optional(v.string()),
+        cjSourcingStatus: v.optional(v.union(
+            v.literal("pending"),
+            v.literal("approved"),
+            v.literal("rejected"),
+            v.literal("none")
+        )),
     },
     handler: async (ctx, args) => {
         // Require authentication
@@ -89,5 +97,82 @@ export const remove = mutation({
             throw new Error("You must be logged in to delete products");
         }
         await ctx.db.delete(args.id);
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STOREFRONT PRODUCTS (filtered for public display)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get products for storefront display
+ * Filters out products with "pending" or "rejected" CJ sourcing status
+ * Only shows products that are ready to be fulfilled
+ */
+export const listForStorefront = query({
+    args: {},
+    handler: async (ctx) => {
+        const allProducts = await ctx.db.query("products").collect();
+
+        // Filter out products that are pending or rejected CJ sourcing
+        return allProducts.filter(product => {
+            // If no CJ sourcing status set, show the product (legacy or manual products)
+            if (!product.cjSourcingStatus || product.cjSourcingStatus === "none") {
+                return true;
+            }
+            // Only show approved products
+            return product.cjSourcingStatus === "approved";
+        });
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADMIN SOURCING QUERIES
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get products pending CJ sourcing approval (for admin)
+ */
+export const getPendingSourcing = query({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "pending"))
+            .collect();
+    },
+});
+
+/**
+ * Get recently approved products (for admin notifications)
+ */
+export const getRecentlyApproved = query({
+    args: {},
+    handler: async (ctx) => {
+        // Get products approved in the last 7 days
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        const approvedProducts = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "approved"))
+            .collect();
+
+        // Filter to only recently approved ones
+        return approvedProducts.filter(p =>
+            p.cjApprovedAt && p.cjApprovedAt >= sevenDaysAgo
+        );
+    },
+});
+
+/**
+ * Get rejected products (for admin to review/resubmit)
+ */
+export const getRejectedProducts = query({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
+            .collect();
     },
 });

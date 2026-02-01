@@ -22,7 +22,7 @@ interface SiteContextType {
   deletePost: (id: string) => void;
   getPost: (id: string) => BlogPost | undefined;
   // Product Actions
-  addProduct: (product: Omit<Product, 'id'>) => void;
+  addProduct: (product: Omit<Product, 'id'>) => Promise<string | null>;
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   // Site Content Actions
@@ -192,8 +192,14 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // --- Product Actions ---
-  const addProduct = (newProductData: Omit<Product, 'id'>) => {
-    createProduct(newProductData);
+  const addProduct = async (newProductData: Omit<Product, 'id'>): Promise<string | null> => {
+    try {
+      const productId = await createProduct(newProductData);
+      return productId as string;
+    } catch (error) {
+      console.error('Failed to create product:', error);
+      return null;
+    }
   };
 
   const updateProduct = (id: string, updatedData: Partial<Product>) => {
