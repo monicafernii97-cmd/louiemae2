@@ -582,7 +582,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     : 'bg-gray-50 border-transparent opacity-50 hover:opacity-75'}`}
                                                         >
                                                             <div className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
-                                                                {variant.image ? <img src={variant.image} alt={variant.name} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-300" />}
+                                                                {(variant.image || currentProduct.images?.[0]) ? (
+                                                                    <img
+                                                                        src={variant.image || currentProduct.images?.[0]}
+                                                                        alt={variant.name}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <Package className="w-4 h-4 text-gray-300" />
+                                                                )}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="truncate font-medium text-earth text-xs">{variant.name}</div>
