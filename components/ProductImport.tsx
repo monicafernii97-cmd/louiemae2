@@ -231,7 +231,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 collection: productCollection as CollectionType,
                 isNew: true,
                 inStock: p.inStock,
-                variants: p.variants,
+                // Filter variants based on user selection (defaults to all if no selection made)
+                variants: p.selectedVariants && p.selectedVariants.length >= 0 && p.variants
+                    ? p.variants.filter(v => p.selectedVariants!.includes(v.id))
+                    : p.variants,
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
             };
