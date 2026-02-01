@@ -38,6 +38,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // URL Import state
     const [importUrl, setImportUrl] = useState('');
     const [isImportingUrl, setIsImportingUrl] = useState(false);
+    const [autoEnhanceAi, setAutoEnhanceAi] = useState(true);
 
     // Filters
     const [minPrice, setMinPrice] = useState<string>('');
@@ -635,9 +636,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         setError(null);
 
         try {
-            const urlMatch = importUrl.match(/item\/(\d+)/);
+            const urlMatch = importUrl.match(/item\/(\d+)/) || importUrl.match(/productId=(\d+)/);
             if (!urlMatch) {
-                setError('Invalid URL. Please paste a direct product link.');
+                setError('Invalid URL. Please paste a direct product link (AliExpress).');
                 return;
             }
 
@@ -649,15 +650,50 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 return;
             }
 
-            const importableProduct: ImportableProduct = {
+            let importableProduct: ImportableProduct = {
                 ...product,
                 selected: true,
                 targetCollection: targetCollection as CollectionType,
                 customPrice: calculateFinalPrice(product.salePrice || product.price)
             };
 
-            setSearchResults(prev => [importableProduct, ...prev]);
+            // Auto-AI Enhancement
+            if (autoEnhanceAi) {
+                try {
+                    const context: ProductContext = {
+                        originalName: product.name,
+                        originalDescription: product.description || '',
+                        category: product.category || '',
+                        collection: targetCollection,
+                        keywords: extractKeywords(product.name + ' ' + (product.description || '')),
+                    };
+
+                    // Run in parallel
+                    const [enhancedName, enhancedDescription] = await Promise.all([
+                        generateProductNameV2(context),
+                        generateProductDescriptionV2(context)
+                    ]);
+
+                    importableProduct = {
+                        ...importableProduct,
+                        customName: enhancedName,
+                        customDescription: enhancedDescription
+                    };
+
+                    toast.success('Product found & AI enhanced');
+                } catch (aiErr) {
+                    console.error('Auto-AI failed:', aiErr);
+                    toast.error('Product found, but AI enhancement failed');
+                }
+            } else {
+                toast.success('Product found');
+            }
+
+            // Set results to just this product and switch to review immediately
+            setSearchResults([importableProduct]);
             setImportUrl('');
+            setImportStep('review');
+            setReviewIndex(0);
 
         } catch (err) {
             console.error('Import by URL failed:', err);
@@ -730,9 +766,66 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 {/* Hero Search Module */}
                 <FadeIn>
                     <div className="glass-card rounded-[2rem] p-10 relative group transition-all duration-700 shadow-xl border border-white/50">
+                        {/* Direct Link Import - Enhanced */}
+                        <FadeIn delay={0.2} className="relative z-20">
+                            <div className="glass-card max-w-2xl mx-auto rounded-2xl p-6 border border-white/50 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/5 rounded-full blur-3xl -z-10" />
+
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-bronze text-xs uppercase tracking-widest font-bold flex items-center gap-2">
+                                            <Link className="w-3 h-3" /> Quick Import by URL
+                                        </h3>
+
+                                        <label className="flex items-center gap-2 cursor-pointer group">
+                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${autoEnhanceAi ? 'bg-purple-500' : 'bg-earth/20'}`}>
+                                                <div className={`absolute top-0.5 bottom-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${autoEnhanceAi ? 'left-4.5' : 'left-0.5'}`} />
+                                            </div>
+                                            <span className={`text-[10px] uppercase tracking-widest font-bold transition-colors ${autoEnhanceAi ? 'text-purple-600' : 'text-earth/40 group-hover:text-earth/60'}`}>
+                                                <Sparkles className="w-3 h-3 inline mr-1" />
+                                                Auto-Enhance
+                                            </span>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={autoEnhanceAi}
+                                                onChange={(e) => setAutoEnhanceAi(e.target.checked)}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={importUrl}
+                                            onChange={(e) => setImportUrl(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleImportByUrl()}
+                                            placeholder="Paste AliExpress product URL..."
+                                            className="flex-1 bg-white border border-earth/10 rounded-xl px-4 py-3 text-sm text-earth placeholder:text-earth/30 focus:outline-none focus:ring-2 focus:ring-bronze/20 focus:border-bronze shadow-inner"
+                                        />
+                                        <button
+                                            onClick={handleImportByUrl}
+                                            disabled={isImportingUrl || !importUrl.trim()}
+                                            className="bg-earth text-cream px-6 rounded-xl text-xs uppercase tracking-widest font-bold hover:bg-bronze transition-colors disabled:opacity-50 whitespace-nowrap shadow-lg shadow-earth/10"
+                                        >
+                                            {isImportingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Fetch & Review'}
+                                        </button>
+                                    </div>
+
+                                    {/* Validation Tip */}
+                                    {importUrl && !importUrl.match(/item\/(\d+)/) && !importUrl.match(/productId=(\d+)/) && (
+                                        <div className="text-[10px] text-orange-600 flex items-center gap-1 font-medium bg-orange-50 p-2 rounded-lg border border-orange-100">
+                                            <AlertCircle className="w-3 h-3" />
+                                            URL format not recognized. Try opening the product page directly.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </FadeIn>
+
                         {/* Search Input - High Contrast */}
-                        <div className="relative mb-8">
-                            <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-earth group-hover:text-bronze transition-colors duration-500" />
+                        <div className="relative mb-8 mt-8 border-t border-earth/10 pt-8">
+                            <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-earth group-hover:text-bronze transition-colors duration-500 mt-4" />
                             <input
                                 type="text"
                                 value={searchQuery}
@@ -744,12 +837,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             <button
                                 onClick={() => handleSearch()}
                                 disabled={isSearching || !searchQuery.trim()}
-                                className="absolute right-3 top-3 bottom-3 bg-earth text-cream px-10 rounded-xl text-xs uppercase tracking-[0.25em] font-bold hover:bg-bronze hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-earth/20"
+                                className="absolute right-3 top-3 bottom-3 bg-earth text-cream px-10 rounded-xl text-xs uppercase tracking-[0.25em] font-bold hover:bg-bronze hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-earth/20 mt-4"
                             >
                                 {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
                             </button>
                         </div>
-
                         {/* Floating Filters - High Contrast Pills */}
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="flex items-center gap-2 px-4 py-2 bg-cream text-earth rounded-full border border-earth/10">
@@ -806,40 +898,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-earth/50 pointer-events-none group-hover/sort:text-bronze transition-colors" />
                             </div>
 
-                            <button
-                                onClick={() => setImportUrl(importUrl ? '' : 'https://')}
-                                className="ml-auto flex items-center gap-2 text-[10px] uppercase tracking-widest text-bronze hover:bg-bronze/10 px-4 py-2 rounded-full transition-colors font-bold"
-                            >
-                                <Plus className="w-3 h-3" />
-                                Import by URL
-                            </button>
                         </div>
 
-                        {/* URL Import Panel */}
-                        {importUrl !== '' && (
-                            <FadeIn className="mt-6 pt-6 border-t border-earth/10">
-                                <div className="flex gap-4 items-center animate-glow p-1 rounded-xl bg-white/50">
-                                    <div className="flex-1 relative">
-                                        <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/60" />
-                                        <input
-                                            type="text"
-                                            value={importUrl}
-                                            onChange={(e) => setImportUrl(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleImportByUrl()}
-                                            placeholder="Paste external product link..."
-                                            className="w-full pl-10 pr-4 py-3 bg-white border border-earth/10 rounded-xl text-sm text-earth focus:outline-none focus:ring-2 ring-bronze/20 transition-all shadow-inner"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={handleImportByUrl}
-                                        disabled={isImportingUrl}
-                                        className="bg-bronze text-cream px-8 py-3 rounded-xl text-xs uppercase tracking-widest font-bold hover:scale-105 transition-transform shadow-lg shadow-bronze/20"
-                                    >
-                                        Import
-                                    </button>
-                                </div>
-                            </FadeIn>
-                        )}
+
                     </div>
                 </FadeIn>
 
