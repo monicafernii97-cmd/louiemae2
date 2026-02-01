@@ -185,7 +185,7 @@ export const CJSettings: React.FC = () => {
                                 description="Verify API connectivity with CJ."
                                 onClick={handleTestConnection}
                                 loading={testing}
-                                colorClass="text-blue-500"
+                                colorClass="text-green-600"
                             />
 
                             <ActionCard
@@ -194,7 +194,7 @@ export const CJSettings: React.FC = () => {
                                 description="Setup status callbacks."
                                 onClick={handleConfigureWebhooks}
                                 loading={configuring}
-                                colorClass="text-purple-500"
+                                colorClass="text-bronze"
                             />
 
                             <ActionCard
@@ -231,15 +231,19 @@ export const CJSettings: React.FC = () => {
                         {/* Pending Products - Glass Panel */}
                         <FadeIn delay={300} className="h-full">
                             <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl h-full flex flex-col relative overflow-hidden group">
-                                <div className="absolute top-2 right-2 p-3 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                                    <Clock className="w-12 h-12 -rotate-12" />
-                                </div>
-
-                                <div className="flex items-center justify-between mb-6 relative">
-                                    <h3 className="font-serif text-xl text-earth">Pending Review</h3>
-                                    <span className="bg-amber-100/50 text-amber-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border border-amber-200/50">
-                                        {pendingProducts.length} Items
-                                    </span>
+                                <div className="flex items-center gap-4 mb-6 relative z-10">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/50 backdrop-blur-md border border-white/60 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
+                                        <Clock className="w-6 h-6 text-earth/60" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-serif text-xl text-earth leading-tight">Pending Review</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                            <span className="text-[10px] uppercase tracking-wider text-earth/50 font-medium">
+                                                {pendingProducts.length} Items Waiting
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {pendingProducts.length === 0 ? (
@@ -296,15 +300,16 @@ export const CJSettings: React.FC = () => {
                             {/* Approved - Glass Panel */}
                             <FadeIn delay={400}>
                                 <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                                    <div className="absolute top-2 right-2 p-3 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                                        <CheckCircle className="w-12 h-12 -rotate-12" />
-                                    </div>
-
-                                    <div className="flex items-center justify-between mb-6 relative">
-                                        <h3 className="font-serif text-xl text-earth">Recently Approved</h3>
-                                        <span className="bg-green-100/50 text-green-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border border-green-200/50">
-                                            {recentlyApproved.length} Items
-                                        </span>
+                                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                                        <div className="w-10 h-10 rounded-xl bg-green-50/50 backdrop-blur-md border border-green-100 flex items-center justify-center shadow-sm">
+                                            <CheckCircle className="w-5 h-5 text-green-600/80" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-serif text-lg text-earth leading-tight">Recently Approved</h3>
+                                            <span className="text-[10px] uppercase tracking-wider text-green-700/60 font-medium block mt-0.5">
+                                                {recentlyApproved.length} Live Items
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {recentlyApproved.length === 0 ? (
@@ -330,15 +335,16 @@ export const CJSettings: React.FC = () => {
                             {/* Rejected - Glass Panel */}
                             <FadeIn delay={500}>
                                 <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                                    <div className="absolute top-2 right-2 p-3 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                                        <AlertTriangle className="w-12 h-12 -rotate-12" />
-                                    </div>
-
-                                    <div className="flex items-center justify-between mb-6 relative">
-                                        <h3 className="font-serif text-xl text-earth">Requires Attention</h3>
-                                        <span className="bg-red-100/50 text-red-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border border-red-200/50">
-                                            {rejectedProducts.length} Items
-                                        </span>
+                                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                                        <div className="w-10 h-10 rounded-xl bg-red-50/50 backdrop-blur-md border border-red-100 flex items-center justify-center shadow-sm">
+                                            <AlertTriangle className="w-5 h-5 text-red-500/80" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-serif text-lg text-earth leading-tight">Requires Attention</h3>
+                                            <span className="text-[10px] uppercase tracking-wider text-red-700/60 font-medium block mt-0.5">
+                                                {rejectedProducts.length} Issues Found
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {rejectedProducts.length === 0 ? (
