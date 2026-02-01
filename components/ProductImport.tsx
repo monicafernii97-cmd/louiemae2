@@ -217,9 +217,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const subcategories = getSubcategoriesForCollection(productCollection);
             const subcategoryTitle = subcategories.find(s => s.id === productSubcategory)?.title || productSubcategory || p.category || 'General';
 
-            // Filter images if selection logic implemented (for now all, or first 5)
-            // Ideally we'd have p.selectedImages
-            const finalImages = p.images;
+            // Filter images based on user selection (defaults to all if no selection made)
+            const finalImages = p.selectedImages && p.selectedImages.length > 0
+                ? p.selectedImages.map(idx => p.images[idx]).filter(Boolean)
+                : p.images;
 
             return {
                 name: p.customName || p.name,
@@ -319,15 +320,45 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         className="w-full h-full object-contain p-4"
                                     />
                                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
-                                        {currentProduct.images.length} Images
+                                        {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length} Selected
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {currentProduct.images.slice(0, 4).map((img, i) => (
-                                        <div key={i} className="aspect-square rounded-lg border border-earth/10 overflow-hidden bg-white hover:border-bronze cursor-pointer transition-colors">
-                                            <img src={img} className="w-full h-full object-cover" />
-                                        </div>
-                                    ))}
+
+                                {/* Selectable Image Grid - CLICK TO SELECT */}
+                                <div className="mb-4">
+                                    <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Click to Select Images</p>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 max-h-52 overflow-y-auto">
+                                    {currentProduct.images.map((img, i) => {
+                                        const isSelected = currentProduct.selectedImages
+                                            ? currentProduct.selectedImages.includes(i)
+                                            : true; // By default all are selected
+                                        return (
+                                            <div
+                                                key={i}
+                                                onClick={() => {
+                                                    const currentSelected = currentProduct.selectedImages ||
+                                                        currentProduct.images.map((_, idx) => idx);
+                                                    const newSelected = isSelected
+                                                        ? currentSelected.filter(idx => idx !== i)
+                                                        : [...currentSelected, i].sort((a, b) => a - b);
+                                                    // Ensure at least one image is selected
+                                                    if (newSelected.length > 0) {
+                                                        updateReviewProduct('selectedImages', newSelected);
+                                                    }
+                                                }}
+                                                className={`aspect-square rounded-lg border-2 overflow-hidden bg-white cursor-pointer transition-all relative
+                                                    ${isSelected ? 'border-bronze ring-2 ring-bronze/30' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
+                                            >
+                                                <img src={img} className="w-full h-full object-cover" />
+                                                {isSelected && (
+                                                    <div className="absolute top-1 right-1 bg-bronze text-white rounded-full w-5 h-5 flex items-center justify-center shadow">
+                                                        <Check className="w-3 h-3" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="mt-8 space-y-6">
@@ -438,23 +469,74 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </div>
                                     </div>
 
-                                    {/* Variants Sidebar (if any) */}
+                                    {/* Variants Sidebar (if any) - CLICKABLE SELECTION */}
                                     {currentProduct.variants && currentProduct.variants.length > 0 && (
-                                        <div className="w-64 bg-white p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
-                                            <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-4">Variants Detected ({currentProduct.variants.length})</h4>
-                                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {currentProduct.variants.map((variant, idx) => (
-                                                    <div key={idx} className="flex items-center gap-3 text-sm p-2 hover:bg-cream/50 rounded-lg transition-colors">
-                                                        <div className="w-8 h-8 rounded border border-earth/10 bg-gray-50 flex items-center justify-center overflow-hidden">
-                                                            {variant.image ? <img src={variant.image} className="w-full h-full object-cover" /> : <Package className="w-3 h-3 text-gray-300" />}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="truncate font-medium text-earth">{variant.name}</div>
-                                                            <div className="text-xs text-earth/40">{variant.inStock ? 'In Stock' : 'Out of Stock'}</div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                        <div className="w-72 bg-white p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">
+                                                    Select Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
+                                                </h4>
+                                                <button
+                                                    onClick={() => {
+                                                        const allIds = currentProduct.variants!.map(v => v.id);
+                                                        const currentSelected = currentProduct.selectedVariants;
+                                                        // Toggle: if all selected, deselect all; otherwise select all
+                                                        const newSelected = currentSelected?.length === allIds.length ? [] : allIds;
+                                                        updateReviewProduct('selectedVariants', newSelected);
+                                                    }}
+                                                    className="text-[10px] text-bronze hover:underline font-medium"
+                                                >
+                                                    {(currentProduct.selectedVariants?.length ?? currentProduct.variants.length) === currentProduct.variants.length ? 'Deselect All' : 'Select All'}
+                                                </button>
                                             </div>
+                                            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {currentProduct.variants.map((variant) => {
+                                                    const isSelected = currentProduct.selectedVariants
+                                                        ? currentProduct.selectedVariants.includes(variant.id)
+                                                        : true; // By default all are selected
+                                                    return (
+                                                        <div
+                                                            key={variant.id}
+                                                            onClick={() => {
+                                                                const allIds = currentProduct.variants!.map(v => v.id);
+                                                                const currentSelected = currentProduct.selectedVariants || allIds;
+                                                                const newSelected = isSelected
+                                                                    ? currentSelected.filter(id => id !== variant.id)
+                                                                    : [...currentSelected, variant.id];
+                                                                updateReviewProduct('selectedVariants', newSelected);
+                                                            }}
+                                                            className={`flex items-center gap-3 text-sm p-2 rounded-lg cursor-pointer transition-all border-2
+                                                                ${isSelected
+                                                                    ? 'bg-bronze/5 border-bronze/30 hover:bg-bronze/10'
+                                                                    : 'bg-gray-50 border-transparent opacity-50 hover:opacity-75'}`}
+                                                        >
+                                                            <div className="w-8 h-8 rounded border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                                {variant.image ? <img src={variant.image} className="w-full h-full object-cover" /> : <Package className="w-3 h-3 text-gray-300" />}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="truncate font-medium text-earth text-xs">{variant.name}</div>
+                                                                <div className="flex items-center gap-2 text-[10px]">
+                                                                    <span className={variant.inStock ? 'text-green-600' : 'text-red-500'}>
+                                                                        {variant.inStock ? '● In Stock' : '○ Out of Stock'}
+                                                                    </span>
+                                                                    {variant.priceAdjustment !== 0 && (
+                                                                        <span className={variant.priceAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}>
+                                                                            {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
+                                                                ${isSelected ? 'bg-bronze text-white' : 'bg-gray-200'}`}>
+                                                                {isSelected && <Check className="w-3 h-3" />}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-[10px] text-earth/40 mt-3 italic">
+                                                Click variants to include/exclude from import
+                                            </p>
                                         </div>
                                     )}
                                 </div>

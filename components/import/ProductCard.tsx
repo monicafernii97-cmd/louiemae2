@@ -12,6 +12,8 @@ export interface ImportableProduct extends AliExpressProduct {
     targetCollection?: CollectionType;
     targetSubcategory?: string;
     isEnhancing?: boolean;
+    selectedImages?: number[]; // Indices of selected images for import
+    selectedVariants?: string[]; // IDs of selected variants for import
 }
 
 interface ProductCardProps {

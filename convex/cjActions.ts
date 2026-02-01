@@ -121,18 +121,25 @@ export const checkSourcingStatus = action({
 /**
  * Submit a product for CJ sourcing
  * Called when importing products from AliExpress/other sources
+ * Now includes optional image, description, and price for faster CJ review
  */
 export const submitProductForSourcing = action({
     args: {
         productId: v.id("products"),
         productUrl: v.string(),
         productName: v.string(),
+        productImage: v.optional(v.string()),
+        productDescription: v.optional(v.string()),
+        targetPrice: v.optional(v.number()),
     },
     handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
         const result = await ctx.runAction(internal.cjDropshipping.submitForSourcing, {
             productId: args.productId,
             productUrl: args.productUrl,
             productName: args.productName,
+            productImage: args.productImage,
+            productDescription: args.productDescription,
+            targetPrice: args.targetPrice,
         });
         return result;
     },

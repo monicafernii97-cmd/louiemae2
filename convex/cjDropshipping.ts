@@ -415,6 +415,9 @@ export const submitForSourcing = internalAction({
         productId: v.id("products"),
         productUrl: v.string(),
         productName: v.string(),
+        productImage: v.optional(v.string()),
+        productDescription: v.optional(v.string()),
+        targetPrice: v.optional(v.number()),
     },
     handler: async (ctx, args): Promise<{ success: boolean; sourcingId?: string; error?: string }> => {
         const token = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
@@ -423,17 +426,30 @@ export const submitForSourcing = internalAction({
         }
 
         try {
-            // Submit sourcing request to CJ
+            // Submit sourcing request to CJ with full product details
+            const sourcingPayload: Record<string, any> = {
+                productUrl: args.productUrl,
+                productName: args.productName,
+            };
+
+            // Add optional fields if provided (may help speed up CJ approval)
+            if (args.productImage) {
+                sourcingPayload.productImage = args.productImage;
+            }
+            if (args.productDescription) {
+                sourcingPayload.remark = args.productDescription.slice(0, 500); // CJ may have length limits
+            }
+            if (args.targetPrice) {
+                sourcingPayload.price = args.targetPrice.toString();
+            }
+
             const response = await fetch(`${CJ_API_BASE}/product/sourcing/create`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "CJ-Access-Token": token,
                 },
-                body: JSON.stringify({
-                    productUrl: args.productUrl,
-                    productName: args.productName,
-                }),
+                body: JSON.stringify(sourcingPayload),
             });
 
             const data = await response.json();
@@ -467,14 +483,15 @@ export const submitForSourcing = internalAction({
 /**
  * Check the status of pending sourcing requests
  * Called by cron job every 2 hours
+ * Also auto-submits pending products that haven't been submitted yet
  */
 export const checkSourcingStatus = internalAction({
     args: {},
-    handler: async (ctx): Promise<{ checked: number; approved: number; rejected: number }> => {
+    handler: async (ctx): Promise<{ checked: number; approved: number; rejected: number; submitted: number }> => {
         const token = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
         if (!token) {
             console.error("CJ: Cannot check sourcing status - auth failed");
-            return { checked: 0, approved: 0, rejected: 0 };
+            return { checked: 0, approved: 0, rejected: 0, submitted: 0 };
         }
 
         // Get products pending sourcing approval
@@ -482,8 +499,64 @@ export const checkSourcingStatus = internalAction({
 
         let approved = 0;
         let rejected = 0;
+        let submitted = 0;
 
         for (const product of pendingProducts) {
+            // If product doesn't have a cjSourcingId yet, auto-submit it to CJ
+            if (!product.cjSourcingId && product.sourceUrl) {
+                try {
+                    // Build sourcing payload with full product details
+                    const sourcingPayload: Record<string, any> = {
+                        productUrl: product.sourceUrl,
+                        productName: product.name,
+                    };
+
+                    // Add image if available (use first product image)
+                    if (product.images && product.images.length > 0) {
+                        sourcingPayload.productImage = product.images[0];
+                    }
+
+                    // Add description as remark
+                    if (product.description) {
+                        sourcingPayload.remark = product.description.slice(0, 500);
+                    }
+
+                    // Add price (the cost price, not retail)
+                    // We don't have the original cost stored, but CJ will determine their price anyway
+
+                    const response = await fetch(`${CJ_API_BASE}/product/sourcing/create`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "CJ-Access-Token": token,
+                        },
+                        body: JSON.stringify(sourcingPayload),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.result && data.data?.sourcingId) {
+                        // Update product with sourcing ID
+                        await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                            productId: product._id,
+                            status: "pending",
+                            sourcingId: data.data.sourcingId,
+                        });
+                        submitted++;
+                        console.log(`CJ Auto-submitted: ${product.name} -> sourcingId=${data.data.sourcingId}`);
+                    } else {
+                        console.error(`CJ Auto-submit failed for ${product.name}: ${data.message || 'Unknown error'}`);
+                    }
+                } catch (error: any) {
+                    console.error(`Error auto-submitting ${product.name}:`, error.message);
+                }
+
+                // Small delay to avoid rate limits
+                await new Promise(resolve => setTimeout(resolve, 300));
+                continue; // Move to next product
+            }
+
+            // If product already has cjSourcingId, check its status
             if (!product.cjSourcingId) continue;
 
             try {
@@ -533,8 +606,8 @@ export const checkSourcingStatus = internalAction({
             await new Promise(resolve => setTimeout(resolve, 200));
         }
 
-        console.log(`CJ Sourcing check: ${pendingProducts.length} checked, ${approved} approved, ${rejected} rejected`);
-        return { checked: pendingProducts.length, approved, rejected };
+        console.log(`CJ Sourcing check: ${pendingProducts.length} products, ${submitted} submitted, ${approved} approved, ${rejected} rejected`);
+        return { checked: pendingProducts.length, approved, rejected, submitted };
     },
 });
 
