@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useAction, useQuery } from 'convex/react';
+import { useAction, useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
-import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink } from 'lucide-react';
+import { Id } from '../convex/_generated/dataModel';
+import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2 } from 'lucide-react';
 import { FadeIn } from './FadeIn';
 
 export const CJSettings: React.FC = () => {
@@ -20,6 +21,25 @@ export const CJSettings: React.FC = () => {
     const [syncing, setSyncing] = useState(false);
     const [checkingSourcing, setCheckingSourcing] = useState(false);
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [deletingId, setDeletingId] = useState<Id<"products"> | null>(null);
+
+    // Delete mutation
+    const deleteProduct = useMutation(api.products.remove);
+
+    const handleDeleteProduct = async (id: Id<"products">, productName: string) => {
+        if (!window.confirm(`Remove "${productName}" from import queue? This cannot be undone.`)) {
+            return;
+        }
+        setDeletingId(id);
+        try {
+            await deleteProduct({ id });
+            setResult({ success: true, message: `"${productName}" removed successfully` });
+        } catch (error: any) {
+            setResult({ success: false, message: error.message || 'Failed to remove product' });
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     const handleTestConnection = async () => {
         setTesting(true);
@@ -121,8 +141,8 @@ export const CJSettings: React.FC = () => {
             {result && (
                 <FadeIn className="mb-8">
                     <div className={`p-4 border-l-2 flex items-center gap-4 shadow-sm ${result.success
-                            ? 'bg-green-50/50 border-green-500 text-green-900'
-                            : 'bg-red-50/50 border-red-500 text-red-900'
+                        ? 'bg-green-50/50 border-green-500 text-green-900'
+                        : 'bg-red-50/50 border-red-500 text-red-900'
                         }`}>
                         <div className={`p-2 rounded-full ${result.success ? 'bg-green-100' : 'bg-red-100'}`}>
                             {result.success ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
@@ -208,6 +228,18 @@ export const CJSettings: React.FC = () => {
                                             <h4 className="font-medium text-earth text-sm truncate">{product.name}</h4>
                                             <p className="text-[10px] uppercase tracking-wider text-earth/40 mt-1">Awaiting CJ Approval</p>
                                         </div>
+                                        <button
+                                            onClick={() => handleDeleteProduct(product._id, product.name)}
+                                            disabled={deletingId === product._id}
+                                            className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all disabled:opacity-50"
+                                            title="Remove from import"
+                                        >
+                                            {deletingId === product._id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="w-4 h-4" />
+                                            )}
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -282,6 +314,18 @@ export const CJSettings: React.FC = () => {
                                                 {product.cjSourcingError || 'Rejected by CJ'}
                                             </p>
                                         </div>
+                                        <button
+                                            onClick={() => handleDeleteProduct(product._id, product.name)}
+                                            disabled={deletingId === product._id}
+                                            className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-full transition-all disabled:opacity-50"
+                                            title="Remove from catalog"
+                                        >
+                                            {deletingId === product._id ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="w-4 h-4" />
+                                            )}
+                                        </button>
                                     </div>
                                 ))}
                             </div>
