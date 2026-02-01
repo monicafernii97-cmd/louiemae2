@@ -91,11 +91,102 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         return Math.max(finalPrice, 0);
     };
 
+    // Search handler
+    const handleSearch = async (page = 1) => {
+        if (!searchQuery.trim()) return;
+
+        setIsSearching(true);
+        setError(null);
+
+        try {
+            const result = await aliexpressService.searchAllSources({
+                query: searchQuery,
+                page,
+                pageSize: 100,
+                minPrice: minPrice ? parseFloat(minPrice) : undefined,
+                maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+                sortBy: sortBy === 'default' ? undefined : sortBy,
+                sources: ['aliexpress', 'alibaba'],
+            });
+
+            const filteredProducts = result.products
+                .filter(p => minRating === 0 || (p.averageRating || 0) >= minRating)
+                .map(p => ({
+                    ...p,
+                    selected: false,
+                    targetCollection: targetCollection as CollectionType,
+                    customPrice: calculateFinalPrice(p.salePrice || p.price)
+                }));
+
+            setSearchResults(filteredProducts);
+            setTotalResults(result.totalCount);
+            setTotalPages(result.totalPages || Math.ceil(result.totalCount / 20));
+            setCurrentPage(page);
+            setSelectAll(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Search failed');
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Toggle product selection
+    const toggleProductSelection = (productId: string) => {
+        setSearchResults(prev => prev.map(p =>
+            p.id === productId ? { ...p, selected: !p.selected } : p
+        ));
+    };
+
+    // Toggle select all
+    const handleSelectAll = () => {
+        const newSelectAll = !selectAll;
+        setSelectAll(newSelectAll);
+        setSearchResults(prev => prev.map(p => ({ ...p, selected: newSelectAll })));
+    };
+
+    // Update product custom field
+    const updateProductField = (productId: string, field: keyof ImportableProduct, value: any) => {
+        setSearchResults(prev => prev.map(p =>
+            p.id === productId ? { ...p, [field]: value } : p
+        ));
+    };
+
+    // AI Enhancement
+    const enhanceProductWithAI = async (productId: string) => {
+        const product = searchResults.find(p => p.id === productId);
+        if (!product) return;
+
+        updateProductField(productId, 'isEnhancing', true);
+
+        try {
+            const enhancedName = await generateProductName(product.name, targetCollection);
+            const enhancedDescription = await generateProductDescription(
+                enhancedName || product.name,
+                product.category || targetCollection,
+                targetCollection
+            );
+
+            updateProductField(productId, 'customName', enhancedName);
+            updateProductField(productId, 'customDescription', enhancedDescription);
+        } catch (err) {
+            console.error('AI enhancement failed:', err);
+        } finally {
+            updateProductField(productId, 'isEnhancing', false);
+        }
+    };
+
+    // Enhance all selected
+    const enhanceAllSelected = async () => {
+        const selectedProducts = searchResults.filter(p => p.selected);
+        for (const product of selectedProducts) {
+            await enhanceProductWithAI(product.id);
+        }
+    };
+
     // Import Multi-Step Workflow State
     const [importStep, setImportStep] = useState<'search' | 'review'>('search');
     const [reviewIndex, setReviewIndex] = useState(0);
-
-    // ... (existing search handler)
 
     // Modify handleImport to start review instead of direct import
     const handleImport = () => {
