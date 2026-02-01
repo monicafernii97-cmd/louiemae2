@@ -319,3 +319,15 @@ export const getProductsWithSourcingIssues = internalQuery({
         return { pending, rejected };
     },
 });
+
+/**
+ * Delete a product from the database (called by cancelSourcingAndDelete action)
+ */
+export const deleteProduct = internalMutation({
+    args: {
+        productId: v.id("products"),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.delete(args.productId);
+    },
+});

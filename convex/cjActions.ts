@@ -137,3 +137,21 @@ export const submitProductForSourcing = action({
         return result;
     },
 });
+
+/**
+ * Cancel a pending sourcing request on CJ and delete the product
+ * Called from admin CJ Settings page to remove products from import queue
+ */
+export const cancelAndDeleteProduct = action({
+    args: {
+        productId: v.id("products"),
+        cjSourcingId: v.optional(v.string()),
+    },
+    handler: async (ctx, args): Promise<{ success: boolean; cjCancelled: boolean; error?: string }> => {
+        const result = await ctx.runAction(internal.cjDropshipping.cancelSourcingAndDelete, {
+            productId: args.productId,
+            cjSourcingId: args.cjSourcingId,
+        });
+        return result;
+    },
+});

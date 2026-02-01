@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAction, useQuery, useMutation } from 'convex/react';
+import { useAction, useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
 import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2 } from 'lucide-react';
@@ -23,17 +23,24 @@ export const CJSettings: React.FC = () => {
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
     const [deletingId, setDeletingId] = useState<Id<"products"> | null>(null);
 
-    // Delete mutation
-    const deleteProduct = useMutation(api.products.remove);
+    // Cancel sourcing on CJ and delete product locally
+    const cancelAndDelete = useAction(api.cjActions.cancelAndDeleteProduct);
 
-    const handleDeleteProduct = async (id: Id<"products">, productName: string) => {
-        if (!window.confirm(`Remove "${productName}" from import queue? This cannot be undone.`)) {
+    const handleDeleteProduct = async (id: Id<"products">, productName: string, cjSourcingId?: string) => {
+        if (!window.confirm(`Remove "${productName}" from import queue? This will cancel the sourcing request on CJ's side and cannot be undone.`)) {
             return;
         }
         setDeletingId(id);
         try {
-            await deleteProduct({ id });
-            setResult({ success: true, message: `"${productName}" removed successfully` });
+            const actionResult = await cancelAndDelete({ productId: id, cjSourcingId });
+            if (actionResult.success) {
+                const cjMessage = actionResult.cjCancelled
+                    ? ' (also cancelled on CJ)'
+                    : ' (CJ request may already be processed)';
+                setResult({ success: true, message: `"${productName}" removed successfully${cjMessage}` });
+            } else {
+                setResult({ success: false, message: actionResult.error || 'Failed to remove product' });
+            }
         } catch (error: any) {
             setResult({ success: false, message: error.message || 'Failed to remove product' });
         } finally {
@@ -229,7 +236,7 @@ export const CJSettings: React.FC = () => {
                                             <p className="text-[10px] uppercase tracking-wider text-earth/40 mt-1">Awaiting CJ Approval</p>
                                         </div>
                                         <button
-                                            onClick={() => handleDeleteProduct(product._id, product.name)}
+                                            onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                             disabled={deletingId === product._id}
                                             className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all disabled:opacity-50"
                                             title="Remove from import"
@@ -315,7 +322,7 @@ export const CJSettings: React.FC = () => {
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => handleDeleteProduct(product._id, product.name)}
+                                            onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                             disabled={deletingId === product._id}
                                             className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-full transition-all disabled:opacity-50"
                                             title="Remove from catalog"
