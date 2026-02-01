@@ -352,6 +352,7 @@ const PRODUCT_TYPE_MAPPINGS: Record<string, string> = {
 };
 
 // Collection-specific fallback descriptions - used when API key missing or fails
+// Expanded to 15-20 per collection for maximum variety
 const FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
   kids: [
     'Soft organic cotton with gentle stretch. A darling piece for little ones, crafted with comfort in mind.',
@@ -362,6 +363,16 @@ const FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
     'Lightweight cotton with charming florals. Airy comfort for your littlest love.',
     'Natural fiber blend with sweet ruffles. Delightfully soft for those precious early years.',
     'Breathable organic weave with easy closures. Comfort meets darling style.',
+    'Buttery-soft cotton in a cheerful print. Easy-care fabric for busy little ones.',
+    'Gentle muslin with adorable embroidery. Softness your baby will love.',
+    'Hypoallergenic cotton blend with stretchy comfort. Perfect for sensitive skin.',
+    'Light and airy linen-cotton mix. Keeps little ones cool and comfortable.',
+    'Eco-friendly bamboo fabric with playful details. Sustainable softness for growing kids.',
+    'Premium organic jersey with reinforced seams. Built for play, soft enough for naps.',
+    'Sweet gingham cotton with functional snaps. Classic charm meets modern convenience.',
+    'Silky-soft modal blend in darling prints. Luxuriously gentle against delicate skin.',
+    'Natural cotton with whimsical appliqué details. A keepsake piece for precious years.',
+    'Breathable cotton gauze with tender touches. Dreamy comfort for your little one.',
   ],
   fashion: [
     'Flowing linen with a relaxed silhouette. Effortlessly elegant from morning coffee to sunset drinks.',
@@ -372,6 +383,16 @@ const FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
     'Flowing viscose with gentle movement. Feminine grace for every occasion.',
     'Premium linen-cotton blend. Relaxed sophistication that transitions seamlessly day to night.',
     'Soft jersey with a modern silhouette. Effortless style meets all-day comfort.',
+    'Airy chiffon layers with subtle shimmer. Romantic elegance for special moments.',
+    'Structured cotton with artful pleating. Polished refinement for the discerning dresser.',
+    'Silky satin finish with graceful lines. Understated glamour for evening occasions.',
+    'Organic cotton with bohemian flair. Free-spirited style rooted in quality.',
+    'Lightweight wool blend with refined tailoring. Timeless polish for cooler days.',
+    'Soft knit with flattering stretch. Sculpted comfort that hugs in all the right places.',
+    'Delicate lace overlay with modern edge. Romantic yet contemporary femininity.',
+    'Breathable rayon with fluid movement. Effortless drape for endless versatility.',
+    'Premium ponte with structured elegance. All-day comfort without sacrificing style.',
+    'Washed silk with lived-in softness. Luxe fabric meets relaxed sophistication.',
   ],
   furniture: [
     'Crafted from solid oak with Nordic precision. A timeless silhouette that anchors any room with quiet sophistication.',
@@ -384,6 +405,14 @@ const FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
     'Natural beechwood with soft organic lines. Minimalist form, maximum presence.',
     'Solid ash construction with earthy undertones. Built for those who appreciate lasting beauty.',
     'Artisan-crafted from sustainable teak. A serene addition to any thoughtfully designed space.',
+    'Premium maple with hand-rubbed oil finish. Understated luxury for everyday living.',
+    'Reclaimed wood with character and story. Sustainable charm meets timeless appeal.',
+    'Solid cherry with traditional joinery. Heirloom quality built to last generations.',
+    'Light birch with Scandinavian restraint. Airy simplicity for modern homes.',
+    'FSC-certified oak with bouclé upholstery. Conscious craftsmanship meets cozy comfort.',
+    'Hand-turned legs with premium velvet seat. Classic silhouette, contemporary comfort.',
+    'Sleek acacia with brass-finished details. Refined warmth for curated spaces.',
+    'Natural cane weaving on solid mahogany frame. Colonial elegance reimagined.',
   ],
   decor: [
     'Hand-thrown ceramic with organic glaze. An artisan touch for curated spaces.',
@@ -391,13 +420,29 @@ const FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
     'Handwoven linen with subtle texture. A collected piece for intentional living.',
     'Natural rattan with artisan craftsmanship. Warm, organic, and effortlessly stylish.',
     'Textured stoneware with matte finish. Understated elegance for the modern home.',
+    'Sculpted terracotta with rustic charm. Mediterranean warmth for any interior.',
+    'Hand-blown glass with delicate bubbles. Light-catching beauty for sunlit spaces.',
+    'Woven jute with boho character. Natural texture that adds instant warmth.',
+    'Brushed brass with aged patina. Timeless metalwork with storied appeal.',
+    'Handcrafted wood with live edge detail. Nature\'s artistry brought indoors.',
+    'Macramé cotton with intricate knotwork. Bohemian craft meets modern minimalism.',
+    'Marble composite with subtle veining. Luxurious weight and timeless beauty.',
+    'Hand-painted ceramic in muted tones. Artisan-made with visible brushstrokes.',
+    'Natural cork with contemporary form. Sustainable material meets modern design.',
+    'Wicker basket with leather handles. Functional beauty for organized spaces.',
   ],
   default: [
     'Thoughtfully designed with quality materials. A timeless addition to any space.',
     'Crafted with care and attention to detail. Understated elegance for everyday life.',
     'Premium materials meet refined design. Built for those who appreciate lasting quality.',
+    'Artisan-made with sustainable practices. Beauty that feels good to own.',
+    'Clean lines with considered proportions. Modern simplicity at its finest.',
+    'Natural materials with organic appeal. Earthy sophistication for curated homes.',
+    'Handcrafted details with modern sensibility. Traditional craft meets contemporary style.',
+    'Timeless design with enduring quality. A piece you\'ll treasure for years.',
   ],
 };
+
 
 // Helper to get random fallback for a collection
 const getCollectionFallback = (collection: string): string => {

@@ -144,7 +144,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         ));
     };
 
-    // AI Enhancement with full product context
+    // AI Enhancement with full product context - enhances BOTH name and description
     const enhanceProductWithAI = async (productId: string) => {
         const product = searchResults.find(p => p.id === productId);
         if (!product) return;
@@ -175,6 +175,64 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             toast.error('AI enhancement failed', {
                 description: 'Please try again later.'
             });
+        } finally {
+            updateProductField(productId, 'isEnhancing', false);
+        }
+    };
+
+    // AI Enhancement for NAME only
+    const enhanceNameWithAI = async (productId: string) => {
+        const product = searchResults.find(p => p.id === productId);
+        if (!product) return;
+
+        updateProductField(productId, 'isEnhancing', true);
+
+        try {
+            const context: ProductContext = {
+                originalName: product.name,
+                originalDescription: product.description || '',
+                category: product.category || '',
+                collection: product.targetCollection || targetCollection,
+                keywords: extractKeywords(product.name + ' ' + (product.description || '')),
+            };
+
+            const enhancedName = await generateProductNameV2(context);
+            updateProductField(productId, 'customName', enhancedName);
+
+            toast.success('Name enhanced', {
+                description: `"${enhancedName}"`
+            });
+        } catch (err) {
+            console.error('AI name enhancement failed:', err);
+            toast.error('Name enhancement failed');
+        } finally {
+            updateProductField(productId, 'isEnhancing', false);
+        }
+    };
+
+    // AI Enhancement for DESCRIPTION only
+    const enhanceDescriptionWithAI = async (productId: string) => {
+        const product = searchResults.find(p => p.id === productId);
+        if (!product) return;
+
+        updateProductField(productId, 'isEnhancing', true);
+
+        try {
+            const context: ProductContext = {
+                originalName: product.customName || product.name,
+                originalDescription: product.description || '',
+                category: product.category || '',
+                collection: product.targetCollection || targetCollection,
+                keywords: extractKeywords((product.customName || product.name) + ' ' + (product.description || '')),
+            };
+
+            const enhancedDescription = await generateProductDescriptionV2(context);
+            updateProductField(productId, 'customDescription', enhancedDescription);
+
+            toast.success('Description enhanced');
+        } catch (err) {
+            console.error('AI description enhancement failed:', err);
+            toast.error('Description enhancement failed');
         } finally {
             updateProductField(productId, 'isEnhancing', false);
         }
@@ -390,10 +448,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             <div className="flex justify-between">
                                                 <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Product Name</label>
                                                 <button
-                                                    onClick={() => enhanceProductWithAI(currentProduct.id)}
-                                                    className="text-[10px] uppercase tracking-widest text-purple-600 flex items-center gap-1 hover:text-purple-700 font-bold"
+                                                    onClick={() => enhanceNameWithAI(currentProduct.id)}
+                                                    disabled={currentProduct.isEnhancing}
+                                                    className="text-[10px] uppercase tracking-widest text-purple-600 flex items-center gap-1 hover:text-purple-700 font-bold disabled:opacity-50"
                                                 >
-                                                    <Wand2 className="w-3 h-3" /> AI Enhance
+                                                    <Wand2 className="w-3 h-3" /> AI Name
                                                 </button>
                                             </div>
                                             <input
@@ -462,7 +521,16 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                                         {/* Description */}
                                         <div className="space-y-2 flex-1">
-                                            <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Description</label>
+                                            <div className="flex justify-between">
+                                                <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Description</label>
+                                                <button
+                                                    onClick={() => enhanceDescriptionWithAI(currentProduct.id)}
+                                                    disabled={currentProduct.isEnhancing}
+                                                    className="text-[10px] uppercase tracking-widest text-purple-600 flex items-center gap-1 hover:text-purple-700 font-bold disabled:opacity-50"
+                                                >
+                                                    <Wand2 className="w-3 h-3" /> AI Description
+                                                </button>
+                                            </div>
                                             <textarea
                                                 rows={6}
                                                 value={currentProduct.customDescription || currentProduct.description || ''}
@@ -513,8 +581,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     ? 'bg-bronze/5 border-bronze/30 hover:bg-bronze/10'
                                                                     : 'bg-gray-50 border-transparent opacity-50 hover:opacity-75'}`}
                                                         >
-                                                            <div className="w-8 h-8 rounded border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
-                                                                {variant.image ? <img src={variant.image} className="w-full h-full object-cover" /> : <Package className="w-3 h-3 text-gray-300" />}
+                                                            <div className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                                {variant.image ? <img src={variant.image} alt={variant.name} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-300" />}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="truncate font-medium text-earth text-xs">{variant.name}</div>
