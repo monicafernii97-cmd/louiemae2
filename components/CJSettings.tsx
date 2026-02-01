@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAction, useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
-import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle } from 'lucide-react';
+import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink } from 'lucide-react';
+import { FadeIn } from './FadeIn';
 
 export const CJSettings: React.FC = () => {
     const testConnection = useAction(api.cjActions.testConnection);
@@ -78,241 +79,231 @@ export const CJSettings: React.FC = () => {
         }
     };
 
+    // Action Card Component
+    const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: any) => (
+        <div
+            onClick={loading ? undefined : onClick}
+            className="group relative bg-white border border-earth/5 p-8 shadow-sm hover:shadow-[0_20px_40px_-10px_rgba(74,59,50,0.1)] transition-all duration-500 cursor-pointer overflow-hidden rounded-sm"
+        >
+            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <ArrowRight className="w-5 h-5 text-earth/20" />
+            </div>
+
+            <div className={`mb-6 p-4 bg-cream/50 inline-block rounded-full group-hover:scale-110 transition-transform duration-500 ${loading ? 'animate-pulse' : ''}`}>
+                <Icon className={`w-6 h-6 ${colorClass}`} />
+            </div>
+
+            <h3 className="font-serif text-xl text-earth mb-2">{title}</h3>
+            <p className="text-xs text-earth/50 leading-relaxed mb-6 h-8">{description}</p>
+
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-earth/40 group-hover:text-bronze transition-colors">
+                {loading ? (
+                    <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Processing...</span>
+                    </>
+                ) : (
+                    <span>Execute Task</span>
+                )}
+            </div>
+        </div>
+    );
+
     return (
-        <div className="p-8">
+        <div>
             {/* Header */}
-            <div className="mb-8">
-                <h2 className="font-serif text-3xl text-earth mb-2">CJ Dropshipping</h2>
-                <p className="text-earth/50 text-sm">Configure CJ Dropshipping integration settings</p>
+            <div className="mb-12">
+                <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Integration Center</span>
+                <h1 className="font-serif text-4xl text-earth">CJ Dropshipping Link</h1>
             </div>
 
-            {/* Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                {/* Test Connection */}
-                <div className="bg-white rounded-lg border border-earth/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Wifi className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-earth">API Connection</h3>
-                            <p className="text-xs text-earth/50">Test CJ API access</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleTestConnection}
-                        disabled={testing}
-                        className="w-full py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                    >
-                        {testing ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Wifi className="w-4 h-4" />
-                        )}
-                        {testing ? 'Testing...' : 'Test Connection'}
-                    </button>
-                </div>
-
-                {/* Configure Webhooks */}
-                <div className="bg-white rounded-lg border border-earth/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                            <Settings className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-earth">Webhooks</h3>
-                            <p className="text-xs text-earth/50">Enable real-time updates</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleConfigureWebhooks}
-                        disabled={configuring}
-                        className="w-full py-2 px-4 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                    >
-                        {configuring ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Settings className="w-4 h-4" />
-                        )}
-                        {configuring ? 'Configuring...' : 'Configure Webhooks'}
-                    </button>
-                </div>
-
-                {/* Sync Tracking */}
-                <div className="bg-white rounded-lg border border-earth/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <RefreshCw className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-earth">Tracking Sync</h3>
-                            <p className="text-xs text-earth/50">Fetch latest tracking</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleSyncTracking}
-                        disabled={syncing}
-                        className="w-full py-2 px-4 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                    >
-                        {syncing ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <RefreshCw className="w-4 h-4" />
-                        )}
-                        {syncing ? 'Syncing...' : 'Sync Now'}
-                    </button>
-                </div>
-
-                {/* Check Sourcing */}
-                <div className="bg-white rounded-lg border border-earth/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                            <Package className="w-5 h-5 text-amber-600" />
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-earth">Check Sourcing</h3>
-                            <p className="text-xs text-earth/50">Check pending products</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleCheckSourcing}
-                        disabled={checkingSourcing}
-                        className="w-full py-2 px-4 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                    >
-                        {checkingSourcing ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Package className="w-4 h-4" />
-                        )}
-                        {checkingSourcing ? 'Checking...' : 'Check Now'}
-                    </button>
-                </div>
-            </div>
-
-            {/* Result Message */}
+            {/* Notification Banner */}
             {result && (
-                <div className={`p-4 rounded-lg flex items-center gap-3 mb-8 ${result.success
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                    {result.success ? (
-                        <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                    ) : (
-                        <XCircle className="w-5 h-5 flex-shrink-0" />
-                    )}
-                    <span>{result.message}</span>
-                </div>
+                <FadeIn className="mb-8">
+                    <div className={`p-4 border-l-2 flex items-center gap-4 shadow-sm ${result.success
+                            ? 'bg-green-50/50 border-green-500 text-green-900'
+                            : 'bg-red-50/50 border-red-500 text-red-900'
+                        }`}>
+                        <div className={`p-2 rounded-full ${result.success ? 'bg-green-100' : 'bg-red-100'}`}>
+                            {result.success ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                        </div>
+                        <span className="text-sm tracking-wide font-medium">{result.message}</span>
+                        <button onClick={() => setResult(null)} className="ml-auto opacity-50 hover:opacity-100">
+                            <XCircle className="w-4 h-4" />
+                        </button>
+                    </div>
+                </FadeIn>
             )}
 
-            {/* Product Sourcing Status */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Pending Products */}
-                <div className="bg-white rounded-lg border border-earth/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <Clock className="w-5 h-5 text-amber-500" />
-                        <h3 className="font-medium text-earth">Pending Sourcing</h3>
-                        <span className="ml-auto bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full">
-                            {pendingProducts.length}
-                        </span>
-                    </div>
-                    {pendingProducts.length === 0 ? (
-                        <p className="text-sm text-earth/50">No products pending approval</p>
-                    ) : (
-                        <ul className="space-y-2 max-h-40 overflow-y-auto">
-                            {pendingProducts.slice(0, 5).map((product: any) => (
-                                <li key={product._id} className="flex items-center gap-2 text-sm">
-                                    {product.images?.[0] && (
-                                        <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
-                                    )}
-                                    <span className="truncate">{product.name}</span>
-                                </li>
-                            ))}
-                            {pendingProducts.length > 5 && (
-                                <li className="text-xs text-earth/50">+{pendingProducts.length - 5} more</li>
-                            )}
-                        </ul>
-                    )}
-                </div>
-
-                {/* Recently Approved */}
-                <div className="bg-white rounded-lg border border-earth/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <h3 className="font-medium text-earth">Recently Approved</h3>
-                        <span className="ml-auto bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">
-                            {recentlyApproved.length}
-                        </span>
-                    </div>
-                    {recentlyApproved.length === 0 ? (
-                        <p className="text-sm text-earth/50">No recently approved products</p>
-                    ) : (
-                        <ul className="space-y-2 max-h-40 overflow-y-auto">
-                            {recentlyApproved.slice(0, 5).map((product: any) => (
-                                <li key={product._id} className="flex items-center gap-2 text-sm">
-                                    {product.images?.[0] && (
-                                        <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <span className="truncate block">{product.name}</span>
-                                        <span className="text-xs text-green-600">CJ: {product.cjVariantId || product.cjSku}</span>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-
-                {/* Rejected Products */}
-                <div className="bg-white rounded-lg border border-earth/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <AlertTriangle className="w-5 h-5 text-red-500" />
-                        <h3 className="font-medium text-earth">Rejected</h3>
-                        <span className="ml-auto bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
-                            {rejectedProducts.length}
-                        </span>
-                    </div>
-                    {rejectedProducts.length === 0 ? (
-                        <p className="text-sm text-earth/50">No rejected products</p>
-                    ) : (
-                        <ul className="space-y-2 max-h-40 overflow-y-auto">
-                            {rejectedProducts.slice(0, 5).map((product: any) => (
-                                <li key={product._id} className="flex items-center gap-2 text-sm">
-                                    {product.images?.[0] && (
-                                        <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <span className="truncate block">{product.name}</span>
-                                        <span className="text-xs text-red-600">{product.cjSourcingError || 'Rejected'}</span>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
+            {/* Actions Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                <FadeIn delay={100}>
+                    <ActionCard
+                        icon={Wifi}
+                        title="API Connection"
+                        description="Test connectivity to CJ platform securely."
+                        loading={testing}
+                        onClick={handleTestConnection}
+                    />
+                </FadeIn>
+                <FadeIn delay={200}>
+                    <ActionCard
+                        icon={Settings}
+                        title="Webhooks"
+                        description="Configure real-time event listeners."
+                        loading={configuring}
+                        onClick={handleConfigureWebhooks}
+                    />
+                </FadeIn>
+                <FadeIn delay={300}>
+                    <ActionCard
+                        icon={Package}
+                        title="Check Status"
+                        description="Verify product sourcing approvals."
+                        loading={checkingSourcing}
+                        onClick={handleCheckSourcing}
+                    />
+                </FadeIn>
+                <FadeIn delay={400}>
+                    <ActionCard
+                        icon={RefreshCw}
+                        title="Sync Tracking"
+                        description="Update latest shipment locations."
+                        loading={syncing}
+                        onClick={handleSyncTracking}
+                    />
+                </FadeIn>
             </div>
 
-            {/* Info Box */}
-            <div className="p-6 bg-cream/30 rounded-lg border border-earth/10">
-                <h4 className="font-medium text-earth mb-3">How It Works</h4>
-                <ul className="space-y-2 text-sm text-earth/70">
-                    <li className="flex items-start gap-2">
-                        <span className="font-medium text-earth">1.</span>
-                        <span><strong>Import Products</strong> - Products from AliExpress are auto-submitted to CJ for sourcing</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <span className="font-medium text-earth">2.</span>
-                        <span><strong>Pending</strong> - Products stay hidden from customers while awaiting CJ approval</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <span className="font-medium text-earth">3.</span>
-                        <span><strong>Approved</strong> - Once CJ approves, the product appears on your store and can be fulfilled</span>
-                    </li>
-                </ul>
-                <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200 text-blue-700 text-sm">
-                    <strong>Auto-check:</strong> Sourcing status is checked every 2 hours automatically.
-                    Click "Check Now" to check immediately.
-                </div>
+            {/* Sourcing Dashboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+
+                {/* Panel 1: Pending */}
+                <FadeIn delay={500} className="lg:col-span-1">
+                    <div className="bg-white border border-earth/5 p-8 shadow-[0_20px_50px_-12px_rgba(74,59,50,0.05)] h-full">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-earth/5">
+                            <h3 className="font-serif text-2xl text-earth">Pending Review</h3>
+                            <span className="bg-amber-100/50 text-amber-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                                {pendingProducts.length}
+                            </span>
+                        </div>
+
+                        {pendingProducts.length === 0 ? (
+                            <div className="text-center py-12 opacity-40">
+                                <Clock className="w-8 h-8 mx-auto mb-3" />
+                                <p className="text-xs uppercase tracking-widest">All Clear</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar pr-2">
+                                {pendingProducts.map((product: any) => (
+                                    <div key={product._id} className="flex gap-4 items-center group p-2 hover:bg-cream/30 transition-colors rounded-sm cursor-default">
+                                        <div className="w-12 h-16 bg-cream/50 overflow-hidden relative border border-earth/5">
+                                            {product.images?.[0] ? (
+                                                <img src={product.images[0]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-earth/20"><Package className="w-4 h-4" /></div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-medium text-earth text-sm truncate">{product.name}</h4>
+                                            <p className="text-[10px] uppercase tracking-wider text-earth/40 mt-1">Awaiting CJ Approval</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </FadeIn>
+
+                {/* Panel 2 & 3: Approved & Rejected (Stacked on Mobile, Split on LG) */}
+                <FadeIn delay={600} className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                    {/* Approved */}
+                    <div className="bg-white border border-earth/5 p-8 shadow-[0_20px_50px_-12px_rgba(74,59,50,0.05)]">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-earth/5">
+                            <h3 className="font-serif text-2xl text-earth">Recently Approved</h3>
+                            <span className="bg-green-100/50 text-green-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                                {recentlyApproved.length}
+                            </span>
+                        </div>
+
+                        {recentlyApproved.length === 0 ? (
+                            <div className="text-center py-12 opacity-40">
+                                <CheckCircle className="w-8 h-8 mx-auto mb-3" />
+                                <p className="text-xs uppercase tracking-widest">No New Items</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar">
+                                {recentlyApproved.map((product: any) => (
+                                    <div key={product._id} className="flex gap-4 items-center group p-2 hover:bg-cream/30 transition-colors rounded-sm">
+                                        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0 border border-green-100">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-medium text-earth text-sm truncate">{product.name}</h4>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[9px] uppercase tracking-wider text-green-600 bg-green-50 px-2 py-0.5 rounded-sm">Live</span>
+                                                <span className="text-[9px] text-earth/30 font-mono">{product.cjVariantId || 'Variant ID'}</span>
+                                            </div>
+                                        </div>
+                                        <a href={`https://cjdropshipping.com/product/${product.cjVariantId}`} target="_blank" rel="noreferrer" className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:text-bronze">
+                                            <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Rejected */}
+                    <div className="bg-white border border-earth/5 p-8 shadow-[0_20px_50px_-12px_rgba(74,59,50,0.05)]">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-earth/5">
+                            <h3 className="font-serif text-2xl text-earth">Requires Attention</h3>
+                            <span className="bg-red-100/50 text-red-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                                {rejectedProducts.length}
+                            </span>
+                        </div>
+
+                        {rejectedProducts.length === 0 ? (
+                            <div className="text-center py-12 opacity-40">
+                                <CheckCircle className="w-8 h-8 mx-auto mb-3 text-green-500" />
+                                <p className="text-xs uppercase tracking-widest">All Good</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar">
+                                {rejectedProducts.map((product: any) => (
+                                    <div key={product._id} className="flex gap-4 items-center group p-2 hover:bg-red-50/30 transition-colors rounded-sm border-l-2 border-transparent hover:border-red-500">
+                                        <div className="shrink-0">
+                                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-medium text-earth text-sm truncate">{product.name}</h4>
+                                            <p className="text-[10px] text-red-600 mt-1 truncate max-w-full">
+                                                {product.cjSourcingError || 'Rejected by CJ'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                </FadeIn>
             </div>
+
+            {/* Knowledge Base / Footer Info */}
+            <FadeIn delay={700} className="mt-16 pt-8 border-t border-earth/5 opacity-60 hover:opacity-100 transition-opacity duration-500">
+                <div className="flex flex-col md:flex-row gap-8 text-xs text-earth/50 leading-relaxed font-sans">
+                    <div className="flex-1">
+                        <strong className="block text-earth uppercase tracking-widest mb-2">Automated Workflow</strong>
+                        <p>Products imported from AliExpress are automatically submitted to CJ for sourcing. They remain "Pending" and hidden from the storefront until CJ approves the sourcing request. Once approved, they automatically go live.</p>
+                    </div>
+                    <div className="flex-1">
+                        <strong className="block text-earth uppercase tracking-widest mb-2">System Sync</strong>
+                        <p>The system automatically checks for status updates every 2 hours. Use "Check Status" above to force an immediate check. Tracking numbers are synced daily for all fulfilled orders.</p>
+                    </div>
+                </div>
+            </FadeIn>
         </div>
     );
 };
