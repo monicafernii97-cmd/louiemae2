@@ -13,6 +13,95 @@ const getAI = () => {
   return aiInstance;
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// DIAGNOSTIC FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface GeminiDiagnosticResult {
+  success: boolean;
+  error?: string;
+  keyPresent: boolean;
+  keyFormat?: string;
+  modelTested?: string;
+}
+
+/**
+ * Test the Gemini API connection and key validity.
+ * Run in browser console: window.__testGemini()
+ */
+export const testGeminiConnection = async (): Promise<GeminiDiagnosticResult> => {
+  // Check if API key is present
+  if (!apiKey) {
+    return {
+      success: false,
+      error: 'VITE_GEMINI_API_KEY is not set in environment variables',
+      keyPresent: false,
+    };
+  }
+
+  // Check key format (Google AI keys start with 'AIza')
+  const keyFormat = apiKey.startsWith('AIza') ? 'valid-format' : 'unknown-format';
+
+  try {
+    const ai = getAI();
+    if (!ai) {
+      return {
+        success: false,
+        error: 'Failed to initialize GoogleGenAI instance',
+        keyPresent: true,
+        keyFormat,
+      };
+    }
+
+    // Simple test prompt
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: 'Say "OK" and nothing else.',
+      config: {
+        temperature: 0,
+        maxOutputTokens: 10,
+      }
+    });
+
+    if (response.text?.toLowerCase().includes('ok')) {
+      console.log('✅ Gemini API connection successful');
+      return {
+        success: true,
+        keyPresent: true,
+        keyFormat,
+        modelTested: 'gemini-2.0-flash',
+      };
+    } else {
+      return {
+        success: false,
+        error: `Unexpected response: ${response.text}`,
+        keyPresent: true,
+        keyFormat,
+        modelTested: 'gemini-2.0-flash',
+      };
+    }
+  } catch (error: any) {
+    console.error('❌ Gemini API test failed:', error);
+    return {
+      success: false,
+      error: error.message || 'Unknown error',
+      keyPresent: true,
+      keyFormat,
+    };
+  }
+};
+
+// Expose diagnostic function to browser console for debugging
+if (typeof window !== 'undefined') {
+  (window as any).__testGemini = testGeminiConnection;
+  (window as any).__geminiKeyStatus = () => ({
+    present: !!apiKey,
+    format: apiKey ? (apiKey.startsWith('AIza') ? 'valid' : 'unknown') : 'missing',
+    length: apiKey?.length || 0,
+  });
+}
+
+
 export const generateConciergeResponse = async (
   userMessage: string,
   history: { role: string; text: string }[]
@@ -262,19 +351,60 @@ const PRODUCT_TYPE_MAPPINGS: Record<string, string> = {
   'coat': 'Coat',
 };
 
-// Varied fallback descriptions - sophisticated, high-end materials
-const FALLBACK_DESCRIPTIONS = [
-  'Crafted from solid oak with Nordic precision. A timeless silhouette that anchors any room with quiet sophistication.',
-  'Hand-finished walnut meets minimalist design. This piece embodies the art of intentional living.',
-  'Natural rattan woven by artisan hands. Earthy texture meets refined simplicity.',
-  'Solid wood construction with linen upholstery. Scandinavian elegance, effortlessly refined.',
-  'Sustainably sourced hardwood with organic curves. A grounding presence for modern spaces.',
-  'Matte oak finish with handwoven natural fibers. Nordic craftsmanship at its finest.',
-  'Warm walnut tones paired with cream linen. Sophisticated simplicity for curated interiors.',
-  'Natural beechwood with soft organic lines. Minimalist form, maximum presence.',
-  'Solid ash construction with earthy undertones. Built for those who appreciate lasting beauty.',
-  'Artisan-crafted from sustainable teak. A serene addition to any thoughtfully designed space.',
-];
+// Collection-specific fallback descriptions - used when API key missing or fails
+const FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
+  kids: [
+    'Soft organic cotton with gentle stretch. A darling piece for little ones, crafted with comfort in mind.',
+    'Breathable muslin in a sweet print. Perfect for warm days and precious moments.',
+    'Cozy bamboo blend with snap closures. Thoughtfully designed for easy dressing and all-day comfort.',
+    'Pure cotton jersey with playful details. Gentle on delicate skin, built for everyday adventures.',
+    'Organic knit with a touch of whimsy. Soft, snuggly, and made for little explorers.',
+    'Lightweight cotton with charming florals. Airy comfort for your littlest love.',
+    'Natural fiber blend with sweet ruffles. Delightfully soft for those precious early years.',
+    'Breathable organic weave with easy closures. Comfort meets darling style.',
+  ],
+  fashion: [
+    'Flowing linen with a relaxed silhouette. Effortlessly elegant from morning coffee to sunset drinks.',
+    'Soft cotton with beautiful drape. A versatile piece that moves with you through the day.',
+    'Refined crepe in a flattering cut. Timeless femininity for the modern woman.',
+    'Luxe modal blend with understated elegance. Easy to style, impossible to ignore.',
+    'Textured cotton with thoughtful details. A wardrobe essential with elevated appeal.',
+    'Flowing viscose with gentle movement. Feminine grace for every occasion.',
+    'Premium linen-cotton blend. Relaxed sophistication that transitions seamlessly day to night.',
+    'Soft jersey with a modern silhouette. Effortless style meets all-day comfort.',
+  ],
+  furniture: [
+    'Crafted from solid oak with Nordic precision. A timeless silhouette that anchors any room with quiet sophistication.',
+    'Hand-finished walnut meets minimalist design. This piece embodies the art of intentional living.',
+    'Natural rattan woven by artisan hands. Earthy texture meets refined simplicity.',
+    'Solid wood construction with linen upholstery. Scandinavian elegance, effortlessly refined.',
+    'Sustainably sourced hardwood with organic curves. A grounding presence for modern spaces.',
+    'Matte oak finish with handwoven natural fibers. Nordic craftsmanship at its finest.',
+    'Warm walnut tones paired with cream linen. Sophisticated simplicity for curated interiors.',
+    'Natural beechwood with soft organic lines. Minimalist form, maximum presence.',
+    'Solid ash construction with earthy undertones. Built for those who appreciate lasting beauty.',
+    'Artisan-crafted from sustainable teak. A serene addition to any thoughtfully designed space.',
+  ],
+  decor: [
+    'Hand-thrown ceramic with organic glaze. An artisan touch for curated spaces.',
+    'Woven seagrass with natural variations. Earthy texture that grounds any room.',
+    'Handwoven linen with subtle texture. A collected piece for intentional living.',
+    'Natural rattan with artisan craftsmanship. Warm, organic, and effortlessly stylish.',
+    'Textured stoneware with matte finish. Understated elegance for the modern home.',
+  ],
+  default: [
+    'Thoughtfully designed with quality materials. A timeless addition to any space.',
+    'Crafted with care and attention to detail. Understated elegance for everyday life.',
+    'Premium materials meet refined design. Built for those who appreciate lasting quality.',
+  ],
+};
+
+// Helper to get random fallback for a collection
+const getCollectionFallback = (collection: string): string => {
+  const descriptions = FALLBACK_DESCRIPTIONS[collection] || FALLBACK_DESCRIPTIONS.default;
+  return descriptions[Math.floor(Math.random() * descriptions.length)];
+};
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONTEXT-AWARE AI ENHANCEMENT (V2)
@@ -502,10 +632,13 @@ export const generateProductDescription = async (
   category: string,
   collection: string
 ): Promise<string> => {
-  // Random fallback for variety
-  const getRandomFallback = () => FALLBACK_DESCRIPTIONS[Math.floor(Math.random() * FALLBACK_DESCRIPTIONS.length)];
+  // Collection-aware fallback
+  const getRandomFallback = () => getCollectionFallback(collection);
 
-  if (!apiKey) return getRandomFallback();
+  if (!apiKey) {
+    console.warn('[AI Fallback] No API key configured - using collection fallback for:', collection);
+    return getRandomFallback();
+  }
 
   try {
     const model = 'gemini-2.0-flash';
@@ -555,6 +688,7 @@ export const generateProductDescription = async (
     return response.text?.trim() || getRandomFallback();
   } catch (error) {
     console.error("Gemini Product Description Error:", error);
+    console.warn('[AI Fallback] API error - using collection fallback for:', collection);
     return getRandomFallback();
   }
 };
@@ -638,17 +772,16 @@ export const generateProductNameV2 = async (context: ProductContext): Promise<st
  * Generate a sophisticated product description using full product context
  */
 export const generateProductDescriptionV2 = async (context: ProductContext): Promise<string> => {
-  // Collection-aware fallbacks
+  // Collection-aware fallback using the shared helper
   const getFallback = () => {
-    if (context.collection === 'kids') {
-      return "Soft organic cotton for gentle comfort. A sweet piece crafted with little ones in mind.";
-    } else if (context.collection === 'fashion') {
-      return "Flowing silhouette with effortless drape. A versatile piece for the modern wardrobe.";
-    }
-    return FALLBACK_DESCRIPTIONS[Math.floor(Math.random() * FALLBACK_DESCRIPTIONS.length)];
+    console.warn('[AI Fallback V2] Using collection fallback for:', context.collection);
+    return getCollectionFallback(context.collection);
   };
 
-  if (!apiKey) return getFallback();
+  if (!apiKey) {
+    console.warn('[AI Fallback V2] No API key configured');
+    return getFallback();
+  }
 
   try {
     const model = 'gemini-2.0-flash';
