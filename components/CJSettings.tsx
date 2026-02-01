@@ -25,39 +25,31 @@ export const CJSettings: React.FC = () => {
 
     // Use the admin products.adminRemove mutation for deleting (no auth required)
     const deleteProduct = useMutation(api.products.adminRemove);
-    // Also try to cancel on CJ if possible
-    const cancelAndDelete = useAction(api.cjActions.cancelAndDeleteProduct);
 
-    const handleDeleteProduct = async (id: Id<"products">, productName: string, cjSourcingId?: string) => {
-        if (!window.confirm(`Remove "${productName}" from import queue? This cannot be undone.`)) {
+    const handleDeleteProduct = async (id: Id<"products">, productName: string, _cjSourcingId?: string) => {
+        console.log("Delete button clicked for:", productName, id);
+
+        const confirmed = window.confirm(`Remove "${productName}" from import queue? This cannot be undone.`);
+        console.log("User confirmed:", confirmed);
+
+        if (!confirmed) {
+            console.log("User cancelled deletion");
             return;
         }
-        setDeletingId(id);
-        try {
-            // Try the full CJ action first (cancels on CJ + deletes locally)
-            if (cjSourcingId) {
-                try {
-                    const actionResult = await cancelAndDelete({ productId: id, cjSourcingId });
-                    if (actionResult.success) {
-                        const cjMessage = actionResult.cjCancelled
-                            ? ' (also cancelled on CJ)'
-                            : ' (CJ request may already be processed)';
-                        setResult({ success: true, message: `"${productName}" removed${cjMessage}` });
-                        setDeletingId(null);
-                        return;
-                    }
-                } catch (cjError) {
-                    console.warn("CJ action failed, falling back to local delete:", cjError);
-                }
-            }
 
-            // Fallback: just delete locally
+        console.log("Starting deletion process...");
+        setDeletingId(id);
+
+        try {
+            console.log("Calling deleteProduct mutation with id:", id);
             await deleteProduct({ id });
+            console.log("Delete successful!");
             setResult({ success: true, message: `"${productName}" removed successfully` });
         } catch (error: any) {
-            console.error("Delete failed:", error);
+            console.error("Delete failed with error:", error);
             setResult({ success: false, message: error.message || 'Failed to remove product' });
         } finally {
+            console.log("Deletion process complete, resetting state");
             setDeletingId(null);
         }
     };
