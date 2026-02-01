@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { useSite } from '../contexts/BlogContext';
 import { useNewsletter } from '../contexts/NewsletterContext';
 import { FadeIn } from './FadeIn';
-import { Plus, Edit3, Trash2, LogOut, Save, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, Box, Shirt, Baby, Sofa, Gamepad2, Bed, Wand2, ChevronDown, List, Layers, Link as LinkIcon, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, TrendingUp, BarChart2, Package } from 'lucide-react';
+import { Plus, Edit3, Trash2, LogOut, Save, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, Box, Shirt, Baby, Sofa, Gamepad2, Bed, Wand2, ChevronDown, List, Layers, Link as LinkIcon, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, TrendingUp, BarChart2, Package, Lock, ChevronLeft } from 'lucide-react';
 import { BlogPost, SiteContent, CustomPage, PageSection, Product, CollectionType, CollectionConfig, NavLink, SectionItem, EmailCampaign } from '../types';
 import { generatePageStructure, suggestProductCategory, generateEmailSubject, generateEmailBody, generateProductName, generateProductDescription } from '../services/geminiService';
 import { AdminOrders } from './AdminOrders';
@@ -391,46 +391,69 @@ export const AdminPage: React.FC = () => {
          );
       }
       return (
-         <div className="min-h-screen bg-cream flex items-center justify-center px-6">
-            <FadeIn className="w-full max-w-md">
-               <div className="bg-white p-12 shadow-[0_20px_50px_-12px_rgba(74,59,50,0.1)] rounded-sm text-center border border-earth/5">
-                  <span className="text-bronze text-[10px] uppercase tracking-[0.3em] mb-4 block">Restricted Access</span>
-                  <h1 className="font-serif text-4xl text-earth mb-2">The Atelier</h1>
-                  <p className="text-earth/50 text-xs uppercase tracking-widest mb-10">Backend Management</p>
+         <div className="min-h-screen bg-[#F5F2EB] flex items-center justify-center px-6 relative overflow-hidden font-sans">
+            {/* Animated Background */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+               <div className="absolute top-0 -left-4 w-[600px] h-[600px] bg-bronze/5 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob" />
+               <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-sand/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000" />
+            </div>
+
+            <FadeIn className="w-full max-w-lg relative z-10">
+               <div className="bg-white/40 backdrop-blur-3xl p-12 shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-3xl text-center border border-white/60 relative overflow-hidden">
+
+                  {/* Decorative Header */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-bronze/30 to-transparent" />
+
+                  <div className="mb-10">
+                     <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-4 block font-medium">Internal Portal</span>
+                     <h1 className="font-serif text-5xl text-earth italic">The Atelier</h1>
+                     <div className="w-12 h-0.5 bg-earth/10 mx-auto mt-6" />
+                  </div>
+
                   <form onSubmit={handleLogin} className="space-y-6">
-                     <div className="relative">
+                     <div className="relative group">
+                        <Mail className="absolute left-0 top-3 w-5 h-5 text-earth/30 group-focus-within:text-bronze transition-colors" />
                         <input
                            type="email"
                            value={email}
                            onChange={(e) => setEmail(e.target.value)}
-                           placeholder="Email Address"
-                           className="w-full text-center border-b border-earth/20 py-3 text-earth placeholder:text-earth/20 focus:outline-none focus:border-bronze transition-colors font-serif text-xl bg-transparent"
+                           placeholder="Access ID (Email)"
+                           className="w-full bg-transparent border-b border-earth/10 py-3 pl-8 text-earth placeholder:text-earth/30 focus:outline-none focus:border-bronze transition-colors text-sm tracking-wide"
                            required
                         />
                      </div>
-                     <div className="relative">
+                     <div className="relative group">
+                        <Lock className="absolute left-0 top-3 w-5 h-5 text-earth/30 group-focus-within:text-bronze transition-colors" />
                         <input
                            type="password"
                            value={password}
                            onChange={(e) => setPassword(e.target.value)}
-                           placeholder="Password"
-                           className="w-full text-center border-b border-earth/20 py-3 text-earth placeholder:text-earth/20 focus:outline-none focus:border-bronze transition-colors font-serif text-xl bg-transparent"
+                           placeholder="Passkey"
+                           className="w-full bg-transparent border-b border-earth/10 py-3 pl-8 text-earth placeholder:text-earth/30 focus:outline-none focus:border-bronze transition-colors text-sm tracking-wide"
                            required
                         />
                      </div>
-                     {error && <p className="text-red-800 text-xs tracking-widest uppercase">{error}</p>}
+
+                     {error && (
+                        <div className="flex items-center justify-center gap-2 p-3 bg-red-50/50 rounded-lg border border-red-100/50">
+                           <span className="text-red-800 text-[10px] tracking-widest uppercase">{error}</span>
+                        </div>
+                     )}
+
                      <button
                         type="submit"
                         disabled={isSigningIn}
-                        className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.25em] hover:bg-bronze transition-all duration-500 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full bg-earth text-cream py-4 rounded-xl text-[10px] uppercase tracking-[0.25em] hover:bg-bronze hover:shadow-lg hover:-translate-y-0.5 transition-all duration-500 disabled:opacity-50 flex items-center justify-center gap-2 mt-8"
                      >
-                        {isSigningIn && <Loader2 className="w-3 h-3 animate-spin" />}
-                        {authFlow === 'signIn' ? 'Enter Studio' : 'Create Account'}
+                        {isSigningIn ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Authenticate'}
                      </button>
                   </form>
-                  <button onClick={handleReturnToSite} className="mt-4 block w-full text-[10px] uppercase tracking-[0.2em] text-earth/30 hover:text-earth transition-colors">
-                     Return to Site
-                  </button>
+
+                  <div className="mt-8 pt-6 border-t border-earth/5">
+                     <button onClick={handleReturnToSite} className="text-[9px] uppercase tracking-[0.2em] text-earth/30 hover:text-bronze transition-colors flex items-center justify-center gap-2 mx-auto">
+                        <ChevronLeft className="w-3 h-3" /> Return to Storefront
+                     </button>
+                  </div>
                </div>
             </FadeIn>
          </div>
@@ -439,155 +462,269 @@ export const AdminPage: React.FC = () => {
 
    // --- MAIN ADMIN INTERFACE ---
    return (
-      <div className="min-h-screen bg-[#F9F7F2] flex">
-         {/* Sidebar Navigation */}
-         <aside className="w-64 bg-earth text-cream fixed h-full z-20 flex flex-col border-r border-white/5 shadow-2xl overflow-y-auto no-scrollbar">
-            <div className="p-8 border-b border-white/10">
-               <h2 className="font-serif text-2xl italic tracking-wide">The Atelier</h2>
-               <p className="text-[10px] uppercase tracking-[0.2em] opacity-50 mt-1">Admin Console</p>
+      <div className="min-h-screen bg-[#F5F2EB] relative overflow-hidden flex font-sans text-earth selection:bg-bronze/20">
+         {/* Animated Background */}
+         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+            <div className="absolute top-0 -left-4 w-[800px] h-[800px] bg-bronze/5 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob" />
+            <div className="absolute top-0 -right-4 w-[600px] h-[600px] bg-sand/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000" />
+            <div className="absolute -bottom-8 left-20 w-[600px] h-[600px] bg-cream-dark/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-4000" />
+         </div>
+
+         {/* Glassmorphic Sidebar */}
+         <aside className="w-72 fixed h-[96vh] top-[2vh] left-4 z-50 flex flex-col rounded-3xl overflow-hidden border border-white/40 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl bg-earth/95 text-cream transition-all duration-500">
+            {/* Header */}
+            <div className="p-8 border-b border-white/5 bg-white/5 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+               <h2 className="font-serif text-3xl italic tracking-wide relative z-10">The Atelier</h2>
+               <div className="flex items-center gap-2 mt-2 opacity-60">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
+                  <p className="text-[9px] uppercase tracking-[0.25em] relative z-10">Admin Console</p>
+               </div>
             </div>
 
-            <nav className="flex-1 py-8 px-4 space-y-1">
+            {/* Navigation */}
+            <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
+               {/* Dashboard */}
                <button
                   onClick={() => { setActiveTab('dashboard'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'dashboard' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'dashboard' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
-                  <Home className="w-4 h-4" /> Dashboard
+                  <Home className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'dashboard' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">Dashboard</span>
+                  {activeTab === 'dashboard' && <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-100" />}
                </button>
 
+               {/* Newsletter */}
                <button
                   onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('overview'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'newsletter' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'newsletter' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
-                  <Mail className="w-4 h-4" /> Newsletter
+                  <Mail className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'newsletter' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">Newsletter</span>
                </button>
 
+               {/* Orders */}
                <button
                   onClick={() => { setActiveTab('orders'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'orders' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'orders' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
-                  <Package className="w-4 h-4" /> Orders
+                  <Package className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'orders' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">Orders</span>
                </button>
 
-               <button
-                  onClick={() => { setActiveTab('structure'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'structure' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
-               >
-                  <Layers className="w-4 h-4" /> Site Structure
-               </button>
-
-               <button
-                  onClick={() => { setActiveTab('import'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'import' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
-               >
-                  <Upload className="w-4 h-4" /> Import Products
-               </button>
-
-               <button
-                  onClick={() => { setActiveTab('cj-settings'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all mb-4 ${activeTab === 'cj-settings' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
-               >
-                  <Settings className="w-4 h-4" /> CJ Settings
-               </button>
-
-               <div className="px-4 pt-4 pb-2">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-semibold">Collections</span>
+               {/* Separator */}
+               <div className="px-4 pt-6 pb-2">
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
+                  <span className="text-[9px] uppercase tracking-[0.3em] text-bronze/70 font-bold block mb-2 shimmer-text">Store Management</span>
                </div>
 
-               {/* Dynamic Collection Menu */}
+               {/* Structure */}
+               <button
+                  onClick={() => { setActiveTab('structure'); setActivePageEditor(null); }}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'structure' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+               >
+                  <Layers className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'structure' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">Structure</span>
+               </button>
+
+               {/* Import */}
+               <button
+                  onClick={() => { setActiveTab('import'); setActivePageEditor(null); }}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'import' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+               >
+                  <Upload className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'import' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">Import</span>
+               </button>
+
+               {/* CJ Settings */}
+               <button
+                  onClick={() => { setActiveTab('cj-settings'); setActivePageEditor(null); }}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'cj-settings' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+               >
+                  <Settings className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'cj-settings' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">CJ Settings</span>
+               </button>
+
+
+               {/* Collections Loop */}
+               <div className="px-4 pt-6 pb-2">
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
+                  <span className="text-[9px] uppercase tracking-[0.3em] text-bronze/70 font-bold block mb-2 shimmer-text">Collections</span>
+               </div>
+
                {siteContent.collections.map(collection => (
-                  <div className="mb-2" key={collection.id}>
+                  <div className="mb-1" key={collection.id}>
                      <button
                         onClick={() => toggleCollectionExpand(collection.id)}
-                        className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center justify-between rounded-sm transition-all ${activeTab === 'products' && filterCollection === collection.id ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                        className={`w-full text-left px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] flex items-center justify-between rounded-lg transition-all ${activeTab === 'products' && filterCollection === collection.id ? 'text-white' : 'text-white/50 hover:text-white'}`}
                      >
                         <div className="flex items-center gap-3">
-                           {/* Simple logic for icons based on ID, fallback to Box */}
-                           {collection.id === 'furniture' ? <Sofa className="w-4 h-4" /> :
-                              collection.id === 'fashion' ? <Shirt className="w-4 h-4" /> :
-                                 collection.id === 'kids' ? <Baby className="w-4 h-4" /> :
-                                    <Box className="w-4 h-4" />}
+                           <span className={`w-1 h-1 rounded-full ${activeTab === 'products' && filterCollection === collection.id ? 'bg-bronze shadow-[0_0_8px_rgba(168,140,119,0.8)]' : 'bg-white/20'}`} />
                            {collection.title}
                         </div>
-                        <ChevronDown className={`w-3 h-3 transition-transform ${expandedCollections[collection.id] ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${expandedCollections[collection.id] ? 'rotate-180 text-white' : 'text-white/20'}`} />
                      </button>
 
-                     {expandedCollections[collection.id] && (
-                        <div className="pl-4 space-y-0.5 mt-1 border-l border-white/10 ml-6">
+                     <div className={`overflow-hidden transition-all duration-500 ease-in-out ${expandedCollections[collection.id] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div className="pl-4 space-y-0.5 mt-1 ml-4 border-l border-white/5">
                            <button
                               onClick={() => { setActiveTab('products'); setFilterCollection(collection.id); setFilterCategory(null); setIsEditingProduct(false); setActivePageEditor(null); }}
-                              className={`w-full text-left px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] rounded-sm transition-all ${activeTab === 'products' && filterCollection === collection.id && !filterCategory ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                              className={`w-full text-left px-3 py-2 text-[9px] uppercase tracking-[0.15em] rounded-r-lg transition-all hover:pl-5 duration-300 ${activeTab === 'products' && filterCollection === collection.id && !filterCategory ? 'text-bronze font-bold bg-white/5' : 'text-white/40 hover:text-white'}`}
                            >
-                              All {collection.title}
+                              View All
                            </button>
                            {collection.subcategories.map(cat => (
                               <button
                                  key={cat.id}
                                  onClick={() => { setActiveTab('products'); setFilterCollection(collection.id); setFilterCategory(cat.title); setIsEditingProduct(false); setActivePageEditor(null); }}
-                                 className={`w-full text-left px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] rounded-sm transition-all ${activeTab === 'products' && filterCollection === collection.id && filterCategory === cat.title ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                                 className={`w-full text-left px-3 py-2 text-[9px] uppercase tracking-[0.15em] rounded-r-lg transition-all hover:pl-5 duration-300 ${activeTab === 'products' && filterCollection === collection.id && filterCategory === cat.title ? 'text-white font-bold bg-white/5' : 'text-white/40 hover:text-white'}`}
                               >
                                  {cat.title.replace(collection.title + ' ', '')}
                               </button>
                            ))}
                         </div>
-                     )}
+                     </div>
                   </div>
                ))}
 
+               {/* Content Section */}
                <div className="px-4 pt-6 pb-2">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-semibold">Content</span>
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
+                  <span className="text-[9px] uppercase tracking-[0.3em] text-bronze/70 font-bold block mb-2 shimmer-text">Content</span>
                </div>
 
                <button
                   onClick={() => { setActiveTab('journal'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all ${activeTab === 'journal' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'journal' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
-                  <BookOpen className="w-4 h-4" /> Journal
+                  <BookOpen className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'journal' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">Journal</span>
                </button>
 
                <button
                   onClick={() => { setActiveTab('pages'); setActivePageEditor(null); }}
-                  className={`w-full text-left px-4 py-3 text-xs uppercase tracking-[0.2em] flex items-center gap-3 rounded-sm transition-all ${activeTab === 'pages' ? 'bg-cream/10 text-white' : 'text-white/50 hover:text-white hover:bg-cream/5'}`}
+                  className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'pages' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
-                  <Layout className="w-4 h-4" /> Page Editor
+                  <Layout className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'pages' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
+                  <span className="relative z-10 font-medium">Pages</span>
                </button>
+
             </nav>
 
-            <div className="p-4 border-t border-white/10 mt-auto">
-               <button onClick={() => { logout(); handleReturnToSite(); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors">
-                  <LogOut className="w-4 h-4" /> Exit Studio
+            {/* User Profile / Exit */}
+            <div className="p-4 bg-black/20 backdrop-blur-md border-t border-white/5 mt-auto">
+               <button onClick={() => { logout(); handleReturnToSite(); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-[0.2em] text-red-300/60 hover:text-red-300 hover:bg-red-900/10 rounded-lg transition-all group">
+                  <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  <span>Exit Studio</span>
                </button>
             </div>
          </aside>
 
          {/* Main Content Area */}
-         <main className="ml-64 flex-1 p-12 overflow-y-auto">
+         <main className="ml-80 flex-1 p-8 h-screen overflow-y-auto no-scrollbar relative z-10">
 
             {/* DASHBOARD VIEW */}
             {activeTab === 'dashboard' && (
                <FadeIn>
-                  <div className="mb-12">
-                     <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Overview</span>
-                     <h1 className="font-serif text-4xl text-earth">Welcome Back, Monica.</h1>
+                  {/* Premium Header */}
+                  <div className="mb-16 relative">
+                     <div className="absolute -left-10 -top-10 w-40 h-40 bg-bronze/10 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob" />
+                     <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-4 block font-medium relative z-10 pl-1">Executive Overview</span>
+                     <h1 className="font-serif text-5xl text-earth relative z-10 tracking-tight">
+                        Welcome Back, <span className="italic text-bronze/80">Monica.</span>
+                     </h1>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-8 mb-16">
-                     <div onClick={() => { setActiveTab('products'); setFilterCollection('all'); setFilterCategory(null); }} className="bg-white p-8 border border-earth/5 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                        <ShoppingBag className="w-6 h-6 text-bronze mb-4 group-hover:scale-110 transition-transform" />
-                        <h3 className="font-serif text-2xl text-earth mb-2">{products.length} Products</h3>
-                        <p className="text-xs text-earth/50">Total inventory across all collections</p>
+                  {/* Glass Metric Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+
+                     {/* Products Card */}
+                     <div
+                        onClick={() => { setActiveTab('products'); setFilterCollection('all'); setFilterCategory(null); }}
+                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                     >
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
+                           <ShoppingBag className="w-24 h-24 rotate-12" />
+                        </div>
+
+                        <div className="relative z-10">
+                           <div className="w-14 h-14 rounded-2xl bg-white/60 backdrop-blur-md shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/50">
+                              <ShoppingBag className="w-7 h-7 text-bronze" />
+                           </div>
+                           <h3 className="font-serif text-4xl text-earth mb-2">{products.length}</h3>
+                           <p className="text-xs uppercase tracking-[0.2em] text-earth/60 font-medium">Active Products</p>
+                        </div>
                      </div>
-                     <div onClick={() => setActiveTab('structure')} className="bg-white p-8 border border-earth/5 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                        <Layers className="w-6 h-6 text-bronze mb-4 group-hover:scale-110 transition-transform" />
-                        <h3 className="font-serif text-2xl text-earth mb-2">{siteContent.collections.length} Collections</h3>
-                        <p className="text-xs text-earth/50">Manage menus & structure</p>
+
+                     {/* Collections Card */}
+                     <div
+                        onClick={() => setActiveTab('structure')}
+                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                     >
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
+                           <Layers className="w-24 h-24 rotate-12" />
+                        </div>
+
+                        <div className="relative z-10">
+                           <div className="w-14 h-14 rounded-2xl bg-white/60 backdrop-blur-md shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/50">
+                              <Layers className="w-7 h-7 text-bronze" />
+                           </div>
+                           <h3 className="font-serif text-4xl text-earth mb-2">{siteContent.collections.length}</h3>
+                           <p className="text-xs uppercase tracking-[0.2em] text-earth/60 font-medium">Collections</p>
+                        </div>
                      </div>
-                     <div onClick={() => setActiveTab('pages')} className="bg-white p-8 border border-earth/5 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                        <Layout className="w-6 h-6 text-bronze mb-4 group-hover:scale-110 transition-transform" />
-                        <h3 className="font-serif text-2xl text-earth mb-2">{2 + siteContent.customPages.length} Pages</h3>
-                        <p className="text-xs text-earth/50">Customize site content</p>
+
+                     {/* Pages Card */}
+                     <div
+                        onClick={() => setActiveTab('pages')}
+                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                     >
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
+                           <Layout className="w-24 h-24 rotate-12" />
+                        </div>
+
+                        <div className="relative z-10">
+                           <div className="w-14 h-14 rounded-2xl bg-white/60 backdrop-blur-md shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/50">
+                              <Layout className="w-7 h-7 text-bronze" />
+                           </div>
+                           <h3 className="font-serif text-4xl text-earth mb-2">{2 + siteContent.customPages.length}</h3>
+                           <p className="text-xs uppercase tracking-[0.2em] text-earth/60 font-medium">Content Pages</p>
+                        </div>
                      </div>
                   </div>
+
+                  {/* Quick Actions Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                     <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-earth text-cream rounded-2xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
+                           <div className="p-3 bg-white/10 rounded-full group-hover:scale-110 transition-transform duration-500"><Plus className="w-6 h-6" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Add Product</span>
+                        </div>
+                     </button>
+
+                     <button onClick={handleCreateNewPost} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
+                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
+                           <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><PenTool className="w-6 h-6 text-earth" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Write Journal</span>
+                        </div>
+                     </button>
+
+                     <button onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('campaigns'); handleCreateCampaign(); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
+                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
+                           <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><Send className="w-6 h-6 text-earth" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Send Email</span>
+                        </div>
+                     </button>
+
+                     <button onClick={() => { setActiveTab('cj-settings'); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
+                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
+                           <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><Settings className="w-6 h-6 text-earth" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Integration</span>
+                        </div>
+                     </button>
+                  </div>
+
                </FadeIn>
             )}
 
