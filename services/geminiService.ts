@@ -276,6 +276,142 @@ const FALLBACK_DESCRIPTIONS = [
   'Artisan-crafted from sustainable teak. A serene addition to any thoughtfully designed space.',
 ];
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTEXT-AWARE AI ENHANCEMENT (V2)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Full product context for AI generation
+ */
+export interface ProductContext {
+  originalName: string;
+  originalDescription: string;
+  category: string;
+  collection: string;
+  keywords?: string[];
+  priceRange?: 'budget' | 'mid' | 'premium';
+}
+
+/**
+ * Extract meaningful keywords from product text
+ */
+export const extractKeywords = (text: string): string[] => {
+  if (!text) return [];
+  const lowerText = text.toLowerCase();
+  const keywords: string[] = [];
+
+  // Material patterns
+  const materials = lowerText.match(/\b(cotton|linen|silk|velvet|denim|wool|polyester|chiffon|satin|muslin|organic|bamboo|cashmere|fleece|knit|woven|rattan|oak|walnut|wood|leather|suede)\b/gi);
+  if (materials) keywords.push(...materials);
+
+  // Style patterns
+  const styles = lowerText.match(/\b(floral|striped|solid|printed|embroidered|lace|ruffle|pleated|vintage|boho|minimalist|modern|classic|elegant|casual|formal)\b/gi);
+  if (styles) keywords.push(...styles);
+
+  // Season/occasion patterns
+  const occasions = lowerText.match(/\b(summer|winter|spring|fall|autumn|party|wedding|beach|office|everyday|holiday|festive)\b/gi);
+  if (occasions) keywords.push(...occasions);
+
+  // Clothing-specific patterns
+  const clothing = lowerText.match(/\b(dress|romper|onesie|bodysuit|jumpsuit|blouse|top|shirt|pants|skirt|shorts|jacket|cardigan|sweater|coat)\b/gi);
+  if (clothing) keywords.push(...clothing);
+
+  // Age/demographic patterns
+  const demographics = lowerText.match(/\b(baby|infant|toddler|kids|children|girls|boys|newborn|0-3m|3-6m|6-12m|1-2y|2-3y)\b/gi);
+  if (demographics) keywords.push(...demographics);
+
+  // Unique and deduplicate
+  return [...new Set(keywords.map(k => k.toLowerCase()))];
+};
+
+/**
+ * Collection-specific prompt templates
+ */
+const COLLECTION_PROMPTS: Record<string, { materials: string; vocabulary: string; examples: string }> = {
+  kids: {
+    materials: `
+      MATERIALS TO MENTION (pick 1-2):
+      - Organic cotton, soft muslin, gentle bamboo
+      - Cozy fleece, breathable knit, natural fibers
+      - Hypoallergenic fabrics, OEKO-TEX certified materials
+    `,
+    vocabulary: `
+      VOCABULARY:
+      - Soft, cozy, gentle, snuggly, sweet, precious
+      - Playful, whimsical, darling, charming
+      - Breathable, comfortable, easy-care, durable
+      - Thoughtfully designed, lovingly crafted
+    `,
+    examples: `
+      EXAMPLES:
+      - "Soft organic cotton with gentle stretch. A darling piece for little ones, crafted with comfort in mind."
+      - "Breathable muslin in a sweet floral print. Perfect for warm days and precious moments."
+      - "Cozy bamboo blend with snap closures. Thoughtfully designed for easy dressing and all-day comfort."
+    `
+  },
+  fashion: {
+    materials: `
+      MATERIALS TO MENTION (pick 1-2):
+      - Flowing linen, soft cotton, luxe silk blend
+      - Textured crepe, elegant chiffon, refined satin
+      - Premium modal, organic cotton, sustainable viscose
+    `,
+    vocabulary: `
+      VOCABULARY:
+      - Effortless, flattering, versatile, elevated
+      - Timeless, feminine, refined, graceful
+      - Drape, silhouette, movement, flow
+      - Day-to-night, easily styled, wardrobe essential
+    `,
+    examples: `
+      EXAMPLES:
+      - "Flowing linen with a relaxed silhouette. Effortlessly elegant from morning coffee to sunset drinks."
+      - "Soft cotton with beautiful drape. A versatile piece that moves with you through the day."
+      - "Refined crepe in a flattering cut. Timeless femininity for the modern woman."
+    `
+  },
+  furniture: {
+    materials: `
+      MATERIALS TO MENTION (pick 1-2):
+      - Solid oak, walnut, ash, beechwood, teak
+      - Natural rattan, handwoven fibers, cane
+      - Premium linen, organic cotton, bouclé upholstery
+    `,
+    vocabulary: `
+      VOCABULARY:
+      - Nordic, Scandinavian, minimalist, curated
+      - Artisan-crafted, hand-finished, sustainably sourced
+      - Timeless, refined, grounding, serene, intentional
+    `,
+    examples: `
+      EXAMPLES:
+      - "Solid walnut with hand-rubbed finish. Nordic restraint meets lasting craftsmanship."
+      - "Artisan-woven rattan on a sustainably sourced ash frame. A grounding presence for curated spaces."
+      - "Premium bouclé over solid oak construction. Scandinavian elegance, effortlessly refined."
+    `
+  },
+  decor: {
+    materials: `
+      MATERIALS TO MENTION (pick 1-2):
+      - Hand-thrown ceramic, artisan stoneware
+      - Natural rattan, woven seagrass, jute
+      - Linen, cotton, handwoven textiles
+    `,
+    vocabulary: `
+      VOCABULARY:
+      - Textured, organic, earthy, grounding
+      - Artisan, handcrafted, curated, collected
+      - Ambient, serene, warm, inviting
+    `,
+    examples: `
+      EXAMPLES:
+      - "Hand-thrown ceramic with organic glaze. An artisan touch for curated spaces."
+      - "Woven seagrass with natural variations. Earthy texture that grounds any room."
+      - "Handwoven linen with subtle texture. A collected piece for intentional living."
+    `
+  }
+};
+
 // Helper function to generate fallback product name
 const generateFallbackName = (originalName: string, collection: string): string => {
   const names = PRODUCT_NAME_INSPIRATIONS[collection as keyof typeof PRODUCT_NAME_INSPIRATIONS]
@@ -421,6 +557,190 @@ export const generateProductDescription = async (
     console.error("Gemini Product Description Error:", error);
     return getRandomFallback();
   }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTEXT-AWARE GENERATION (V2 - Uses full product data)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate a boutique-style product name using full product context
+ */
+export const generateProductNameV2 = async (context: ProductContext): Promise<string> => {
+  if (!apiKey) {
+    return generateFallbackName(context.originalName, context.collection);
+  }
+
+  try {
+    const model = 'gemini-2.0-flash';
+    const ai = getAI();
+    if (!ai) return generateFallbackName(context.originalName, context.collection);
+
+    // Determine product type from context
+    const productType = detectProductType(context);
+    const keywords = context.keywords || extractKeywords(context.originalName + ' ' + context.originalDescription);
+
+    // Choose name style based on collection
+    let nameStyle = '';
+    if (context.collection === 'kids') {
+      nameStyle = 'playful, sweet, whimsical (Poppy, Birdie, Rosie, Clementine, Meadow)';
+    } else if (context.collection === 'fashion') {
+      nameStyle = 'elegant, nature-inspired (Sienna, Willow, Maeve, Ivy, Wren)';
+    } else {
+      nameStyle = 'Nordic, feminine (Astrid, Linnea, Freya, Clara, Nora)';
+    }
+
+    const systemInstruction = `
+      You are the product naming specialist for "Louie Mae", a sophisticated lifestyle brand.
+      
+      PRODUCT ANALYSIS:
+      - Original Name: "${context.originalName}"
+      - Detected Type: ${productType}
+      - Keywords Found: ${keywords.join(', ') || 'none'}
+      - Collection: ${context.collection}
+      
+      NAME STYLE FOR THIS COLLECTION: ${nameStyle}
+      
+      STRICT RULES:
+      1. Use a single feminine first name + product type (2-3 words total)
+      2. NO "The" prefix
+      3. Match the name to the product type:
+         - For baby/kids items: "Poppy Romper", "Birdie Dress", "Rosie Onesie"
+         - For fashion items: "Sienna Blouse", "Willow Dress", "Maeve Top"
+         - For furniture: "Astrid Chair", "Linnea Console", "Freya Sofa"
+      4. The product type must match what the item actually is
+      
+      Return ONLY the 2-3 word name, nothing else.
+    `;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: `Generate boutique name for this ${context.collection} item.`,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      }
+    });
+
+    let result = response.text?.trim().replace(/^["']|["']$/g, '');
+    if (!result || result === context.originalName) {
+      return generateFallbackName(context.originalName, context.collection);
+    }
+    result = result.replace(/^The\s+/i, '');
+    return result;
+  } catch (error) {
+    console.error("Gemini Product Name V2 Error:", error);
+    return generateFallbackName(context.originalName, context.collection);
+  }
+};
+
+/**
+ * Generate a sophisticated product description using full product context
+ */
+export const generateProductDescriptionV2 = async (context: ProductContext): Promise<string> => {
+  // Collection-aware fallbacks
+  const getFallback = () => {
+    if (context.collection === 'kids') {
+      return "Soft organic cotton for gentle comfort. A sweet piece crafted with little ones in mind.";
+    } else if (context.collection === 'fashion') {
+      return "Flowing silhouette with effortless drape. A versatile piece for the modern wardrobe.";
+    }
+    return FALLBACK_DESCRIPTIONS[Math.floor(Math.random() * FALLBACK_DESCRIPTIONS.length)];
+  };
+
+  if (!apiKey) return getFallback();
+
+  try {
+    const model = 'gemini-2.0-flash';
+    const ai = getAI();
+    if (!ai) return getFallback();
+
+    const keywords = context.keywords || extractKeywords(context.originalName + ' ' + context.originalDescription);
+    const prompts = COLLECTION_PROMPTS[context.collection] || COLLECTION_PROMPTS.furniture;
+    const productType = detectProductType(context);
+
+    const systemInstruction = `
+      You are the copywriter for "Louie Mae", a sophisticated lifestyle brand.
+      
+      PRODUCT TO DESCRIBE:
+      - Name: "${context.originalName}"
+      - Type: ${productType}
+      - Collection: ${context.collection}
+      - Keywords from source: ${keywords.join(', ') || 'none'}
+      - Original description hints: "${context.originalDescription?.slice(0, 200) || 'none'}"
+      
+      ${prompts.materials}
+      ${prompts.vocabulary}
+      
+      STRICT RULES:
+      1. Exactly 1-2 sentences (25-40 words)
+      2. MUST be relevant to the actual product type (${productType})
+      3. If it's clothing: focus on fabric, fit, comfort, style
+      4. If it's baby/kids: focus on softness, comfort, easy-care, sweetness
+      5. If it's furniture: focus on materials, craftsmanship, presence
+      6. Use keywords found in the product data when applicable
+      7. NO generic phrases: "high quality", "beautiful design", "perfect for"
+      
+      ${prompts.examples}
+      
+      Return ONLY the description, no quotes.
+    `;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: `Write a boutique description for this ${productType}.`,
+      config: {
+        systemInstruction,
+        temperature: 0.85,
+      }
+    });
+
+    return response.text?.trim() || getFallback();
+  } catch (error) {
+    console.error("Gemini Product Description V2 Error:", error);
+    return getFallback();
+  }
+};
+
+/**
+ * Detect product type from context
+ */
+const detectProductType = (context: ProductContext): string => {
+  const text = (context.originalName + ' ' + context.originalDescription + ' ' + context.category).toLowerCase();
+
+  // Baby/Kids clothing
+  if (/romper|onesie|bodysuit|baby|infant|newborn/i.test(text)) return 'baby romper/bodysuit';
+  if (/toddler|kids|children|girl|boy/i.test(text) && /dress|top|pants|skirt|shorts/i.test(text)) {
+    return 'kids clothing';
+  }
+
+  // Women's fashion
+  if (/dress/i.test(text) && !/kids|baby|girl/i.test(text)) return 'women\'s dress';
+  if (/blouse|top/i.test(text)) return 'blouse/top';
+  if (/pants|trousers/i.test(text)) return 'pants';
+  if (/skirt/i.test(text)) return 'skirt';
+  if (/jumpsuit/i.test(text)) return 'jumpsuit';
+  if (/cardigan|sweater/i.test(text)) return 'knitwear';
+
+  // Furniture
+  if (/chair|seat/i.test(text)) return 'chair';
+  if (/table|desk/i.test(text)) return 'table';
+  if (/sofa|couch/i.test(text)) return 'sofa';
+  if (/cabinet|buffet|sideboard/i.test(text)) return 'storage furniture';
+  if (/bed/i.test(text)) return 'bed';
+
+  // Decor
+  if (/vase|planter|pot/i.test(text)) return 'vessel/planter';
+  if (/basket|storage/i.test(text)) return 'basket';
+  if (/lamp|light/i.test(text)) return 'lighting';
+  if (/rug|carpet/i.test(text)) return 'rug';
+  if (/mirror/i.test(text)) return 'mirror';
+
+  // Default based on collection
+  if (context.collection === 'kids') return 'kids item';
+  if (context.collection === 'fashion') return 'fashion item';
+  if (context.collection === 'furniture') return 'furniture piece';
+  return 'home item';
 };
 
 // --- Newsletter AI Functions ---

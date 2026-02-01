@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight } from 'lucide-react';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
-import { generateProductName, generateProductDescription } from '../services/geminiService';
+import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext } from '../services/geminiService';
 import { FadeIn } from './FadeIn';
 
 interface ProductImportProps {
@@ -152,7 +152,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         ));
     };
 
-    // AI Enhancement
+    // AI Enhancement with full product context
     const enhanceProductWithAI = async (productId: string) => {
         const product = searchResults.find(p => p.id === productId);
         if (!product) return;
@@ -160,17 +160,24 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         updateProductField(productId, 'isEnhancing', true);
 
         try {
-            const enhancedName = await generateProductName(product.name, targetCollection);
-            const enhancedDescription = await generateProductDescription(
-                enhancedName || product.name,
-                product.category || targetCollection,
-                targetCollection
-            );
+            // Build full context for AI
+            const context: ProductContext = {
+                originalName: product.name,
+                originalDescription: product.description || '',
+                category: product.category || '',
+                collection: product.targetCollection || targetCollection,
+                keywords: extractKeywords(product.name + ' ' + (product.description || '')),
+            };
+
+            const enhancedName = await generateProductNameV2(context);
+            const enhancedDescription = await generateProductDescriptionV2(context);
 
             updateProductField(productId, 'customName', enhancedName);
             updateProductField(productId, 'customDescription', enhancedDescription);
         } catch (err) {
+            // TODO: Replace with toast notification
             console.error('AI enhancement failed:', err);
+            setError('AI enhancement failed. Please try again.');
         } finally {
             updateProductField(productId, 'isEnhancing', false);
         }
