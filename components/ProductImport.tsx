@@ -91,102 +91,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         return Math.max(finalPrice, 0);
     };
 
-    // Search handler
-    const handleSearch = async (page = 1) => {
-        if (!searchQuery.trim()) return;
+    // Import Multi-Step Workflow State
+    const [importStep, setImportStep] = useState<'search' | 'review'>('search');
+    const [reviewIndex, setReviewIndex] = useState(0);
 
-        setIsSearching(true);
-        setError(null);
+    // ... (existing search handler)
 
-        try {
-            // Use aggregated search to get products from external sources
-            const result = await aliexpressService.searchAllSources({
-                query: searchQuery,
-                page,
-                pageSize: 100,
-                minPrice: minPrice ? parseFloat(minPrice) : undefined,
-                maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-                sortBy: sortBy === 'default' ? undefined : sortBy,
-                sources: ['aliexpress', 'alibaba'],
-            });
-
-            // Transform to ImportableProduct
-            const filteredProducts = result.products
-                .filter(p => minRating === 0 || (p.averageRating || 0) >= minRating)
-                .map(p => ({
-                    ...p,
-                    selected: false,
-                    targetCollection: targetCollection as CollectionType,
-                    customPrice: calculateFinalPrice(p.salePrice || p.price)
-                }));
-
-            setSearchResults(filteredProducts);
-            setTotalResults(result.totalCount);
-            setTotalPages(result.totalPages || Math.ceil(result.totalCount / 20));
-            setCurrentPage(page);
-            setSelectAll(false);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Search failed');
-            setSearchResults([]);
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    // Toggle product selection
-    const toggleProductSelection = (productId: string) => {
-        setSearchResults(prev => prev.map(p =>
-            p.id === productId ? { ...p, selected: !p.selected } : p
-        ));
-    };
-
-    // Toggle select all
-    const handleSelectAll = () => {
-        const newSelectAll = !selectAll;
-        setSelectAll(newSelectAll);
-        setSearchResults(prev => prev.map(p => ({ ...p, selected: newSelectAll })));
-    };
-
-    // Update product custom field
-    const updateProductField = (productId: string, field: keyof ImportableProduct, value: any) => {
-        setSearchResults(prev => prev.map(p =>
-            p.id === productId ? { ...p, [field]: value } : p
-        ));
-    };
-
-    // AI Enhancement
-    const enhanceProductWithAI = async (productId: string) => {
-        const product = searchResults.find(p => p.id === productId);
-        if (!product) return;
-
-        updateProductField(productId, 'isEnhancing', true);
-
-        try {
-            const enhancedName = await generateProductName(product.name, targetCollection);
-            const enhancedDescription = await generateProductDescription(
-                enhancedName || product.name,
-                product.category || targetCollection,
-                targetCollection
-            );
-
-            updateProductField(productId, 'customName', enhancedName);
-            updateProductField(productId, 'customDescription', enhancedDescription);
-        } catch (err) {
-            console.error('AI enhancement failed:', err);
-        } finally {
-            updateProductField(productId, 'isEnhancing', false);
-        }
-    };
-
-    // Enhance all selected
-    const enhanceAllSelected = async () => {
-        const selectedProducts = searchResults.filter(p => p.selected);
-        for (const product of selectedProducts) {
-            await enhanceProductWithAI(product.id);
-        }
-    };
-
-    // Import selected
+    // Modify handleImport to start review instead of direct import
     const handleImport = () => {
         const selectedProducts = searchResults.filter(p => p.selected);
 
@@ -195,17 +106,31 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             return;
         }
 
+        // Initialize review step
+        setImportStep('review');
+        setReviewIndex(0);
+        setError(null);
+    };
+
+    // Final Import Action
+    const confirmImport = () => {
+        const selectedProducts = searchResults.filter(p => p.selected);
+
         const productsToImport: Omit<Product, 'id'>[] = selectedProducts.map(p => {
             const productCollection = p.targetCollection || targetCollection;
             const productSubcategory = p.targetSubcategory || targetSubcategory;
             const subcategories = getSubcategoriesForCollection(productCollection);
             const subcategoryTitle = subcategories.find(s => s.id === productSubcategory)?.title || productSubcategory || p.category || 'General';
 
+            // Filter images if selection logic implemented (for now all, or first 5)
+            // Ideally we'd have p.selectedImages
+            const finalImages = p.images;
+
             return {
                 name: p.customName || p.name,
                 price: p.customPrice || calculateFinalPrice(p.salePrice || p.price),
                 description: p.customDescription || p.description || '',
-                images: p.images,
+                images: finalImages,
                 category: subcategoryTitle,
                 collection: productCollection as CollectionType,
                 isNew: true,
@@ -219,7 +144,232 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         onImportProducts(productsToImport);
         setSearchResults(prev => prev.map(p => ({ ...p, selected: false })));
         setSelectAll(false);
+        setImportStep('search');
     };
+
+    // Helper to update current review item
+    const updateReviewProduct = (field: keyof ImportableProduct, value: any) => {
+        const currentProduct = searchResults.filter(p => p.selected)[reviewIndex];
+        if (!currentProduct) return;
+        updateProductField(currentProduct.id, field, value);
+    };
+
+    // Render Review Screen
+    if (importStep === 'review') {
+        const selectedProducts = searchResults.filter(p => p.selected);
+        const currentProduct = selectedProducts[reviewIndex];
+        const progress = ((reviewIndex + 1) / selectedProducts.length) * 100;
+
+        if (!currentProduct) return <div>Error: Product not found</div>;
+
+        return (
+            <div className="min-h-[80vh] flex flex-col items-center justify-center p-8 relative z-20">
+                <style>{`
+                    .glass-panel {
+                        background: rgba(255, 255, 255, 0.95);
+                        backdrop-filter: blur(40px);
+                        border: 1px solid rgba(255, 255, 255, 0.5);
+                        box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+                    }
+                `}</style>
+
+                <FadeIn className="w-full max-w-6xl">
+                    <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
+                        {/* Header / Progress */}
+                        <div className="bg-cream/50 p-8 border-b border-earth/5 flex justify-between items-center relative overflow-hidden">
+                            <div className="absolute top-0 left-0 bottom-0 bg-bronze/10 transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
+                            <div className="relative z-10 flex items-center gap-4">
+                                <button
+                                    onClick={() => setImportStep('search')}
+                                    className="flex items-center gap-2 text-earth/60 hover:text-earth transition-colors text-xs uppercase tracking-widest font-bold"
+                                >
+                                    <ChevronLeft className="w-4 h-4" /> Back
+                                </button>
+                                <div className="h-4 w-px bg-earth/10"></div>
+                                <span className="text-xl font-serif text-earth">Reviewing {reviewIndex + 1} of {selectedProducts.length}</span>
+                            </div>
+                            <div className="relative z-10 flex gap-4">
+                                <button
+                                    onClick={() => setReviewIndex(prev => Math.max(0, prev - 1))}
+                                    disabled={reviewIndex === 0}
+                                    className="px-6 py-2 rounded-full border border-earth/10 hover:bg-white disabled:opacity-30 transition-all text-xs uppercase tracking-widest font-bold"
+                                >
+                                    Previous
+                                </button>
+                                {reviewIndex < selectedProducts.length - 1 ? (
+                                    <button
+                                        onClick={() => setReviewIndex(prev => Math.min(selectedProducts.length - 1, prev + 1))}
+                                        className="px-8 py-2 rounded-full bg-earth text-cream hover:bg-bronze transition-all text-xs uppercase tracking-widest font-bold shadow-lg"
+                                    >
+                                        Next Item
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={confirmImport}
+                                        className="px-8 py-2 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20"
+                                    >
+                                        Complete Import ({selectedProducts.length})
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row h-[70vh]">
+                            {/* Left: Product Images & Basic Info */}
+                            <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
+                                <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
+                                    <img
+                                        src={currentProduct.images[0]}
+                                        alt="Main Preview"
+                                        className="w-full h-full object-contain p-4"
+                                    />
+                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
+                                        {currentProduct.images.length} Images
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {currentProduct.images.slice(0, 4).map((img, i) => (
+                                        <div key={i} className="aspect-square rounded-lg border border-earth/10 overflow-hidden bg-white hover:border-bronze cursor-pointer transition-colors">
+                                            <img src={img} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-8 space-y-6">
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold block mb-2">Original URL</label>
+                                        <a href={currentProduct.productUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-bronze hover:underline text-sm truncate">
+                                            <Link className="w-3 h-3" />
+                                            {currentProduct.productUrl || 'No Link'}
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold block mb-2">Original Price</label>
+                                        <span className="text-lg font-serif text-earth/60 line-through decoration-bronze/30">
+                                            ${(currentProduct.salePrice || currentProduct.price).toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Customization Form */}
+                            <div className="w-full lg:w-2/3 p-10 space-y-8 overflow-y-auto bg-white/60">
+                                <div className="flex gap-4">
+                                    <div className="flex-1 space-y-6">
+                                        {/* Product Name */}
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Product Name</label>
+                                                <button
+                                                    onClick={() => enhanceProductWithAI(currentProduct.id)}
+                                                    className="text-[10px] uppercase tracking-widest text-purple-600 flex items-center gap-1 hover:text-purple-700 font-bold"
+                                                >
+                                                    <Wand2 className="w-3 h-3" /> AI Enhance
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={currentProduct.customName || currentProduct.name}
+                                                onChange={(e) => updateReviewProduct('customName', e.target.value)}
+                                                className="w-full p-4 bg-white border border-earth/10 rounded-xl font-serif text-lg text-earth focus:ring-2 ring-bronze/20 focus:border-bronze transition-all shadow-sm"
+                                            />
+                                        </div>
+
+                                        {/* Categorization */}
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Collection</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={currentProduct.targetCollection || targetCollection}
+                                                        onChange={(e) => updateReviewProduct('targetCollection', e.target.value)}
+                                                        className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth appearance-none focus:ring-2 ring-bronze/20 shadow-sm font-medium"
+                                                    >
+                                                        {collections.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/30 pointer-events-none" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Sub-Category</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={currentProduct.targetSubcategory || targetSubcategory}
+                                                        onChange={(e) => updateReviewProduct('targetSubcategory', e.target.value)}
+                                                        className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth appearance-none focus:ring-2 ring-bronze/20 shadow-sm font-medium"
+                                                    >
+                                                        <option value="">Select Sub-Category</option>
+                                                        {getSubcategoriesForCollection(currentProduct.targetCollection || targetCollection as string).map(s => (
+                                                            <option key={s.id} value={s.id}>{s.title}</option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/30 pointer-events-none" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Pricing */}
+                                        <div className="grid grid-cols-2 gap-6 bg-cream/30 p-6 rounded-2xl border border-earth/5">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Your Price ($)</label>
+                                                <input
+                                                    type="number"
+                                                    value={currentProduct.customPrice || calculateFinalPrice(currentProduct.salePrice || currentProduct.price)}
+                                                    onChange={(e) => updateReviewProduct('customPrice', parseFloat(e.target.value))}
+                                                    className="w-full p-3 bg-white border border-earth/10 rounded-xl font-serif text-xl text-bronze font-bold focus:ring-2 ring-bronze/20 shadow-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-1 flex flex-col justify-center">
+                                                <div className="flex justify-between text-xs text-earth/60">
+                                                    <span>Cost:</span>
+                                                    <span>${(currentProduct.salePrice || currentProduct.price).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xs font-bold text-green-700">
+                                                    <span>Profit:</span>
+                                                    <span>${((currentProduct.customPrice || calculateFinalPrice(currentProduct.salePrice || currentProduct.price)) - (currentProduct.salePrice || currentProduct.price)).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Description */}
+                                        <div className="space-y-2 flex-1">
+                                            <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Description</label>
+                                            <textarea
+                                                rows={6}
+                                                value={currentProduct.customDescription || currentProduct.description || ''}
+                                                onChange={(e) => updateReviewProduct('customDescription', e.target.value)}
+                                                className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth/80 focus:ring-2 ring-bronze/20 shadow-sm resize-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Variants Sidebar (if any) */}
+                                    {currentProduct.variants && currentProduct.variants.length > 0 && (
+                                        <div className="w-64 bg-white p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
+                                            <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-4">Variants Detected ({currentProduct.variants.length})</h4>
+                                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {currentProduct.variants.map((variant, idx) => (
+                                                    <div key={idx} className="flex items-center gap-3 text-sm p-2 hover:bg-cream/50 rounded-lg transition-colors">
+                                                        <div className="w-8 h-8 rounded border border-earth/10 bg-gray-50 flex items-center justify-center overflow-hidden">
+                                                            {variant.image ? <img src={variant.image} className="w-full h-full object-cover" /> : <Package className="w-3 h-3 text-gray-300" />}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="truncate font-medium text-earth">{variant.name}</div>
+                                                            <div className="text-xs text-earth/40">{variant.inStock ? 'In Stock' : 'Out of Stock'}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </FadeIn>
+            </div>
+        );
+    }
 
     // URL Import
     const handleImportByUrl = async () => {
@@ -490,7 +640,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <FadeIn key={product.id} delay={idx * 50}>
                                     <div
                                         className={`glass-card rounded-2xl overflow-hidden transition-all duration-500 relative group bg-white
-                                        ${product.selected ? 'ring-2 ring-bronze shadow-2xl scale-[1.02]' : 'hover:scale-[1.01] hover:shadow-xl'}
+                                        ${product.selected ? 'ring-4 ring-cream/80 scale-[1.02] shadow-xl' : 'hover:scale-[1.01] hover:shadow-xl hover:ring-2 hover:ring-cream/50'}
                                     `}
                                     >
                                         {/* Action Overlay (Glass) */}
