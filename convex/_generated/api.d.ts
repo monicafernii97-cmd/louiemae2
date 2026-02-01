@@ -22,6 +22,7 @@ import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
+import type * as scraper from "../scraper.js";
 import type * as siteContent from "../siteContent.js";
 import type * as subscribers from "../subscribers.js";
 
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   orders: typeof orders;
   products: typeof products;
+  scraper: typeof scraper;
   siteContent: typeof siteContent;
   subscribers: typeof subscribers;
 }>;
