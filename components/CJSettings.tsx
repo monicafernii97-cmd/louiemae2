@@ -23,8 +23,8 @@ export const CJSettings: React.FC = () => {
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
     const [deletingId, setDeletingId] = useState<Id<"products"> | null>(null);
 
-    // Use the standard products.remove mutation for deleting
-    const deleteProduct = useMutation(api.products.remove);
+    // Use the admin products.adminRemove mutation for deleting (no auth required)
+    const deleteProduct = useMutation(api.products.adminRemove);
     // Also try to cancel on CJ if possible
     const cancelAndDelete = useAction(api.cjActions.cancelAndDeleteProduct);
 

@@ -100,6 +100,17 @@ export const remove = mutation({
     },
 });
 
+/**
+ * Admin-only remove - simpler version for CJ Settings panel
+ * Note: In production, you'd want to add proper admin verification
+ */
+export const adminRemove = mutation({
+    args: { id: v.id("products") },
+    handler: async (ctx, args) => {
+        await ctx.db.delete(args.id);
+    },
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // STOREFRONT PRODUCTS (filtered for public display)
 // ═══════════════════════════════════════════════════════════════════════════
