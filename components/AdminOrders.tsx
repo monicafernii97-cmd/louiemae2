@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
-import { Package, Truck, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, MapPin, Mail, RefreshCw, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Package, Truck, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, MapPin, Mail, RefreshCw, ExternalLink, AlertTriangle, Loader2 } from 'lucide-react';
 
 type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 type CjStatus = 'pending' | 'sending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'failed' | 'cancelled';
@@ -31,9 +31,12 @@ export const AdminOrders: React.FC = () => {
     const orders = useQuery(api.orders.getAll) || [];
     const updateStatus = useMutation(api.orders.updateStatus);
     const resetCjStatus = useMutation(api.orders.resetCjStatus);
+    const syncTracking = useAction(api.cjActions.syncTracking);
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all' | 'cj-failed'>('all');
     const [retryingOrder, setRetryingOrder] = useState<string | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncResult, setSyncResult] = useState<{ synced: number; errors: number } | null>(null);
 
     const filteredOrders = filterStatus === 'all'
         ? orders
@@ -52,6 +55,21 @@ export const AdminOrders: React.FC = () => {
             // The CJ order will be resent on the next sync or manually triggered
         } finally {
             setRetryingOrder(null);
+        }
+    };
+
+    const handleSyncTracking = async () => {
+        setIsSyncing(true);
+        setSyncResult(null);
+        try {
+            const result = await syncTracking({});
+            setSyncResult(result);
+            // Clear result after 5 seconds
+            setTimeout(() => setSyncResult(null), 5000);
+        } catch (error) {
+            console.error('Sync failed:', error);
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -98,6 +116,28 @@ export const AdminOrders: React.FC = () => {
                         <option value="cancelled">Cancelled</option>
                         {cjFailedCount > 0 && <option value="cj-failed">⚠️ CJ Failed ({cjFailedCount})</option>}
                     </select>
+
+                    {/* Sync Tracking Button */}
+                    <button
+                        onClick={handleSyncTracking}
+                        disabled={isSyncing}
+                        className="flex items-center gap-2 px-4 py-2 bg-earth text-white rounded hover:bg-earth/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                    >
+                        {isSyncing ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="w-4 h-4" />
+                        )}
+                        {isSyncing ? 'Syncing...' : 'Sync Tracking'}
+                    </button>
+
+                    {/* Sync Result Toast */}
+                    {syncResult && (
+                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                            ✓ Synced {syncResult.synced} orders
+                            {syncResult.errors > 0 && `, ${syncResult.errors} errors`}
+                        </span>
+                    )}
                 </div>
             </div>
 
