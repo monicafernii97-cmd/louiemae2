@@ -194,7 +194,7 @@ export const CJSettings: React.FC = () => {
                                 description="Setup status callbacks."
                                 onClick={handleConfigureWebhooks}
                                 loading={configuring}
-                                colorClass="text-bronze"
+                                colorClass="text-amber-500"
                             />
 
                             <ActionCard
@@ -278,7 +278,7 @@ export const CJSettings: React.FC = () => {
                                                 <button
                                                     onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                                     disabled={deletingId === product._id}
-                                                    className="opacity-0 group-hover/item:opacity-100 p-2 text-red-400 hover:text-red-600 hover:bg-red-50/50 rounded-full transition-all disabled:opacity-50 backdrop-blur-sm"
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50/50 rounded-full transition-all disabled:opacity-50 backdrop-blur-sm"
                                                     title="Remove from import"
                                                 >
                                                     {deletingId === product._id ? (
@@ -358,7 +358,7 @@ export const CJSettings: React.FC = () => {
                                                         <button
                                                             onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                                             disabled={deletingId === product._id}
-                                                            className="opacity-0 group-hover/item:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-100/50 rounded-full transition-all disabled:opacity-50"
+                                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-100/50 rounded-full transition-all disabled:opacity-50"
                                                             title="Remove from catalog"
                                                         >
                                                             {deletingId === product._id ? (
