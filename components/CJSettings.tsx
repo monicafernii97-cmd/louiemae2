@@ -106,38 +106,33 @@ export const CJSettings: React.FC = () => {
         }
     };
 
-    // Action Card Component
+    // Action Card Component (Refined & Minimalist)
     const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: any) => (
         <div
             onClick={loading ? undefined : onClick}
-            className="group relative backdrop-blur-xl bg-white/40 border border-white/40 p-8 shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden rounded-2xl hover:-translate-y-2 animate-float"
-            style={{ animationDelay: `${Math.random() * 2}s` }}
+            className="group relative backdrop-blur-xl bg-white/60 border border-white/40 p-6 shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer overflow-hidden rounded-xl hover:-translate-y-1"
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-4 group-hover:translate-x-0">
-                <ArrowRight className="w-5 h-5 text-earth/40" />
-            </div>
-
-            <div className={`relative mb-6 p-4 bg-gradient-to-br from-white/80 to-white/20 border border-white/40 inline-block rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-sm ${loading ? 'animate-pulse' : ''}`}>
-                <Icon className={`w-6 h-6 ${colorClass} drop-shadow-sm`} />
-            </div>
-
-            <div className="relative">
-                <h3 className="font-serif text-2xl text-earth mb-2 group-hover:text-bronze transition-colors">{title}</h3>
-                <p className="text-xs text-earth/60 leading-relaxed mb-6 h-8 font-sans tracking-wide">{description}</p>
-
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-earth/40 group-hover:text-bronze transition-colors font-medium">
-                    {loading ? (
-                        <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            <span>Processing...</span>
-                        </>
-                    ) : (
-                        <span>Execute Task</span>
-                    )}
+            <div className="flex justify-between items-start mb-4">
+                <div className={`p-2 rounded-lg bg-white/50 backdrop-blur-md shadow-sm border border-white/20 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className={`w-5 h-5 ${colorClass}`} />
+                </div>
+                <div className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                    <ArrowRight className="w-4 h-4 text-earth/30" />
                 </div>
             </div>
+
+            <div className="relative z-10">
+                <h3 className="font-serif text-lg text-earth font-medium mb-1 group-hover:text-bronze transition-colors">{title}</h3>
+                <p className="text-xs text-earth/50 leading-relaxed font-sans line-clamp-2">{description}</p>
+            </div>
+
+            {loading && (
+                <div className="absolute bottom-4 right-4 animate-pulse">
+                    <Loader2 className="w-4 h-4 text-bronze animate-spin" />
+                </div>
+            )}
         </div>
     );
 
@@ -183,11 +178,11 @@ export const CJSettings: React.FC = () => {
                             <Settings className="w-5 h-5 text-bronze/60" />
                             System Controls
                         </h2>
-                        <div className="grid grid-cols-1 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <ActionCard
                                 icon={Wifi}
-                                title="Connection Test"
-                                description="Verify API connectivity with CJ Dropshipping servers."
+                                title="Connection"
+                                description="Verify API connectivity with CJ."
                                 onClick={handleTestConnection}
                                 loading={testing}
                                 colorClass="text-blue-500"
@@ -195,8 +190,8 @@ export const CJSettings: React.FC = () => {
 
                             <ActionCard
                                 icon={ExternalLink}
-                                title="Configure Webhooks"
-                                description="Setup real-time callbacks for order status updates."
+                                title="Webhooks"
+                                description="Setup status callbacks."
                                 onClick={handleConfigureWebhooks}
                                 loading={configuring}
                                 colorClass="text-purple-500"
@@ -204,8 +199,8 @@ export const CJSettings: React.FC = () => {
 
                             <ActionCard
                                 icon={RefreshCw}
-                                title="Sync Tracking"
-                                description="Manually pull tracking numbers for open orders."
+                                title="Tracking"
+                                description="Pull latest tracking numbers."
                                 onClick={handleSyncTracking}
                                 loading={syncing}
                                 colorClass="text-green-500"
@@ -213,8 +208,8 @@ export const CJSettings: React.FC = () => {
 
                             <ActionCard
                                 icon={Package}
-                                title="Check Sourcing"
-                                description="Update status of pending sourcing requests."
+                                title="Sourcing"
+                                description="Update sourcing status."
                                 onClick={handleCheckSourcing}
                                 loading={checkingSourcing}
                                 colorClass="text-amber-500"
