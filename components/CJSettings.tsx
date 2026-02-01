@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAction, useQuery } from 'convex/react';
+import { useAction, useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
 import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2 } from 'lucide-react';
@@ -23,25 +23,39 @@ export const CJSettings: React.FC = () => {
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
     const [deletingId, setDeletingId] = useState<Id<"products"> | null>(null);
 
-    // Cancel sourcing on CJ and delete product locally
+    // Use the standard products.remove mutation for deleting
+    const deleteProduct = useMutation(api.products.remove);
+    // Also try to cancel on CJ if possible
     const cancelAndDelete = useAction(api.cjActions.cancelAndDeleteProduct);
 
     const handleDeleteProduct = async (id: Id<"products">, productName: string, cjSourcingId?: string) => {
-        if (!window.confirm(`Remove "${productName}" from import queue? This will cancel the sourcing request on CJ's side and cannot be undone.`)) {
+        if (!window.confirm(`Remove "${productName}" from import queue? This cannot be undone.`)) {
             return;
         }
         setDeletingId(id);
         try {
-            const actionResult = await cancelAndDelete({ productId: id, cjSourcingId });
-            if (actionResult.success) {
-                const cjMessage = actionResult.cjCancelled
-                    ? ' (also cancelled on CJ)'
-                    : ' (CJ request may already be processed)';
-                setResult({ success: true, message: `"${productName}" removed successfully${cjMessage}` });
-            } else {
-                setResult({ success: false, message: actionResult.error || 'Failed to remove product' });
+            // Try the full CJ action first (cancels on CJ + deletes locally)
+            if (cjSourcingId) {
+                try {
+                    const actionResult = await cancelAndDelete({ productId: id, cjSourcingId });
+                    if (actionResult.success) {
+                        const cjMessage = actionResult.cjCancelled
+                            ? ' (also cancelled on CJ)'
+                            : ' (CJ request may already be processed)';
+                        setResult({ success: true, message: `"${productName}" removed${cjMessage}` });
+                        setDeletingId(null);
+                        return;
+                    }
+                } catch (cjError) {
+                    console.warn("CJ action failed, falling back to local delete:", cjError);
+                }
             }
+
+            // Fallback: just delete locally
+            await deleteProduct({ id });
+            setResult({ success: true, message: `"${productName}" removed successfully` });
         } catch (error: any) {
+            console.error("Delete failed:", error);
             setResult({ success: false, message: error.message || 'Failed to remove product' });
         } finally {
             setDeletingId(null);
