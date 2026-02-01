@@ -206,12 +206,16 @@ http.route({
                 country: shippingDetails.address.country || "",
             } : undefined;
 
+            // Get customer phone if available
+            const customerPhone = session.customer_details?.phone || shippingDetails?.phone || undefined;
+
             // Create order in database
-            await ctx.runMutation(api.orders.createOrder, {
+            const orderId = await ctx.runMutation(api.orders.createOrder, {
                 stripeSessionId: session.id,
                 stripePaymentIntentId: session.payment_intent as string || undefined,
                 customerEmail: session.customer_details?.email || "",
                 customerName: session.customer_details?.name || undefined,
+                customerPhone,
                 items: itemsData,
                 subtotal: (session.amount_subtotal || 0) / 100,
                 shipping: (session.shipping_cost?.amount_total || 0) / 100,
@@ -243,6 +247,33 @@ http.route({
                     // Don't fail the webhook if email fails
                 }
             }
+
+            // Forward order to CJ Dropshipping if items have CJ mapping
+            const cjProducts = itemsData
+                .filter((item: any) => item.cjVariantId || item.cjSku)
+                .map((item: any) => ({
+                    vid: item.cjVariantId || undefined,
+                    sku: item.cjSku || undefined,
+                    quantity: item.quantity,
+                }));
+
+            if (cjProducts.length > 0 && shippingAddress) {
+                try {
+                    await ctx.runAction(internal.cjDropshipping.createCjOrder, {
+                        orderId,
+                        orderNumber: session.id.slice(-12).toUpperCase(),
+                        customerName: session.customer_details?.name || "Customer",
+                        customerPhone: customerPhone || "",
+                        customerEmail: session.customer_details?.email || "",
+                        shippingAddress,
+                        products: cjProducts,
+                    });
+                    console.log(`CJ order forwarding initiated for order ${orderId}`);
+                } catch (cjError: any) {
+                    console.error("Failed to forward order to CJ:", cjError.message);
+                    // Don't fail the webhook if CJ order fails - it will be retried manually
+                }
+            }
         }
 
         return new Response(JSON.stringify({ received: true }), {
@@ -251,6 +282,141 @@ http.route({
         });
     }),
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CJ DROPSHIPPING WEBHOOK
+// Receives real-time notifications from CJ for order updates, tracking, etc.
+// ═══════════════════════════════════════════════════════════════════════════
+
+http.route({
+    path: "/cj/webhook",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        try {
+            const body = await request.json();
+
+            console.log("CJ Webhook received:", JSON.stringify(body, null, 2));
+
+            const { messageId, type, messageType, params } = body;
+
+            if (!messageId || !type) {
+                return new Response(JSON.stringify({ success: false, error: "Invalid webhook payload" }), {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" },
+                });
+            }
+
+            // Handle different webhook types
+            switch (type) {
+                case "ORDER":
+                    // Order status update from CJ
+                    await handleCjOrderWebhook(ctx, params, messageType);
+                    break;
+
+                case "LOGISTIC":
+                    // Tracking/logistics update
+                    await handleCjLogisticsWebhook(ctx, params);
+                    break;
+
+                case "ORDERSPLIT":
+                    // Order was split into multiple shipments
+                    console.log("CJ Order Split:", params);
+                    break;
+
+                case "PRODUCT":
+                case "VARIANT":
+                case "STOCK":
+                    // Product updates - log for now
+                    console.log(`CJ ${type} update:`, params);
+                    break;
+
+                default:
+                    console.log(`Unknown CJ webhook type: ${type}`, params);
+            }
+
+            // CJ requires 200 response within 3 seconds
+            return new Response(JSON.stringify({ success: true }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            });
+
+        } catch (error: any) {
+            console.error("CJ Webhook error:", error.message);
+            return new Response(JSON.stringify({ success: false, error: error.message }), {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+            });
+        }
+    }),
+});
+
+// Handle CJ Order status webhook
+async function handleCjOrderWebhook(ctx: any, params: any, messageType: string) {
+    const { cjOrderId, orderNumber, orderStatus, trackNumber, logisticName, trackingUrl } = params;
+
+    if (!orderNumber) {
+        console.error("CJ Order webhook missing orderNumber");
+        return;
+    }
+
+    console.log(`CJ Order ${orderNumber} status: ${orderStatus}, tracking: ${trackNumber}`);
+
+    // Find order by order number (stripeSessionId last 12 chars uppercase)
+    try {
+        await ctx.runMutation(internal.cjHelpers.handleCjWebhookUpdate, {
+            orderNumber,
+            cjOrderId: cjOrderId?.toString(),
+            cjStatus: mapCjOrderStatus(orderStatus),
+            trackingNumber: trackNumber || undefined,
+            trackingUrl: trackingUrl || undefined,
+            carrier: logisticName || undefined,
+        });
+    } catch (error: any) {
+        console.error("Failed to process CJ order webhook:", error.message);
+    }
+}
+
+// Handle CJ Logistics/tracking webhook
+async function handleCjLogisticsWebhook(ctx: any, params: any) {
+    const { orderId, trackingNumber, logisticName, trackingStatus, trackingUrl } = params;
+
+    console.log(`CJ Logistics update for order ${orderId}: ${trackingNumber}, status: ${trackingStatus}`);
+
+    // Map CJ tracking status to our status
+    let cjStatus: string = "shipped";
+    if (trackingStatus === 12) {
+        cjStatus = "delivered";
+    } else if (trackingStatus === 13 || trackingStatus === 14) {
+        cjStatus = "failed";
+    }
+
+    try {
+        await ctx.runMutation(internal.cjHelpers.handleCjLogisticsUpdate, {
+            cjOrderId: orderId?.toString(),
+            trackingNumber: trackingNumber || undefined,
+            trackingUrl: trackingUrl || undefined,
+            carrier: logisticName || undefined,
+            cjStatus,
+        });
+    } catch (error: any) {
+        console.error("Failed to process CJ logistics webhook:", error.message);
+    }
+}
+
+// Map CJ order status strings to our status
+function mapCjOrderStatus(cjStatus: string): string {
+    const statusMap: Record<string, string> = {
+        "CREATED": "confirmed",
+        "IN_CART": "confirmed",
+        "UNPAID": "confirmed",
+        "UNSHIPPED": "processing",
+        "SHIPPED": "shipped",
+        "DELIVERED": "delivered",
+        "CANCELLED": "cancelled",
+    };
+    return statusMap[cjStatus] || "processing";
+}
 
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -12,6 +12,8 @@ import type * as aliexpress from "../aliexpress.js";
 import type * as auth from "../auth.js";
 import type * as blogPosts from "../blogPosts.js";
 import type * as campaigns from "../campaigns.js";
+import type * as cjDropshipping from "../cjDropshipping.js";
+import type * as cjHelpers from "../cjHelpers.js";
 import type * as customPages from "../customPages.js";
 import type * as emails from "../emails.js";
 import type * as files from "../files.js";
@@ -32,6 +34,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   blogPosts: typeof blogPosts;
   campaigns: typeof campaigns;
+  cjDropshipping: typeof cjDropshipping;
+  cjHelpers: typeof cjHelpers;
   customPages: typeof customPages;
   emails: typeof emails;
   files: typeof files;

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
-import { Package, Truck, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, MapPin, Mail } from 'lucide-react';
+import { Package, Truck, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, MapPin, Mail, RefreshCw, ExternalLink, AlertTriangle } from 'lucide-react';
 
 type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+type CjStatus = 'pending' | 'sending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'failed' | 'cancelled';
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: React.ReactNode }> = {
     pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-700', icon: <Clock className="w-4 h-4" /> },
@@ -15,18 +16,43 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: Re
     cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700', icon: <XCircle className="w-4 h-4" /> },
 };
 
+const cjStatusConfig: Record<CjStatus, { label: string; color: string; icon: React.ReactNode }> = {
+    pending: { label: 'CJ Pending', color: 'bg-gray-100 text-gray-600', icon: <Clock className="w-3 h-3" /> },
+    sending: { label: 'Sending to CJ', color: 'bg-blue-100 text-blue-600', icon: <RefreshCw className="w-3 h-3 animate-spin" /> },
+    confirmed: { label: 'CJ Confirmed', color: 'bg-green-100 text-green-600', icon: <CheckCircle className="w-3 h-3" /> },
+    processing: { label: 'CJ Processing', color: 'bg-blue-100 text-blue-600', icon: <Package className="w-3 h-3" /> },
+    shipped: { label: 'CJ Shipped', color: 'bg-purple-100 text-purple-600', icon: <Truck className="w-3 h-3" /> },
+    delivered: { label: 'CJ Delivered', color: 'bg-emerald-100 text-emerald-600', icon: <CheckCircle className="w-3 h-3" /> },
+    failed: { label: 'CJ Failed', color: 'bg-red-100 text-red-600', icon: <XCircle className="w-3 h-3" /> },
+    cancelled: { label: 'CJ Cancelled', color: 'bg-gray-100 text-gray-600', icon: <XCircle className="w-3 h-3" /> },
+};
+
 export const AdminOrders: React.FC = () => {
     const orders = useQuery(api.orders.getAll) || [];
     const updateStatus = useMutation(api.orders.updateStatus);
+    const resetCjStatus = useMutation(api.orders.resetCjStatus);
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-    const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
+    const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all' | 'cj-failed'>('all');
+    const [retryingOrder, setRetryingOrder] = useState<string | null>(null);
 
     const filteredOrders = filterStatus === 'all'
         ? orders
-        : orders.filter(o => o.status === filterStatus);
+        : filterStatus === 'cj-failed'
+            ? orders.filter(o => o.cjStatus === 'failed')
+            : orders.filter(o => o.status === filterStatus);
 
     const handleStatusChange = async (orderId: Id<"orders">, newStatus: OrderStatus) => {
         await updateStatus({ orderId, status: newStatus });
+    };
+
+    const handleRetryCj = async (orderId: Id<"orders">) => {
+        setRetryingOrder(orderId);
+        try {
+            await resetCjStatus({ orderId });
+            // The CJ order will be resent on the next sync or manually triggered
+        } finally {
+            setRetryingOrder(null);
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -39,6 +65,9 @@ export const AdminOrders: React.FC = () => {
         });
     };
 
+    // Count CJ failed orders
+    const cjFailedCount = orders.filter(o => o.cjStatus === 'failed').length;
+
     return (
         <div className="p-8">
             {/* Header */}
@@ -49,18 +78,27 @@ export const AdminOrders: React.FC = () => {
                 </div>
 
                 {/* Filter */}
-                <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value as OrderStatus | 'all')}
-                    className="px-4 py-2 border border-earth/20 rounded text-sm text-earth bg-white"
-                >
-                    <option value="all">All Orders</option>
-                    <option value="paid">Paid</option>
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                </select>
+                <div className="flex items-center gap-3">
+                    {cjFailedCount > 0 && (
+                        <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full flex items-center gap-1.5">
+                            <AlertTriangle className="w-3 h-3" />
+                            {cjFailedCount} CJ Failed
+                        </span>
+                    )}
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value as OrderStatus | 'all' | 'cj-failed')}
+                        className="px-4 py-2 border border-earth/20 rounded text-sm text-earth bg-white"
+                    >
+                        <option value="all">All Orders</option>
+                        <option value="paid">Paid</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                        {cjFailedCount > 0 && <option value="cj-failed">⚠️ CJ Failed ({cjFailedCount})</option>}
+                    </select>
+                </div>
             </div>
 
             {/* Orders List */}
@@ -74,9 +112,11 @@ export const AdminOrders: React.FC = () => {
                     {filteredOrders.map((order) => {
                         const isExpanded = expandedOrder === order._id;
                         const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
+                        const cjStatus = order.cjStatus ? cjStatusConfig[order.cjStatus as CjStatus] : null;
+                        const hasCjProducts = order.items?.some((item: any) => item.cjVariantId || item.cjSku);
 
                         return (
-                            <div key={order._id} className="bg-white border border-earth/10 rounded-lg overflow-hidden shadow-sm">
+                            <div key={order._id} className={`bg-white border rounded-lg overflow-hidden shadow-sm ${order.cjStatus === 'failed' ? 'border-red-300' : 'border-earth/10'}`}>
                                 {/* Order Header */}
                                 <div
                                     className="p-4 flex items-center justify-between cursor-pointer hover:bg-cream/20 transition-colors"
@@ -95,8 +135,18 @@ export const AdminOrders: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3">
                                         <span className="font-serif text-lg text-earth">${order.total.toFixed(2)}</span>
+
+                                        {/* CJ Status Badge */}
+                                        {cjStatus && (
+                                            <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${cjStatus.color}`}>
+                                                {cjStatus.icon}
+                                                {cjStatus.label}
+                                            </span>
+                                        )}
+
+                                        {/* Order Status Badge */}
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${status.color}`}>
                                             {status.icon}
                                             {status.label}
@@ -108,14 +158,19 @@ export const AdminOrders: React.FC = () => {
                                 {/* Expanded Details */}
                                 {isExpanded && (
                                     <div className="border-t border-earth/10 p-6 bg-cream/10">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                             {/* Items */}
                                             <div>
                                                 <h4 className="text-xs uppercase tracking-widest text-earth/50 mb-3">Items</h4>
                                                 <div className="space-y-2">
-                                                    {order.items.map((item, idx) => (
+                                                    {order.items.map((item: any, idx: number) => (
                                                         <div key={idx} className="flex justify-between text-sm">
-                                                            <span className="text-earth">{item.name} × {item.quantity}</span>
+                                                            <span className="text-earth">
+                                                                {item.name} × {item.quantity}
+                                                                {(item.cjVariantId || item.cjSku) && (
+                                                                    <span className="ml-1 text-xs text-purple-600">(CJ)</span>
+                                                                )}
+                                                            </span>
                                                             <span className="text-earth/70">${(item.price * item.quantity).toFixed(2)}</span>
                                                         </div>
                                                     ))}
@@ -151,6 +206,68 @@ export const AdminOrders: React.FC = () => {
                                                     </div>
                                                 ) : (
                                                     <p className="text-sm text-earth/50">No address provided</p>
+                                                )}
+                                            </div>
+
+                                            {/* CJ Fulfillment */}
+                                            <div>
+                                                <h4 className="text-xs uppercase tracking-widest text-earth/50 mb-3 flex items-center gap-2">
+                                                    <Package className="w-3 h-3" /> CJ Fulfillment
+                                                </h4>
+                                                {hasCjProducts ? (
+                                                    <div className="space-y-3">
+                                                        {order.cjOrderId && (
+                                                            <div className="text-sm">
+                                                                <span className="text-earth/50">CJ Order: </span>
+                                                                <span className="font-mono text-earth">{order.cjOrderId}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {order.trackingNumber && (
+                                                            <div className="text-sm">
+                                                                <span className="text-earth/50">Tracking: </span>
+                                                                {order.trackingUrl ? (
+                                                                    <a
+                                                                        href={order.trackingUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="font-mono text-purple-600 hover:underline inline-flex items-center gap-1"
+                                                                    >
+                                                                        {order.trackingNumber}
+                                                                        <ExternalLink className="w-3 h-3" />
+                                                                    </a>
+                                                                ) : (
+                                                                    <span className="font-mono text-earth">{order.trackingNumber}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {order.carrier && (
+                                                            <div className="text-sm">
+                                                                <span className="text-earth/50">Carrier: </span>
+                                                                <span className="text-earth">{order.carrier}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {order.cjError && (
+                                                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                                                <strong>Error:</strong> {order.cjError}
+                                                            </div>
+                                                        )}
+
+                                                        {order.cjStatus === 'failed' && (
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleRetryCj(order._id as Id<"orders">); }}
+                                                                disabled={retryingOrder === order._id}
+                                                                className="mt-2 w-full px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                                            >
+                                                                <RefreshCw className={`w-4 h-4 ${retryingOrder === order._id ? 'animate-spin' : ''}`} />
+                                                                Retry CJ Order
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-earth/50">No CJ products</p>
                                                 )}
                                             </div>
 

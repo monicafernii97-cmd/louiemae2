@@ -82,6 +82,7 @@ export default defineSchema({
         stripePaymentIntentId: v.optional(v.string()),
         customerEmail: v.string(),
         customerName: v.optional(v.string()),
+        customerPhone: v.optional(v.string()), // Required by CJ API
         items: v.array(v.object({
             productId: v.string(),
             variantId: v.optional(v.string()),
@@ -90,6 +91,9 @@ export default defineSchema({
             price: v.number(),
             quantity: v.number(),
             image: v.optional(v.string()),
+            // CJ Dropshipping product mapping
+            cjVariantId: v.optional(v.string()), // CJ variant ID (vid)
+            cjSku: v.optional(v.string()), // CJ product SKU
         })),
         subtotal: v.number(),
         shipping: v.optional(v.number()),
@@ -112,10 +116,31 @@ export default defineSchema({
             postalCode: v.string(),
             country: v.string(),
         })),
+        // CJ Dropshipping fulfillment fields
+        cjOrderId: v.optional(v.string()), // CJ's order reference ID
+        cjStatus: v.optional(v.union(
+            v.literal("pending"), // Not yet sent to CJ
+            v.literal("sending"), // Being sent to CJ
+            v.literal("confirmed"), // CJ accepted order
+            v.literal("processing"), // CJ is fulfilling
+            v.literal("shipped"), // CJ shipped the order
+            v.literal("delivered"), // Delivered to customer
+            v.literal("failed"), // CJ order creation failed
+            v.literal("cancelled") // Order cancelled at CJ
+        )),
+        cjError: v.optional(v.string()), // Error message if CJ order fails
+        cjLastSyncAt: v.optional(v.string()), // Last time we synced with CJ
+        // Tracking information
+        trackingNumber: v.optional(v.string()),
+        trackingUrl: v.optional(v.string()),
+        carrier: v.optional(v.string()), // Shipping carrier name
+        shippedAt: v.optional(v.string()), // When the order was shipped
+        estimatedDelivery: v.optional(v.string()), // Estimated delivery date
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("by_session", ["stripeSessionId"])
-        .index("by_email", ["customerEmail"]),
+        .index("by_email", ["customerEmail"])
+        .index("by_cj_status", ["cjStatus"]),
 
     // AliExpress product cache - stores fetched products for faster access
     aliexpressCache: defineTable({

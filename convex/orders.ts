@@ -8,6 +8,7 @@ export const createOrder = mutation({
         stripePaymentIntentId: v.optional(v.string()),
         customerEmail: v.string(),
         customerName: v.optional(v.string()),
+        customerPhone: v.optional(v.string()),
         items: v.array(v.object({
             productId: v.string(),
             variantId: v.optional(v.string()),
@@ -16,6 +17,9 @@ export const createOrder = mutation({
             price: v.number(),
             quantity: v.number(),
             image: v.optional(v.string()),
+            // CJ Dropshipping product mapping
+            cjVariantId: v.optional(v.string()),
+            cjSku: v.optional(v.string()),
         })),
         subtotal: v.number(),
         shipping: v.optional(v.number()),
@@ -33,9 +37,15 @@ export const createOrder = mutation({
     },
     handler: async (ctx, args) => {
         const now = new Date().toISOString();
+
+        // Check if any items have CJ product mapping
+        const hasCjProducts = args.items.some(item => item.cjVariantId || item.cjSku);
+
         return await ctx.db.insert("orders", {
             ...args,
             status: "paid",
+            // Set CJ status to pending if there are CJ products to fulfill
+            cjStatus: hasCjProducts ? "pending" : undefined,
             createdAt: now,
             updatedAt: now,
         });
@@ -90,5 +100,47 @@ export const updateStatus = mutation({
             status: args.status,
             updatedAt: new Date().toISOString(),
         });
+    },
+});
+
+// Get order by ID
+export const getById = query({
+    args: { orderId: v.id("orders") },
+    handler: async (ctx, args) => {
+        return await ctx.db.get(args.orderId);
+    },
+});
+
+// Reset CJ status to retry sending to CJ
+export const resetCjStatus = mutation({
+    args: { orderId: v.id("orders") },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.orderId, {
+            cjStatus: "pending",
+            cjError: undefined,
+            updatedAt: new Date().toISOString(),
+        });
+    },
+});
+
+// Get orders with failed CJ status
+export const getFailedCjOrders = query({
+    handler: async (ctx) => {
+        return await ctx.db
+            .query("orders")
+            .filter((q) => q.eq(q.field("cjStatus"), "failed"))
+            .order("desc")
+            .collect();
+    },
+});
+
+// Get orders pending CJ submission
+export const getPendingCjOrders = query({
+    handler: async (ctx) => {
+        return await ctx.db
+            .query("orders")
+            .filter((q) => q.eq(q.field("cjStatus"), "pending"))
+            .order("desc")
+            .collect();
     },
 });

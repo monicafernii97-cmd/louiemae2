@@ -1,0 +1,403 @@
+"use node";
+
+import { v } from "convex/values";
+import { internalAction } from "./_generated/server";
+import { internal } from "./_generated/api";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CJ DROPSHIPPING API INTEGRATION
+// Handles authentication, order creation, and tracking sync with CJ
+// Note: Queries/mutations are in cjHelpers.ts (can't be in "use node" files)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
+
+// Token cache (in-memory, will refresh on cold start)
+let cachedToken: { accessToken: string; expiresAt: number } | null = null;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTHENTICATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get CJ API access token using email/password authentication
+ * Tokens last 15 days, we cache them in memory
+ */
+export const getAccessToken = internalAction({
+    args: {},
+    handler: async (ctx): Promise<string | null> => {
+        const email = process.env.CJ_API_EMAIL;
+        const password = process.env.CJ_API_PASSWORD;
+
+        if (!email || !password) {
+            console.error("CJ API credentials not configured. Set CJ_API_EMAIL and CJ_API_PASSWORD in Convex.");
+            return null;
+        }
+
+        // Check if we have a valid cached token
+        if (cachedToken && cachedToken.expiresAt > Date.now()) {
+            return cachedToken.accessToken;
+        }
+
+        try {
+            const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (!data.result || !data.data?.accessToken) {
+                console.error("CJ Auth failed:", data.message || "Unknown error");
+                return null;
+            }
+
+            // Cache token (expires in 15 days, we'll refresh at 14 days)
+            cachedToken = {
+                accessToken: data.data.accessToken,
+                expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000, // 14 days
+            };
+
+            console.log("CJ API token obtained successfully");
+            return cachedToken.accessToken;
+        } catch (error: any) {
+            console.error("CJ Auth error:", error.message);
+            return null;
+        }
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ORDER CREATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface CjOrderProduct {
+    vid?: string; // CJ variant ID
+    sku?: string; // CJ SKU
+    quantity: number;
+}
+
+interface CjOrderRequest {
+    orderNumber: string; // Your unique order ID
+    shippingCustomerName: string;
+    shippingPhone?: string;
+    shippingAddress: string;
+    shippingAddress2?: string;
+    shippingCity: string;
+    shippingProvince: string;
+    shippingCountry: string;
+    shippingCountryCode: string;
+    shippingZip?: string;
+    email?: string;
+    logisticName: string; // Shipping method
+    fromCountryCode: string;
+    products: CjOrderProduct[];
+    payType?: number; // 2 = balance payment, 3 = no balance payment
+    remark?: string;
+}
+
+/**
+ * Create an order in CJ Dropshipping
+ */
+export const createCjOrder = internalAction({
+    args: {
+        orderId: v.id("orders"),
+        orderNumber: v.string(),
+        customerName: v.string(),
+        customerPhone: v.optional(v.string()),
+        customerEmail: v.string(),
+        shippingAddress: v.object({
+            line1: v.string(),
+            line2: v.optional(v.string()),
+            city: v.string(),
+            state: v.optional(v.string()),
+            postalCode: v.string(),
+            country: v.string(),
+        }),
+        products: v.array(v.object({
+            vid: v.optional(v.string()),
+            sku: v.optional(v.string()),
+            quantity: v.number(),
+        })),
+    },
+    handler: async (ctx, args): Promise<{ success: boolean; cjOrderId?: string; error?: string }> => {
+        // Get access token
+        const accessToken = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
+        if (!accessToken) {
+            await ctx.runMutation(internal.cjHelpers.updateOrderCjStatus, {
+                orderId: args.orderId,
+                cjStatus: "failed",
+                cjError: "Failed to authenticate with CJ API",
+            });
+            return { success: false, error: "Failed to authenticate with CJ API" };
+        }
+
+        // Map country name to code (basic mapping)
+        const countryCode = getCountryCode(args.shippingAddress.country);
+
+        // Build CJ order request
+        const cjOrder: CjOrderRequest = {
+            orderNumber: args.orderNumber,
+            shippingCustomerName: args.customerName,
+            shippingPhone: args.customerPhone || "",
+            shippingAddress: args.shippingAddress.line1,
+            shippingAddress2: args.shippingAddress.line2 || "",
+            shippingCity: args.shippingAddress.city,
+            shippingProvince: args.shippingAddress.state || args.shippingAddress.city,
+            shippingCountry: args.shippingAddress.country,
+            shippingCountryCode: countryCode,
+            shippingZip: args.shippingAddress.postalCode,
+            email: args.customerEmail,
+            logisticName: "CJ Packet Ordinary", // Default shipping method
+            fromCountryCode: "CN", // Ship from China
+            products: args.products.filter(p => p.vid || p.sku), // Only include valid products
+            payType: 3, // No balance payment (use CJ balance)
+        };
+
+        // Validate we have products to ship
+        if (cjOrder.products.length === 0) {
+            await ctx.runMutation(internal.cjHelpers.updateOrderCjStatus, {
+                orderId: args.orderId,
+                cjStatus: "failed",
+                cjError: "No CJ products found in order (missing vid/sku)",
+            });
+            return { success: false, error: "No CJ products found in order" };
+        }
+
+        try {
+            // Mark order as sending
+            await ctx.runMutation(internal.cjHelpers.updateOrderCjStatus, {
+                orderId: args.orderId,
+                cjStatus: "sending",
+            });
+
+            const response = await fetch(`${CJ_API_BASE}/shopping/order/createOrderV2`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "CJ-Access-Token": accessToken,
+                },
+                body: JSON.stringify(cjOrder),
+            });
+
+            const data = await response.json();
+
+            if (data.result && data.data?.orderId) {
+                // Success! Update order with CJ order ID
+                await ctx.runMutation(internal.cjHelpers.updateOrderCjStatus, {
+                    orderId: args.orderId,
+                    cjStatus: "confirmed",
+                    cjOrderId: data.data.orderId,
+                });
+
+                console.log(`CJ Order created: ${data.data.orderId}`);
+                return { success: true, cjOrderId: data.data.orderId };
+            } else {
+                // CJ API returned an error
+                const errorMsg = data.message || "Unknown CJ API error";
+                await ctx.runMutation(internal.cjHelpers.updateOrderCjStatus, {
+                    orderId: args.orderId,
+                    cjStatus: "failed",
+                    cjError: errorMsg,
+                });
+
+                console.error("CJ Order creation failed:", errorMsg);
+                return { success: false, error: errorMsg };
+            }
+        } catch (error: any) {
+            const errorMsg = error.message || "Network error contacting CJ API";
+            await ctx.runMutation(internal.cjHelpers.updateOrderCjStatus, {
+                orderId: args.orderId,
+                cjStatus: "failed",
+                cjError: errorMsg,
+            });
+
+            console.error("CJ Order error:", error);
+            return { success: false, error: errorMsg };
+        }
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRACKING SYNC
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Fetch tracking information for a CJ order
+ */
+export const getTrackingInfo = internalAction({
+    args: {
+        orderId: v.id("orders"),
+        cjOrderId: v.string(),
+    },
+    handler: async (ctx, args): Promise<{
+        success: boolean;
+        trackingNumber?: string;
+        trackingUrl?: string;
+        carrier?: string;
+        status?: string;
+        error?: string
+    }> => {
+        const accessToken = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
+        if (!accessToken) {
+            return { success: false, error: "Failed to authenticate with CJ API" };
+        }
+
+        try {
+            const response = await fetch(
+                `${CJ_API_BASE}/logistic/getTrackInfo?orderId=${args.cjOrderId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "CJ-Access-Token": accessToken,
+                    },
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.result && data.data) {
+                const trackingData = data.data;
+
+                // Update order with tracking info
+                if (trackingData.trackNumber) {
+                    await ctx.runMutation(internal.cjHelpers.updateOrderTracking, {
+                        orderId: args.orderId,
+                        trackingNumber: trackingData.trackNumber,
+                        trackingUrl: trackingData.trackingUrl || buildTrackingUrl(trackingData.trackNumber, trackingData.logisticName),
+                        carrier: trackingData.logisticName,
+                        cjStatus: "shipped",
+                    });
+
+                    return {
+                        success: true,
+                        trackingNumber: trackingData.trackNumber,
+                        trackingUrl: trackingData.trackingUrl,
+                        carrier: trackingData.logisticName,
+                        status: trackingData.status,
+                    };
+                }
+
+                return { success: true, status: trackingData.status || "processing" };
+            }
+
+            return { success: false, error: data.message || "No tracking data available" };
+        } catch (error: any) {
+            console.error("CJ Tracking fetch error:", error);
+            return { success: false, error: error.message };
+        }
+    },
+});
+
+/**
+ * Sync tracking for all orders that need updates
+ */
+export const syncAllTracking = internalAction({
+    args: {},
+    handler: async (ctx): Promise<{ synced: number; errors: number }> => {
+        // Get orders that need tracking sync
+        const ordersToSync = await ctx.runQuery(internal.cjHelpers.getOrdersNeedingSync, {});
+
+        let synced = 0;
+        let errors = 0;
+
+        for (const order of ordersToSync) {
+            if (!order.cjOrderId) continue;
+
+            try {
+                const result = await ctx.runAction(internal.cjDropshipping.getTrackingInfo, {
+                    orderId: order._id,
+                    cjOrderId: order.cjOrderId,
+                });
+
+                if (result.success && result.trackingNumber) {
+                    synced++;
+
+                    // Send shipping notification email
+                    await ctx.runAction(internal.emails.sendShippingNotification, {
+                        customerEmail: order.customerEmail,
+                        customerName: order.customerName || undefined,
+                        orderId: order.stripeSessionId.slice(-12).toUpperCase(),
+                        trackingNumber: result.trackingNumber,
+                        trackingUrl: result.trackingUrl || "",
+                        carrier: result.carrier || "Standard Shipping",
+                    });
+                }
+            } catch (error) {
+                errors++;
+                console.error(`Failed to sync tracking for order ${order._id}:`, error);
+            }
+        }
+
+        console.log(`Tracking sync complete: ${synced} updated, ${errors} errors`);
+        return { synced, errors };
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILITY FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Map country name to ISO 2-letter code
+ */
+function getCountryCode(country: string): string {
+    const countryMap: Record<string, string> = {
+        "United States": "US",
+        "USA": "US",
+        "US": "US",
+        "Canada": "CA",
+        "United Kingdom": "GB",
+        "UK": "GB",
+        "GB": "GB",
+        "Australia": "AU",
+        "Germany": "DE",
+        "France": "FR",
+        "Italy": "IT",
+        "Spain": "ES",
+        "Netherlands": "NL",
+        "Belgium": "BE",
+        "Austria": "AT",
+        "Switzerland": "CH",
+        "Sweden": "SE",
+        "Norway": "NO",
+        "Denmark": "DK",
+        "Finland": "FI",
+        "Ireland": "IE",
+        "Portugal": "PT",
+        "Poland": "PL",
+        "Japan": "JP",
+        "South Korea": "KR",
+        "Mexico": "MX",
+        "Brazil": "BR",
+        "New Zealand": "NZ",
+        "Singapore": "SG",
+    };
+
+    const upperCountry = country.toUpperCase();
+    return countryMap[country] || countryMap[upperCountry] || upperCountry.slice(0, 2);
+}
+
+/**
+ * Build tracking URL for common carriers
+ */
+function buildTrackingUrl(trackingNumber: string, carrier?: string): string {
+    const carrierLower = (carrier || "").toLowerCase();
+
+    if (carrierLower.includes("usps")) {
+        return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
+    }
+    if (carrierLower.includes("fedex")) {
+        return `https://www.fedex.com/apps/fedextrack/?tracknumbers=${trackingNumber}`;
+    }
+    if (carrierLower.includes("ups")) {
+        return `https://www.ups.com/track?tracknum=${trackingNumber}`;
+    }
+    if (carrierLower.includes("dhl")) {
+        return `https://www.dhl.com/en/express/tracking.html?AWB=${trackingNumber}`;
+    }
+    // Default to 17track for international shipments
+    return `https://t.17track.net/en#nums=${trackingNumber}`;
+}
