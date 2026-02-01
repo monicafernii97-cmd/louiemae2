@@ -680,43 +680,57 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 const rawData = result.data.result?.item;
                 if (!rawData) throw new Error("Invalid AliExpress data");
 
-                // Quick transformation
+                // Quick transformation - map to AliExpressProduct structure
                 importableProduct = {
+                    // Base Product fields
                     id: rawData.itemId || String(rawData.sku?.skuId) || 'unknown',
                     name: rawData.title || 'Unknown Product',
                     price: parseFloat(rawData.sku?.def?.promotionPrice || rawData.sku?.def?.price || '0'),
-                    originalPrice: parseFloat(rawData.sku?.def?.price || '0'),
-                    rating: parseFloat(rawData.evaluation?.starRating || '0'),
-                    sales: parseInt(rawData.sales || '0'),
-                    image: rawData.images?.[0] || '',
+                    description: 'Imported from AliExpress',
                     images: rawData.images || [],
-                    shipping: 'Calculated at checkout',
-                    description: 'Imported from AliExpress', // Will be populated by AI later
-                    variants: [], // Simplified for now, or copy complex variant mapping logic if needed
-                    url: importUrl,
+                    category: '',
+                    collection: targetCollection as CollectionType,
+                    variants: [],
+                    // AliExpressProduct specific fields
+                    aliExpressId: rawData.itemId || '',
+                    originalPrice: parseFloat(rawData.sku?.def?.price || '0'),
+                    salePrice: parseFloat(rawData.sku?.def?.promotionPrice || rawData.sku?.def?.price || '0'),
+                    shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
+                    seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
+                    reviewCount: 0,
+                    averageRating: parseFloat(rawData.evaluation?.starRating || '0'),
+                    productUrl: importUrl,
                     source: 'aliexpress',
+                    // ImportableProduct fields
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
-                    customPrice: 0 // Will calc below
+                    customPrice: 0
                 };
                 importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
-                // Generic source
+                // Generic source - still needs to satisfy AliExpressProduct structure
                 const data = result.data;
                 importableProduct = {
+                    // Base Product fields
                     id: `gen_${Date.now()}`,
                     name: data.title || 'Unknown',
                     price: data.price || 0,
-                    originalPrice: data.price || 0,
-                    rating: 0,
-                    sales: 0,
-                    image: data.image || '',
-                    images: data.image ? [data.image] : [],
-                    shipping: 'Unknown',
                     description: data.description || '',
+                    images: data.image ? [data.image] : [],
+                    category: '',
+                    collection: targetCollection as CollectionType,
                     variants: [],
-                    url: data.url,
+                    // AliExpressProduct specific fields (with placeholder values for generic)
+                    aliExpressId: `gen_${Date.now()}`,
+                    originalPrice: data.price || 0,
+                    salePrice: data.price || 0,
+                    shippingInfo: { freeShipping: false, estimatedDays: 'Unknown', cost: 0 },
+                    seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
+                    reviewCount: 0,
+                    averageRating: 0,
+                    productUrl: data.url || '',
                     source: 'generic',
+                    // ImportableProduct fields
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: calculateFinalPrice(data.price || 0)
