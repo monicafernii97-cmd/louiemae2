@@ -1,23 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight } from 'lucide-react';
+import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext } from '../services/geminiService';
 import { FadeIn } from './FadeIn';
+import { ProductCard, ImportableProduct } from './import/ProductCard';
 
 interface ProductImportProps {
     collections: CollectionConfig[];
     onImportProducts: (products: Omit<Product, 'id'>[]) => void;
-}
-
-interface ImportableProduct extends AliExpressProduct {
-    selected: boolean;
-    customName?: string;
-    customPrice?: number;
-    customDescription?: string;
-    targetCollection?: CollectionType;
-    targetSubcategory?: string;
-    isEnhancing?: boolean;
 }
 
 // Pricing rules configuration
@@ -174,10 +166,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             updateProductField(productId, 'customName', enhancedName);
             updateProductField(productId, 'customDescription', enhancedDescription);
+
+            toast.success('AI enhancement complete', {
+                description: `Enhanced "${enhancedName}"`
+            });
         } catch (err) {
-            // TODO: Replace with toast notification
             console.error('AI enhancement failed:', err);
-            setError('AI enhancement failed. Please try again.');
+            toast.error('AI enhancement failed', {
+                description: 'Please try again later.'
+            });
         } finally {
             updateProductField(productId, 'isEnhancing', false);
         }
@@ -513,6 +510,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
     return (
         <div className="relative min-h-[80vh]">
+            {/* Toast Container */}
+            <Toaster position="top-right" richColors closeButton />
+
             {/* Custom Styles for Float/Glow Animations */}
             <style>{`
                 @keyframes float {
@@ -732,107 +732,18 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </div>
                         </div>
 
-                        {/* Product Grid - Masonry-ish Feel */}
+                        {/* Product Grid - Using ProductCard Component */}
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                             {searchResults.map((product, idx) => (
-                                <FadeIn key={product.id} delay={idx * 50}>
-                                    <div
-                                        className={`glass-card rounded-2xl overflow-hidden transition-all duration-500 relative group bg-white
-                                        ${product.selected ? 'ring-4 ring-cream/80 scale-[1.02] shadow-xl' : 'hover:scale-[1.01] hover:shadow-xl hover:ring-2 hover:ring-cream/50'}
-                                    `}
-                                    >
-                                        {/* Action Overlay (Glass) */}
-                                        <div className="absolute inset-0 bg-earth/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex flex-col justify-center items-center gap-3">
-                                            <button
-                                                onClick={() => toggleProductSelection(product.id)}
-                                                className={`px-8 py-3 rounded-full text-xs uppercase tracking-widest font-bold transition-all transform hover:scale-105 shadow-lg ${product.selected ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-cream text-earth hover:bg-white'}`}
-                                            >
-                                                {product.selected ? 'Deselect' : 'Select Product'}
-                                            </button>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); enhanceProductWithAI(product.id); }}
-                                                    className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-purple-600 hover:text-purple-700 shadow-md hover:scale-110 transition-transform"
-                                                    title="AI Enhance"
-                                                >
-                                                    <Sparkles className="w-5 h-5" />
-                                                </button>
-                                                {product.productUrl && (
-                                                    <a
-                                                        href={product.productUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-earth hover:text-bronze shadow-md hover:scale-110 transition-transform"
-                                                    >
-                                                        <ExternalLink className="w-5 h-5" />
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Visible Content */}
-                                        <div className="relative">
-                                            <div className="h-72 overflow-hidden bg-cream/10">
-                                                <img
-                                                    src={product.images[0] || 'https://via.placeholder.com/160'}
-                                                    alt={product.name}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                />
-                                            </div>
-
-                                            {/* Status Badge */}
-                                            {product.selected && (
-                                                <div className="absolute top-4 right-4 bg-bronze text-white px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-lg animate-bounce">
-                                                    Selected
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="p-6 relative z-0 bg-white">
-                                            {product.selected ? (
-                                                <div className="mb-4 space-y-2">
-                                                    <input
-                                                        type="text"
-                                                        value={product.customName || product.name}
-                                                        onChange={(e) => updateProductField(product.id, 'customName', e.target.value)}
-                                                        className="w-full bg-transparent border-b border-earth/20 focus:border-bronze font-serif text-lg text-earth pb-1 focus:outline-none font-medium"
-                                                        placeholder="Product Name"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <h3 className="font-serif text-xl text-earth mb-2 line-clamp-2 leading-tight font-medium">
-                                                    {product.name}
-                                                </h3>
-                                            )}
-
-                                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-earth/5">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] uppercase tracking-widest text-earth/50 font-bold">Price</span>
-                                                    <span className="font-serif text-2xl text-bronze font-bold">
-                                                        ${(product.customPrice || calculateFinalPrice(product.salePrice || product.price)).toFixed(2)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-[9px] uppercase tracking-widest text-earth/50 font-bold">Cost</span>
-                                                    <span className="text-sm text-earth/40 line-through font-medium">
-                                                        ${(product.salePrice || product.price).toFixed(2)}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-4 flex items-center justify-between text-xs text-earth/60">
-                                                <div className="flex items-center gap-1">
-                                                    <Star className="w-3 h-3 text-bronze fill-bronze" />
-                                                    <span className="font-medium">{product.averageRating.toFixed(1)}</span>
-                                                </div>
-                                                <div className="bg-earth/5 px-2 py-1 rounded-md text-[10px] uppercase tracking-wider font-semibold text-earth/60">
-                                                    {product.category || 'Item'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </FadeIn>
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                    index={idx}
+                                    calculateFinalPrice={calculateFinalPrice}
+                                    toggleProductSelection={toggleProductSelection}
+                                    updateProductField={updateProductField}
+                                    enhanceProductWithAI={enhanceProductWithAI}
+                                />
                             ))}
                         </div>
 
