@@ -342,11 +342,12 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             </FadeIn>
 
             {/* Premium "Mosaic Gallery" Layout - Organic & Editorial */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[200px] md:auto-rows-[280px] grid-flow-dense">
+            {/* Switched to 5 columns and reduced row height to make large blocks less imposing */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 auto-rows-[160px] md:auto-rows-[220px] grid-flow-dense">
               {mainCategories.map((cat, idx) => {
                 // Determine grid span based on index for "curated chaos" look
                 // Pattern repeats every 10 items approx
-                const isLarge = idx === 0 || idx === 6; // 2x2
+                const isLarge = idx === 0 || idx === 6; // 2x2 (Now 40% width instead of 50%)
                 const isTall = idx === 2 || idx === 7; // 1x2
                 const isWide = idx === 5; // 2x1
 
