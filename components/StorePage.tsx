@@ -66,7 +66,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   const mainCategories = useMemo(() => {
     const flagged = config.subcategories.filter(sub => sub.isMainCategory);
     return flagged.length > 0 ? flagged : config.subcategories;
-  }, [config.subcategories]);
+  }, [config.subcategories, collection]);
 
   // Get child categories of the selected main category (for CATEGORY view)
   const childCategories = useMemo(() => {
@@ -332,24 +332,32 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         </div>
       </section>
 
-      {/* --- LEVEL 1: ROOT VIEW - Main Categories Only --- */}
+      {/* --- LEVEL 1: ROOT VIEW - All Categories Grid --- */}
       {viewLevel === 'ROOT' && config.subcategories.length > 0 && (
-        <section className="px-4 md:px-8 py-16 md:py-24">
+        <section className="px-4 md:px-8 py-12 md:py-16">
           <div className="container mx-auto">
-            <FadeIn className="text-center mb-12 md:mb-16">
+            <FadeIn className="text-center mb-8 md:mb-12">
               <h2 className="font-serif text-3xl md:text-4xl text-earth mb-4">Explore {config.title}</h2>
               <p className="text-xs uppercase tracking-widest text-earth/50">Select a category to begin</p>
             </FadeIn>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 md:auto-rows-[minmax(300px,auto)]">
+            {/* Premium Condensed Grid - 2 cols mobile, 3 cols tablet, 5 cols desktop (Perfect 2x5 for 10 items) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
               {mainCategories.map((cat, idx) => (
                 <FadeIn
                   key={cat.id || idx}
-                  delay={idx * 100}
-                  className={`group cursor-pointer relative overflow-hidden rounded-[2rem] shadow-sm border border-earth/5 aspect-[4/3] md:aspect-auto ${idx === 0 ? 'md:row-span-2 md:h-auto' : 'md:h-[350px]'}`}
+                  delay={idx * 50}
+                  className="group cursor-pointer relative overflow-hidden rounded-lg shadow-sm border border-earth/5 aspect-[4/5]"
                 >
                   <div
-                    onClick={() => handleCategoryChange(cat.title)}
+                    onClick={() => {
+                      // Handle cross-collection redirects (e.g., Nursery -> Kids)
+                      if (cat.redirect) {
+                        window.location.hash = cat.redirect.replace('#', '');
+                      } else {
+                        handleCategoryChange(cat.title);
+                      }
+                    }}
                     className="w-full h-full relative"
                   >
                     <img
@@ -358,20 +366,23 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                     />
 
-                    {/* Overlay Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                    {/* Overlay - Darker at bottom for text legibility */}
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-500"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
 
-                    {/* Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 flex flex-col justify-end items-start transform transition-transform duration-500 group-hover:-translate-y-2">
+                    {/* Content - Centered and elegant */}
+                    <div className="absolute inset-0 flex flex-col justify-end items-center p-4 pb-6 text-center">
                       {cat.caption && (
-                        <span className="text-[10px] uppercase tracking-[0.3em] text-white/80 mb-2">{cat.caption}</span>
+                        <span className="font-serif italic text-white/80 text-[10px] md:text-xs mb-1 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500 delay-100">
+                          {cat.caption}
+                        </span>
                       )}
-                      <div className="flex items-center justify-between w-full">
-                        <h3 className="font-serif text-2xl md:text-4xl text-white leading-none">{cat.title}</h3>
-                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-                          <ArrowUpRight className="w-5 h-5 text-white" />
-                        </div>
-                      </div>
+
+                      <h3 className="text-sm md:text-base text-white uppercase tracking-[0.15em] font-medium transform group-hover:-translate-y-1 transition-transform duration-500">
+                        {cat.title}
+                      </h3>
+
+                      <div className="h-px w-0 bg-white/50 mt-3 group-hover:w-8 transition-all duration-500 delay-75"></div>
                     </div>
                   </div>
                 </FadeIn>

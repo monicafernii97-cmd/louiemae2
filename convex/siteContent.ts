@@ -536,33 +536,23 @@ export const migrateAllCollectionsHierarchy = mutation({
             ]
         };
 
-        // --- 2. Furniture Collection ---
+        // --- 2. Furniture Collection (FLAT - all categories visible) ---
         const furnitureCollection = {
             id: 'furniture',
             title: 'Furniture',
             subtitle: 'Curated pieces for a timeless home',
             heroImage: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=2000&auto=format&fit=crop',
             subcategories: [
-                // Main Categories
-                { id: 'seating', title: 'Seating', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Sit & Stay Awhile', isMainCategory: true },
-                { id: 'tables', title: 'Tables', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Gather Together', isMainCategory: true },
-                { id: 'storage', title: 'Storage', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Functional Beauty', isMainCategory: true },
-                { id: 'kids-furniture-main', title: 'Kids Furniture', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'For Little Ones', isMainCategory: true },
-
-                // Subcategories
-                { id: 'accent-chairs', title: 'Accent Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Statement Pieces', parentCategory: 'Seating' },
-                { id: 'dining-chairs', title: 'Dining Chairs', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Dining Comfort', parentCategory: 'Seating' },
-                { id: 'barstools', title: 'Barstools', image: 'https://images.unsplash.com/photo-1594226372073-672ce3467332?q=80&w=800', caption: 'Kitchen Seating', parentCategory: 'Seating' },
-                { id: 'counterstools', title: 'Counterstools', image: 'https://images.unsplash.com/photo-1594226372073-672ce3467332?q=80&w=800', caption: 'Counter Height', parentCategory: 'Seating' },
-
-                { id: 'dining-tables', title: 'Dining Tables', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Center of the Home', parentCategory: 'Tables' },
-                { id: 'entryway-tables', title: 'Entryway Tables', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'First Impressions', parentCategory: 'Tables' },
-
-                { id: 'side-storage-cabinets', title: 'Side Storage Cabinets', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Stylish Storage', parentCategory: 'Storage' },
-                { id: 'nightstands', title: 'Nightstands', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Bedside Essentials', parentCategory: 'Storage' },
-
-                { id: 'nursery-furniture-cross', title: 'Nursery Furniture', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Nursery Essentials', parentCategory: 'Kids Furniture' },
-                { id: 'playroom-furniture-cross', title: 'Playroom Furniture', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Playroom Staples', parentCategory: 'Kids Furniture' },
+                { id: 'accent-chairs', title: 'Accent Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Statement Pieces' },
+                { id: 'barstools', title: 'Barstools', image: 'https://images.unsplash.com/photo-1594226372073-672ce3467332?q=80&w=800', caption: 'Kitchen Seating' },
+                { id: 'counterstools', title: 'Counterstools', image: 'https://images.unsplash.com/photo-1594226372073-672ce3467332?q=80&w=800', caption: 'Counter Height' },
+                { id: 'side-storage-cabinets', title: 'Side Storage Cabinets', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Stylish Storage' },
+                { id: 'dining-chairs', title: 'Dining Chairs', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Dining Comfort' },
+                { id: 'dining-tables', title: 'Dining Tables', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Gather Together' },
+                { id: 'entryway-tables', title: 'Entryway Tables', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'First Impressions' },
+                { id: 'nightstands', title: 'Nightstands', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Bedside Essentials' },
+                { id: 'nursery-furniture', title: 'Nursery Furniture', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'For Little Ones', redirect: '#collection/kids?cat=Nursery Furniture' },
+                { id: 'playroom-furniture', title: 'Playroom Furniture', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Create & Explore', redirect: '#collection/kids?cat=Playroom Furniture' },
             ]
         };
 
