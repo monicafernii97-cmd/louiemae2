@@ -485,8 +485,8 @@ export const migrateToNewMenuStructure = mutation({
         }
     },
 });
-// Migration to update collections with hierarchy flags for hierarchical navigation
-export const migrateToHierarchicalCategories = mutation({
+// Migration to update ALL collections (Fashion, Furniture, Decor, Kids) with hierarchy flags
+export const migrateAllCollectionsHierarchy = mutation({
     args: {},
     handler: async (ctx) => {
         // Require authentication
@@ -495,7 +495,102 @@ export const migrateToHierarchicalCategories = mutation({
             throw new Error("You must be logged in to run migrations");
         }
 
-        // Updated Kids collection with isMainCategory and parentCategory flags
+
+        // --- 1. Fashion Collection ---
+        const fashionCollection = {
+            id: 'fashion',
+            title: 'The Mae Collective',
+            subtitle: 'Effortless style for the modern woman',
+            heroImage: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop',
+            subcategories: [
+                // Main Categories
+                { id: 'dresses-main', title: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', caption: 'Effortless Elegance', isMainCategory: true },
+                { id: 'tops-main', title: 'Tops', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Everyday Essentials', isMainCategory: true },
+                { id: 'bottoms-main', title: 'Bottoms', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800', caption: 'Perfect Fit', isMainCategory: true },
+                { id: 'blazers-layers-main', title: 'Blazers & Layers', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Polished Layers', isMainCategory: true },
+                { id: 'active-lounge-main', title: 'Active & Lounge', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Comfy Chic', isMainCategory: true },
+                { id: 'outfits-sets-main', title: 'Outfits & Sets', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Coordinated Style', isMainCategory: true },
+
+                // Subcategories
+                { id: 'everyday-dresses', title: 'Everyday Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', caption: 'Daily Style', parentCategory: 'Dresses' },
+                { id: 'formal-dresses', title: 'Formal Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', caption: 'Special Occasions', parentCategory: 'Dresses' },
+
+                { id: 'blouses', title: 'Blouses', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Refined Style', parentCategory: 'Tops' },
+                { id: 'casual-tops', title: 'Casual Tops', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Easy Everyday', parentCategory: 'Tops' },
+
+                { id: 'pants', title: 'Pants', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800', caption: 'Tailored Comfort', parentCategory: 'Bottoms' },
+                { id: 'skirts', title: 'Skirts', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800', caption: 'Feminine Flow', parentCategory: 'Bottoms' },
+                { id: 'denim', title: 'Denim', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800', caption: 'Classic & Versatile', parentCategory: 'Bottoms' },
+
+                { id: 'blazers', title: 'Blazers', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Power Pieces', parentCategory: 'Blazers & Layers' },
+                { id: 'layers', title: 'Layers', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Seasonal Essentials', parentCategory: 'Blazers & Layers' },
+
+                { id: 'active', title: 'Active', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Move Freely', parentCategory: 'Active & Lounge' },
+                { id: 'lounge', title: 'Lounge', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Relaxed Living', parentCategory: 'Active & Lounge' },
+
+                { id: 'formal-outfits', title: 'Formal Outfits', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Elevated Looks', parentCategory: 'Outfits & Sets' },
+                { id: 'casual-sets', title: 'Casual Sets', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Effortless Matching', parentCategory: 'Outfits & Sets' },
+
+                // Standalone / Special
+                { id: 'vacation-edit', title: 'Vacation Edit', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Travel in Style', isMainCategory: true },
+            ]
+        };
+
+        // --- 2. Furniture Collection ---
+        const furnitureCollection = {
+            id: 'furniture',
+            title: 'Furniture',
+            subtitle: 'Curated pieces for a timeless home',
+            heroImage: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=2000&auto=format&fit=crop',
+            subcategories: [
+                // Main Categories
+                { id: 'seating', title: 'Seating', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Sit & Stay Awhile', isMainCategory: true },
+                { id: 'tables', title: 'Tables', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Gather Together', isMainCategory: true },
+                { id: 'storage', title: 'Storage', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Functional Beauty', isMainCategory: true },
+                { id: 'kids-furniture-main', title: 'Kids Furniture', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'For Little Ones', isMainCategory: true },
+
+                // Subcategories
+                { id: 'accent-chairs', title: 'Accent Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Statement Pieces', parentCategory: 'Seating' },
+                { id: 'dining-chairs', title: 'Dining Chairs', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Dining Comfort', parentCategory: 'Seating' },
+                { id: 'barstools', title: 'Barstools', image: 'https://images.unsplash.com/photo-1594226372073-672ce3467332?q=80&w=800', caption: 'Kitchen Seating', parentCategory: 'Seating' },
+                { id: 'counterstools', title: 'Counterstools', image: 'https://images.unsplash.com/photo-1594226372073-672ce3467332?q=80&w=800', caption: 'Counter Height', parentCategory: 'Seating' },
+
+                { id: 'dining-tables', title: 'Dining Tables', image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=800', caption: 'Center of the Home', parentCategory: 'Tables' },
+                { id: 'entryway-tables', title: 'Entryway Tables', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'First Impressions', parentCategory: 'Tables' },
+
+                { id: 'side-storage-cabinets', title: 'Side Storage Cabinets', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Stylish Storage', parentCategory: 'Storage' },
+                { id: 'nightstands', title: 'Nightstands', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800', caption: 'Bedside Essentials', parentCategory: 'Storage' },
+
+                { id: 'nursery-furniture-cross', title: 'Nursery Furniture', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Nursery Essentials', parentCategory: 'Kids Furniture' },
+                { id: 'playroom-furniture-cross', title: 'Playroom Furniture', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Playroom Staples', parentCategory: 'Kids Furniture' },
+            ]
+        };
+
+        // --- 3. Decor Collection ---
+        const decorCollection = {
+            id: 'decor',
+            title: 'Accent Decor',
+            subtitle: 'The details that tell your story',
+            heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2000&auto=format&fit=crop',
+            subcategories: [
+                // Main Categories
+                { id: 'lighting', title: 'Lighting', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Warm Glow', isMainCategory: true },
+                { id: 'home-accents', title: 'Home Accents', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Finishing Touches', isMainCategory: true },
+                { id: 'textiles', title: 'Textiles', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Soft Layers', isMainCategory: true },
+
+                // Subcategories
+                { id: 'table-lamps', title: 'Table Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Ambient Light', parentCategory: 'Lighting' },
+                { id: 'floor-lamps', title: 'Floor Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Corner Brightening', parentCategory: 'Lighting' },
+
+                { id: 'decor-items', title: 'Decor Items', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Objects', parentCategory: 'Home Accents' },
+                { id: 'vases', title: 'Vases', image: 'https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800', caption: 'Ceramic & Glass', parentCategory: 'Home Accents' },
+
+                { id: 'rugs', title: 'Rugs', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Grounding Textures', parentCategory: 'Textiles' },
+            ]
+        };
+
+        // --- 4. Kids Collection (Keep existing) ---
+        // Reuse the Kids definition from earlier or just update everything safely
         const kidsCollection = {
             id: 'kids',
             title: 'Louie Kids & Co.',
@@ -557,20 +652,11 @@ export const migrateToHierarchicalCategories = mutation({
             return { success: false, message: "No siteContent found to update" };
         }
 
-        // Update only the kids collection, keep others as-is
-        const currentCollections = existing.collections || [];
-        const updatedCollections = currentCollections.map((col: any) => {
-            if (col.id === 'kids') {
-                return kidsCollection;
-            }
-            return col;
-        });
-
-        // Update the database
+        // Update the database with NEW collections
         await ctx.db.patch(existing._id, {
-            collections: updatedCollections,
+            collections: [furnitureCollection, decorCollection, fashionCollection, kidsCollection],
         });
 
-        return { success: true, message: "Hierarchical categories migration complete for Kids collection" };
+        return { success: true, message: "Comprehensive hierarchical migration complete for ALL collections" };
     },
 });
