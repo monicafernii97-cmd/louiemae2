@@ -55,7 +55,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-y-0 right-0 left-80 z-[500] pointer-events-none flex items-center justify-center p-6 sm:p-8 animate-fade-in">
+        <div className="fixed inset-y-0 right-0 left-80 z-[500] pointer-events-none flex items-center justify-center p-6 sm:p-8 animate-fade-in bg-[#F5F2EB]">
             {/* Floating Card Container */}
             <div className="pointer-events-auto w-full h-full max-w-[1600px] bg-[#FAFAF9] rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden relative border border-white/60 box-border">
 
@@ -453,15 +453,13 @@ const EssenceStep: React.FC<{
                                     disabled={isCategorizing || !product.name}
                                     className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-bronze hover:text-earth disabled:opacity-50"
                                 >
-                                    {isCategorizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                    Auto
+                                    {isCategorizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                                    Auto-Detect
                                 </button>
                             </div>
-                            <input
-                                type="text"
-                                value={product.category}
+                            <select
+                                value={product.category || ''}
                                 onChange={(e) => onChange({ ...product, category: e.target.value })}
-                                placeholder="e.g. Lounge Chairs"
                                 className="w-full text-xl text-earth/80 border-b border-earth/10 py-2 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/20 transition-colors"
                             />
                         </div>
