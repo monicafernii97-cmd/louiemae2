@@ -22,56 +22,77 @@ export const scrapeProduct = action({
 });
 
 async function scrapeAliExpress(productId: string) {
-    const RAPIDAPI_HOST = "aliexpress-datahub.p.rapidapi.com";
     const rapidApiKey = process.env.RAPIDAPI_KEY;
 
     if (!rapidApiKey) {
         throw new Error("RapidAPI key not configured");
     }
 
-    // Try multiple API versions/endpoints as in http.ts
+    // Try multiple API versions/endpoints for resilience
+    // Priority: item_detail_2 > item_detail_3 > item_detail > True API
+    const DATAHUB_HOST = "aliexpress-datahub.p.rapidapi.com";
+    const TRUE_API_HOST = "aliexpress-true-api.p.rapidapi.com";
+
     const endpoints = [
-        `https://${RAPIDAPI_HOST}/item_detail_2?itemId=${productId}`,
-        `https://${RAPIDAPI_HOST}/item_detail_3?itemId=${productId}`,
-        `https://${RAPIDAPI_HOST}/item_detail?itemId=${productId}`,
+        // Datahub endpoints (multiple versions)
+        { url: `https://${DATAHUB_HOST}/item_detail_2?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
+        { url: `https://${DATAHUB_HOST}/item_detail_3?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
+        { url: `https://${DATAHUB_HOST}/item_detail?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
+        // AliExpress True API as fallback
+        { url: `https://${TRUE_API_HOST}/api/v3/product/${productId}`, host: TRUE_API_HOST, type: 'true-api' },
+        { url: `https://${TRUE_API_HOST}/api/product/${productId}`, host: TRUE_API_HOST, type: 'true-api' },
     ];
 
     let lastError = null;
 
     for (const endpoint of endpoints) {
         try {
-            const response = await fetch(endpoint, {
+            console.log(`Trying endpoint: ${endpoint.url}`);
+
+            const response = await fetch(endpoint.url, {
                 headers: {
                     "X-RapidAPI-Key": rapidApiKey,
-                    "X-RapidAPI-Host": RAPIDAPI_HOST,
+                    "X-RapidAPI-Host": endpoint.host,
                 },
             });
 
             if (!response.ok) {
-                lastError = `API Error: ${response.status}`;
+                lastError = `API Error: ${response.status} from ${endpoint.host}`;
+                console.log(`Endpoint failed with ${response.status}, trying next...`);
                 continue;
             }
 
             const data = await response.json();
-            // Check internal error
-            if (data.result?.status?.data === "error") {
+
+            // Check internal error for datahub
+            if (endpoint.type === 'datahub' && data.result?.status?.data === "error") {
                 lastError = data.result?.status?.msg?.["internal-error"] || "API returned error";
+                console.log(`Datahub endpoint returned internal error, trying next...`);
                 continue;
             }
 
-            // Normalize AliExpress data to our format
-            // We use a simplified normalization here, effectively delegating detailed normalization to the frontend
-            // or we could assume the frontend will handle the raw 'data' if we mark it as source: 'aliexpress'
+            // Check for True API error format
+            if (endpoint.type === 'true-api' && (data.error || data.status === 'error')) {
+                lastError = data.error || data.message || "True API returned error";
+                console.log(`True API endpoint returned error, trying next...`);
+                continue;
+            }
+
+            console.log(`Successfully fetched from ${endpoint.host}`);
+
+            // Normalize based on API type
             return {
-                source: 'aliexpress',
+                source: endpoint.type === 'true-api' ? 'aliexpress-true' : 'aliexpress',
                 data: data
             };
 
         } catch (e: any) {
             lastError = e.message;
+            console.log(`Endpoint threw error: ${e.message}, trying next...`);
         }
     }
-    throw new Error(lastError || "Failed to fetch AliExpress product");
+
+    throw new Error(lastError || "this endpoint is temporarily unavailable, try again later. If this persists, contact developer for more information. Meanwhile, try using other version of this Endpoint if it exists");
 }
 
 async function scrapeGeneric(url: string) {
