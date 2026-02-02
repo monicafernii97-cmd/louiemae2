@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Wand2, Send, ChevronRight, Layout, Type, Image as ImageIcon, CheckCircle, Clock, AlertCircle, ArrowLeft, Eye, Smartphone, Monitor, Loader2, Grid, Upload, Trash2, Box, Tag, DollarSign, Shirt } from 'lucide-react';
 import { Product, SiteContent } from '../types';
-import { generateProductName, generateProductDescription, suggestProductCategory } from '../services/geminiService';
+import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, suggestProductCategory } from '../services/geminiService';
 import { FadeIn } from './FadeIn';
+import { useAction } from 'convex/react';
+import { api } from '../convex/_generated/api';
+import { toast } from 'sonner';
 
 interface ProductStudioProps {
     isOpen: boolean;
@@ -46,6 +49,9 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
         }
     }, [isOpen, initialProduct, siteContent.collections]);
 
+    // URL Scraper Action
+    const scrapeProduct = useAction(api.scraper.scrapeProduct);
+
     if (!isOpen) return null;
 
     return (
@@ -88,6 +94,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                             onChange={setProduct}
                             onNext={() => setStep('visuals')}
                             collections={siteContent.collections}
+                            scrapeProduct={scrapeProduct}
                         />
                     )}
 
@@ -156,10 +163,105 @@ const StudioStepIndicator: React.FC<{ currentStep: StudioStep }> = ({ currentSte
 };
 
 // --- Step 1: Essence ---
-const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => void; onNext: () => void; collections: any[] }> = ({ product, onChange, onNext, collections }) => {
+const EssenceStep: React.FC<{
+    product: Partial<Product>;
+    onChange: (p: any) => void;
+    onNext: () => void;
+    collections: any[];
+    scrapeProduct: any;
+}> = ({ product, onChange, onNext, collections, scrapeProduct }) => {
     const [isGeneratingName, setIsGeneratingName] = useState(false);
     const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
     const [isCategorizing, setIsCategorizing] = useState(false);
+
+    // Import Logic
+    const [importUrl, setImportUrl] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
+    const [autoEnhance, setAutoEnhance] = useState(false); // Default off to avoid quota issues
+
+    const handleImport = async () => {
+        if (!importUrl) return;
+        setIsImporting(true);
+        try {
+            const result = await scrapeProduct({ url: importUrl });
+            if (!result) throw new Error("Failed to fetch");
+
+            let scrapedData: any = {};
+
+            if (result.source === 'aliexpress') {
+                const raw = result.data.result?.item;
+                if (raw) {
+                    scrapedData = {
+                        name: raw.title,
+                        price: parseFloat(raw.sku?.def?.promotionPrice || raw.sku?.def?.price || '0'),
+                        description: raw.description || 'Imported from AliExpress',
+                        images: raw.images || [],
+                        sourceUrl: importUrl
+                    };
+                }
+            } else {
+                const data = result.data;
+                scrapedData = {
+                    name: data.title,
+                    price: data.price,
+                    description: data.description,
+                    images: data.image ? [data.image] : [],
+                    sourceUrl: data.url
+                };
+            }
+
+            // Merge data
+            const updatedProduct = {
+                ...product,
+                ...scrapedData,
+                // Only overwrite if scraped data exists
+                name: scrapedData.name || product.name,
+                price: scrapedData.price || product.price,
+                description: scrapedData.description || product.description,
+                images: scrapedData.images.length > 0 ? scrapedData.images : product.images
+            };
+
+            // AI Enhance if enabled
+            if (autoEnhance) {
+                const context: ProductContext = {
+                    originalName: updatedProduct.name,
+                    originalDescription: updatedProduct.description || '',
+                    category: '',
+                    collection: updatedProduct.collection,
+                    keywords: extractKeywords(updatedProduct.name + ' ' + (updatedProduct.description || '')),
+                };
+
+                // Try AI enhancement
+                try {
+                    const [name, desc] = await Promise.all([
+                        generateProductNameV2(context).catch(() => updatedProduct.name),
+                        generateProductDescriptionV2(context).catch(() => updatedProduct.description)
+                    ]);
+
+                    // Helper to check for generic fallbacks
+                    const isGeneric = (text: string) => text.includes("Chair") || text.includes("Table") || text.includes("Unknown");
+
+                    if (!isGeneric(name)) updatedProduct.name = name;
+                    if (!isGeneric(desc)) updatedProduct.description = desc;
+
+                    toast.success("Imported & Enhanced!");
+                } catch (e) {
+                    console.warn("AI Enhance failed", e);
+                    toast.success("Imported (AI skipped)");
+                }
+            } else {
+                toast.success("Data Imported");
+            }
+
+            onChange(updatedProduct);
+
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to import URL");
+        } finally {
+            setIsImporting(false);
+        }
+    };
 
     const handleGenerateName = async () => {
         setIsGeneratingName(true);
@@ -167,7 +269,13 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
         const collectionName = collections.find(c => c.id === product.collection)?.title || product.collection || 'Furniture';
 
         // Call the service - generateProductName returns a single name string, let's get multiple suggestions
-        const name = await generateProductName(product.name || product.category || 'Home Decor Item', collectionName);
+        const context: ProductContext = {
+            originalName: product.name || '',
+            originalDescription: product.description || '',
+            category: product.category || '',
+            collection: collectionName,
+        };
+        const name = await generateProductNameV2(context);
 
         setNameSuggestions([name]);
         setIsGeneratingName(false);
@@ -184,30 +292,83 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
     };
 
     return (
-        <div className="h-full flex flex-col items-center justify-center animate-fade-in-up p-8">
-            <div className="w-full max-w-4xl space-y-10">
-                <div className="text-center space-y-2">
-                    <h2 className="font-serif text-4xl text-earth">Define the Essence</h2>
-                    <p className="text-earth/60 font-light text-lg">Start with the core identity of this piece.</p>
+        <div className="h-full flex flex-col items-center justify-start animate-fade-in-up p-8 overflow-y-auto">
+            <div className="w-full max-w-5xl space-y-12 pb-24">
+
+                {/* 1. Quick Import Section - Refined Design */}
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-earth/5 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/5 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-bronze/10 rounded-lg text-bronze">
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-serif text-2xl text-earth">Quick Start</h3>
+                                <p className="text-earth/60 font-light text-sm">Paste a URL to auto-fill details from any website.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 items-start">
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    value={importUrl}
+                                    onChange={(e) => setImportUrl(e.target.value)}
+                                    placeholder="https://..."
+                                    className="w-full bg-earth/5 border border-transparent rounded-xl px-4 py-3 text-earth text-sm focus:outline-none focus:bg-white focus:border-bronze transition-all placeholder:text-earth/30"
+                                />
+                            </div>
+                            <button
+                                onClick={handleImport}
+                                disabled={isImporting || !importUrl}
+                                className="px-6 py-3 bg-earth text-white rounded-xl text-sm font-medium hover:bg-earth/90 transition-all flex items-center gap-2 disabled:opacity-50 shadow-md hover:shadow-lg"
+                            >
+                                {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                {isImporting ? 'Fetching...' : 'Auto-Fill'}
+                            </button>
+                        </div>
+
+                        {/* AI Toggle */}
+                        <div className="mt-4 flex items-center gap-2">
+                            <label className="flex items-center gap-2 cursor-pointer group select-none">
+                                <div className={`w-9 h-5 rounded-full p-1 transition-colors ${autoEnhance ? 'bg-bronze' : 'bg-earth/20'}`}>
+                                    <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${autoEnhance ? 'translate-x-4' : 'translate-x-0'}`} />
+                                </div>
+                                <input type="checkbox" checked={autoEnhance} onChange={(e) => setAutoEnhance(e.target.checked)} className="hidden" />
+                                <span className={`text-xs font-medium tracking-wide transition-colors ${autoEnhance ? 'text-bronze' : 'text-earth/40'}`}>
+                                    Auto-Enhance with AI
+                                </span>
+                            </label>
+                            <span className="text-[10px] text-earth/30">(Writes descriptions for you)</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    {/* Left Column: Core Info */}
-                    <div className="space-y-8 bg-white p-8 rounded-xl shadow-sm border border-earth/5">
+                <div className="flex items-center gap-4">
+                    <div className="h-px bg-earth/10 flex-1"></div>
+                    <span className="text-xs uppercase tracking-widest text-earth/30">Or Create Manually</span>
+                    <div className="h-px bg-earth/10 flex-1"></div>
+                </div>
+
+                {/* 2. Manual Details Form - 2 Column Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+                    {/* Left: Core Identity */}
+                    <div className="space-y-8">
                         <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest text-earth/40 flex justify-between">
-                                Collection
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
+                            <label className="text-xs uppercase tracking-widest text-earth/40">Collection</label>
+                            <div className="flex flex-wrap gap-3">
                                 {collections.map(c => (
                                     <button
                                         key={c.id}
                                         onClick={() => onChange({ ...product, collection: c.id })}
-                                        className={`p-3 text-left border rounded-lg transition-all ${product.collection === c.id
-                                            ? 'border-bronze bg-bronze/5 text-earth'
-                                            : 'border-earth/10 text-earth/60 hover:bg-earth/5'}`}
+                                        className={`px-4 py-2 text-sm rounded-full border transition-all ${product.collection === c.id
+                                            ? 'border-bronze bg-bronze text-white shadow-md'
+                                            : 'border-earth/10 text-earth/60 hover:border-earth/30 hover:bg-earth/5'}`}
                                     >
-                                        <span className="block font-medium text-sm">{c.title}</span>
+                                        {c.title}
                                     </button>
                                 ))}
                             </div>
@@ -230,9 +391,8 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                                 value={product.name}
                                 onChange={(e) => onChange({ ...product, name: e.target.value })}
                                 placeholder="e.g. The Velocity Chair"
-                                className="w-full text-2xl font-serif border-b border-earth/10 py-2 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/20"
+                                className="w-full text-3xl font-serif text-earth border-b border-earth/10 py-2 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/10 transition-colors"
                             />
-
                             {/* Suggestions */}
                             {nameSuggestions.length > 0 && (
                                 <div className="flex flex-wrap gap-2 animate-fade-in">
@@ -250,8 +410,8 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                         </div>
                     </div>
 
-                    {/* Right Column: Details */}
-                    <div className="space-y-8 bg-white p-8 rounded-xl shadow-sm border border-earth/5 h-fit">
+                    {/* Right: Market Details */}
+                    <div className="space-y-8">
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
                                 <label className="text-xs uppercase tracking-widest text-earth/40">Category</label>
@@ -261,7 +421,7 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                                     className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-bronze hover:text-earth disabled:opacity-50"
                                 >
                                     {isCategorizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                    Auto-Categorize
+                                    Auto
                                 </button>
                             </div>
                             <input
@@ -269,19 +429,19 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                                 value={product.category}
                                 onChange={(e) => onChange({ ...product, category: e.target.value })}
                                 placeholder="e.g. Lounge Chairs"
-                                className="w-full text-lg border-b border-earth/10 py-2 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/20"
+                                className="w-full text-xl text-earth/80 border-b border-earth/10 py-2 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/20 transition-colors"
                             />
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest text-earth/40">Price ($)</label>
+                            <label className="text-xs uppercase tracking-widest text-earth/40">Price</label>
                             <div className="relative">
-                                <DollarSign className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-earth/40" />
+                                <DollarSign className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 text-earth/20" />
                                 <input
                                     type="number"
                                     value={product.price}
                                     onChange={(e) => onChange({ ...product, price: Number(e.target.value) })}
-                                    className="w-full text-2xl font-serif border-b border-earth/10 py-2 pl-8 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/20"
+                                    className="w-full text-3xl font-serif text-earth border-b border-earth/10 py-2 pl-8 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/10 transition-colors"
                                 />
                             </div>
                         </div>
@@ -291,7 +451,7 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                                 <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${product.isNew ? 'bg-bronze border-bronze' : 'border-earth/20 group-hover:border-bronze'}`}>
                                     {product.isNew && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                                 </div>
-                                <input type="checkbox" checked={product.isNew} onChange={(e) => onChange({ ...product, isNew: e.target.checked })} className="hidden" />
+                                <input type="checkbox" checked={product.isNew || false} onChange={(e) => onChange({ ...product, isNew: e.target.checked })} className="hidden" />
                                 <span className="text-xs uppercase tracking-widest text-earth/70">New Arrival</span>
                             </label>
 
@@ -299,14 +459,14 @@ const EssenceStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                                 <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${product.inStock ? 'bg-earth border-earth' : 'border-earth/20 group-hover:border-bronze'}`}>
                                     {product.inStock && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                                 </div>
-                                <input type="checkbox" checked={product.inStock} onChange={(e) => onChange({ ...product, inStock: e.target.checked })} className="hidden" />
+                                <input type="checkbox" checked={product.inStock || false} onChange={(e) => onChange({ ...product, inStock: e.target.checked })} className="hidden" />
                                 <span className="text-xs uppercase tracking-widest text-earth/70">In Stock</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-end pt-8">
                     <button onClick={onNext} disabled={!product.name} className="py-4 px-12 bg-earth text-white rounded-lg hover:bg-earth/90 transition-colors flex items-center gap-2 text-lg font-light tracking-wide shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                         Next: Imagery <ChevronRight className="w-5 h-5" />
                     </button>
