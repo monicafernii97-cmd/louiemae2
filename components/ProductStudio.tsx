@@ -55,32 +55,47 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-y-0 right-0 left-80 z-[500] bg-black/80 backdrop-blur-sm flex flex-col pt-2 px-2 pb-0 animate-fade-in">
-            {/* Maximized Modal Container */}
-            <div className="bg-[#FAFAF9] w-full h-full rounded-t-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/10">
+        <div className="fixed inset-y-0 right-0 left-80 z-[500] pointer-events-none flex items-center justify-center p-6 sm:p-8 animate-fade-in">
+            {/* Floating Card Container */}
+            <div className="pointer-events-auto w-full h-full max-w-[1600px] bg-[#FAFAF9] rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden relative border border-white/60 box-border">
 
-                {/* Top Bar: Navigation & Progress */}
-                <div className="shrink-0 h-16 border-b border-earth/10 flex items-center justify-between px-6 bg-white/50 backdrop-blur-sm z-20">
-                    <div className="flex items-center gap-4">
-                        <button onClick={onClose} className="p-2 hover:bg-earth/5 rounded-full transition-colors">
-                            <X className="w-5 h-5 text-earth/60" />
+                {/* Luxury Header */}
+                <div className="shrink-0 h-32 border-b border-earth/5 flex items-center justify-between px-10 bg-white/60 backdrop-blur-md z-20 relative">
+
+                    {/* Left: Close & Branding */}
+                    <div className="flex items-center gap-6">
+                        <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-earth/5 text-earth/40 hover:text-earth transition-all group">
+                            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
                         </button>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] uppercase tracking-widest text-earth/40">Product Studio</span>
-                            <h1 className="font-serif text-xl text-earth">
-                                {product.name || 'New Product'}
+
+                        <div className="h-10 w-px bg-earth/10 mx-2"></div>
+
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] uppercase tracking-[0.3em] text-bronze font-medium">The Atelier</span>
+                            <h1 className="font-serif text-3xl text-earth tracking-tight">
+                                {product.name || <span className="text-earth/20 italic">Untitled Creation</span>}
                             </h1>
                         </div>
                     </div>
 
-                    {/* Step Indicator */}
-                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                    {/* Center: Stage Indicator */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden xl:block">
                         <StudioStepIndicator currentStep={step} />
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => onSave(product)} className="text-sm font-medium text-earth/60 hover:text-earth px-4 py-2 hover:bg-earth/5 rounded-md transition-colors flex items-center gap-2">
-                            <Send className="w-4 h-4" /> Save & Close
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-4">
+                        <div className="text-xs uppercase tracking-widest text-earth/30 hidden lg:block mr-4">
+                            {step === 'review' ? 'Final Polish' : 'Drafting Mode'}
+                        </div>
+                        <button
+                            onClick={() => onSave(product)}
+                            className="group relative overflow-hidden bg-earth text-white px-8 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                            <span className="relative z-10 flex items-center gap-2">
+                                <Send className="w-3 h-3" /> Save Product
+                            </span>
+                            <div className="absolute inset-0 bg-bronze opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </button>
                     </div>
                 </div>
@@ -144,17 +159,23 @@ const StudioStepIndicator: React.FC<{ currentStep: StudioStep }> = ({ currentSte
     ];
 
     return (
-        <div className="flex items-center bg-earth/5 rounded-full p-1 border border-earth/5">
+        <div className="flex items-center bg-white/40 backdrop-blur-sm rounded-full p-1.5 border border-white/40 shadow-sm">
             {steps.map((s) => {
                 const isActive = s.id === currentStep;
+                const isPast = steps.findIndex(step => step.id === s.id) < steps.findIndex(step => step.id === currentStep);
+
                 return (
                     <div
                         key={s.id}
-                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${isActive ? 'bg-white shadow-sm text-earth' : 'text-earth/40'
+                        className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] uppercase tracking-widest font-medium transition-all duration-500 ${isActive
+                                ? 'bg-white shadow-md text-bronze scale-105'
+                                : isPast
+                                    ? 'text-earth/60'
+                                    : 'text-earth/30'
                             }`}
                     >
-                        <s.icon className={`w-3.5 h-3.5 ${isActive ? 'text-bronze' : ''}`} />
-                        <span className={isActive ? 'opacity-100' : 'hidden sm:block opacity-100'}>{s.label}</span>
+                        <s.icon className={`w-3.5 h-3.5 ${isActive ? 'text-bronze' : 'opacity-70'}`} />
+                        <span className={isActive ? 'opacity-100' : 'hidden md:block'}>{s.label}</span>
                     </div>
                 );
             })}
