@@ -62,8 +62,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   }, [selectedCategory, config.subcategories]);
 
   // Get main categories (for ROOT view)
+  // Fallback: if no categories have isMainCategory flag, show all subcategories
   const mainCategories = useMemo(() => {
-    return config.subcategories.filter(sub => sub.isMainCategory);
+    const flagged = config.subcategories.filter(sub => sub.isMainCategory);
+    return flagged.length > 0 ? flagged : config.subcategories;
   }, [config.subcategories]);
 
   // Get child categories of the selected main category (for CATEGORY view)
@@ -249,7 +251,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       </section>
 
       {/* --- LEVEL 1: ROOT VIEW - Main Categories Only --- */}
-      {viewLevel === 'ROOT' && mainCategories.length > 0 && (
+      {viewLevel === 'ROOT' && config.subcategories.length > 0 && (
         <section className="px-4 md:px-8 py-16 md:py-24">
           <div className="container mx-auto">
             <FadeIn className="text-center mb-12 md:mb-16">
