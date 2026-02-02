@@ -341,52 +341,66 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
               <p className="text-xs uppercase tracking-widest text-earth/50">Select a category to begin</p>
             </FadeIn>
 
-            {/* Premium Condensed Grid - 2 cols mobile, 3 cols tablet, 5 cols desktop (Perfect 2x5 for 10 items) */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-              {mainCategories.map((cat, idx) => (
-                <FadeIn
-                  key={cat.id || idx}
-                  delay={idx * 50}
-                  className="group cursor-pointer relative overflow-hidden rounded-lg shadow-sm border border-earth/5 aspect-[4/5]"
-                >
-                  <div
-                    onClick={() => {
-                      // Handle cross-collection redirects (e.g., Nursery -> Kids)
-                      if (cat.redirect) {
-                        window.location.hash = cat.redirect.replace('#', '');
-                      } else {
-                        handleCategoryChange(cat.title);
-                      }
-                    }}
-                    className="w-full h-full relative"
+            {/* Premium "Mosaic Gallery" Layout - Organic & Editorial */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[200px] md:auto-rows-[280px] grid-flow-dense">
+              {mainCategories.map((cat, idx) => {
+                // Determine grid span based on index for "curated chaos" look
+                // Pattern repeats every 10 items approx
+                const isLarge = idx === 0 || idx === 6; // 2x2
+                const isTall = idx === 2 || idx === 7; // 1x2
+                const isWide = idx === 5; // 2x1
+
+                let spanClass = "col-span-1 row-span-1";
+                if (isLarge) spanClass = "col-span-2 row-span-2";
+                else if (isTall) spanClass = "col-span-1 row-span-2";
+                else if (isWide) spanClass = "col-span-2 row-span-1";
+
+                return (
+                  <FadeIn
+                    key={cat.id || idx}
+                    delay={idx * 50}
+                    className={`group cursor-pointer relative overflow-hidden rounded-sm shadow-sm ${spanClass}`}
                   >
-                    <img
-                      src={cat.image}
-                      alt={cat.title}
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                    />
+                    <div
+                      onClick={() => {
+                        if (cat.redirect) {
+                          window.location.hash = cat.redirect.replace('#', '');
+                        } else {
+                          handleCategoryChange(cat.title);
+                        }
+                      }}
+                      className="w-full h-full relative"
+                    >
+                      <img
+                        src={cat.image}
+                        alt={cat.title}
+                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
+                      />
 
-                    {/* Overlay - Darker at bottom for text legibility */}
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-500"></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90"></div>
+                      {/* Luxurious Dark Overlay - Minimal until hover */}
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-colors duration-700"></div>
+                      <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 ${isLarge ? 'via-black/20' : ''}`}></div>
 
-                    {/* Content - Centered and elegant */}
-                    <div className="absolute inset-0 flex flex-col justify-end items-center p-4 pb-6 text-center">
-                      {cat.caption && (
-                        <span className="font-serif italic text-white/80 text-[10px] md:text-xs mb-1 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500 delay-100">
-                          {cat.caption}
-                        </span>
-                      )}
+                      {/* Content - "Gallery Label" Style */}
+                      <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
+                        <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
+                          {cat.caption && (
+                            <span className="font-serif italic text-white/90 text-xs md:text-sm mb-2 block opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                              {cat.caption}
+                            </span>
+                          )}
+                          <h3 className={`font-serif text-white leading-none ${isLarge ? 'text-2xl md:text-4xl' : 'text-lg md:text-xl'}`}>
+                            {cat.title}
+                          </h3>
 
-                      <h3 className="text-sm md:text-base text-white uppercase tracking-[0.15em] font-medium transform group-hover:-translate-y-1 transition-transform duration-500">
-                        {cat.title}
-                      </h3>
-
-                      <div className="h-px w-0 bg-white/50 mt-3 group-hover:w-8 transition-all duration-500 delay-75"></div>
+                          {/* Elegant underline expansion */}
+                          <div className={`h-[1px] bg-white/60 mt-3 transition-all duration-700 ease-out w-0 group-hover:w-full max-w-[40px]`}></div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </FadeIn>
-              ))}
+                  </FadeIn>
+                );
+              })}
             </div>
           </div>
         </section>
