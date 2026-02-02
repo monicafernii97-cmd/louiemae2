@@ -190,42 +190,42 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   const SubcategoryWithPreviews: React.FC<{ category: Category; index: number }> = ({ category, index }) => {
     const previewProducts = getProductsForCategory(category.title, 4);
 
+    // Only render if there are products to show, or if we want to show empty categories too
+    // Taking the user's "product displays" requirement literally, empty categories might be hidden or just show "Coming Soon"
+
     return (
       <FadeIn delay={index * 100} className="mb-16">
-        {/* Category Header with Box */}
-        <div
-          className="relative group cursor-pointer h-[280px] md:h-[320px] overflow-hidden rounded-2xl mb-6"
-          onClick={() => handleCategoryChange(category.title)}
-        >
-          <img
-            src={category.image}
-            alt={category.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-            {category.caption && (
-              <span className="text-[10px] uppercase tracking-[0.25em] text-white/70 mb-2 block">{category.caption}</span>
-            )}
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif text-2xl md:text-3xl text-white">{category.title}</h3>
-              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowUpRight className="w-5 h-5 text-white" />
-              </div>
-            </div>
+        {/* Clean Section Header */}
+        <div className="flex items-center justify-between mb-6 border-b border-earth/10 pb-2">
+          <div
+            className="group cursor-pointer flex items-center gap-3"
+            onClick={() => handleCategoryChange(category.title)}
+          >
+            <h3 className="font-serif text-2xl md:text-3xl text-earth transition-colors group-hover:text-bronze">
+              {category.title}
+            </h3>
+            <ArrowUpRight className="w-5 h-5 text-earth/30 transition-all group-hover:text-bronze group-hover:translate-x-1 group-hover:-translate-y-1" />
           </div>
+
+          <button
+            onClick={() => handleCategoryChange(category.title)}
+            className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest text-earth/50 hover:text-earth transition-colors"
+          >
+            View All
+          </button>
         </div>
 
         {/* Product Previews */}
-        {previewProducts.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {previewProducts.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {previewProducts.map((product, idx) => (
               <ProductCard key={product.id} product={product} index={idx} compact />
             ))}
           </div>
-        )}
-        {previewProducts.length === 0 && (
-          <p className="text-center text-earth/50 text-sm italic py-4">Coming soon...</p>
+        ) : (
+          <div className="bg-white/50 rounded-lg p-10 text-center border border-dashed border-earth/10">
+            <p className="text-earth/40 text-sm italic font-serif">New arrivals coming to {category.title} soon.</p>
+          </div>
         )}
       </FadeIn>
     );
