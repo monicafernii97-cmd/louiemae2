@@ -342,25 +342,24 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             </FadeIn>
 
             {/* Premium "Mosaic Gallery" Layout - Organic & Editorial */}
-            {/* Switched to 5 columns and reduced row height to make large blocks less imposing */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 auto-rows-[160px] md:auto-rows-[220px] grid-flow-dense">
+            {/* Switched to 4 columns (balanced size) and increased row height */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[200px] md:auto-rows-[280px] grid-flow-dense">
               {mainCategories.map((cat, idx) => {
                 // Determine grid span based on index for "curated chaos" look
-                // Pattern repeats every 10 items approx
-                const isLarge = idx === 0 || idx === 6; // 2x2 (Now 40% width instead of 50%)
-                const isTall = idx === 2 || idx === 7; // 1x2
-                const isWide = idx === 5; // 2x1
+                // Removed the massive 2x2 blocks to keep size ratios closer (max 2:1)
+                const isWide = idx === 0 || idx === 5 || idx === 8; // 2x1
+                const isTall = idx === 2 || idx === 6; // 1x2
 
                 let spanClass = "col-span-1 row-span-1";
-                if (isLarge) spanClass = "col-span-2 row-span-2";
+                // Priority: Wide then Tall (no overlapping logic here, distinct indices)
+                if (isWide) spanClass = "col-span-2 row-span-1";
                 else if (isTall) spanClass = "col-span-1 row-span-2";
-                else if (isWide) spanClass = "col-span-2 row-span-1";
 
                 return (
                   <FadeIn
                     key={cat.id || idx}
                     delay={idx * 50}
-                    className={`group cursor-pointer relative overflow-hidden rounded-sm shadow-sm ${spanClass}`}
+                    className={`group cursor-pointer relative overflow-hidden rounded-3xl shadow-sm ${spanClass}`}
                   >
                     <div
                       onClick={() => {
@@ -380,17 +379,17 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
 
                       {/* Luxurious Dark Overlay - Minimal until hover */}
                       <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-colors duration-700"></div>
-                      <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 ${isLarge ? 'via-black/20' : ''}`}></div>
+                      <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80`}></div>
 
                       {/* Content - "Gallery Label" Style */}
-                      <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
+                      <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
                         <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
                           {cat.caption && (
                             <span className="font-serif italic text-white/90 text-xs md:text-sm mb-2 block opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
                               {cat.caption}
                             </span>
                           )}
-                          <h3 className={`font-serif text-white leading-none ${isLarge ? 'text-2xl md:text-4xl' : 'text-lg md:text-xl'}`}>
+                          <h3 className={`font-serif text-white leading-none ${isWide ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
                             {cat.title}
                           </h3>
 
