@@ -341,27 +341,26 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
               <p className="text-xs uppercase tracking-widest text-earth/50">Select a category to begin</p>
             </FadeIn>
 
-            {/* Premium "Floating Glass Mosaic" - Luxury & Fluid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-[300px] grid-flow-dense px-2">
+            {/* Premium "Mosaic Gallery" Layout - Organic & Editorial */}
+            {/* Switched to 5 columns and reduced row height to make large blocks less imposing */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 auto-rows-[160px] md:auto-rows-[220px] grid-flow-dense">
               {mainCategories.map((cat, idx) => {
-                // Curated Bento Grid Pattern (4-column layout)
-                // 0: Large Feature (2x2)
-                // 2 & 6: Tall Portrait (1x2)
-                // 5: Wide Feature (2x1)
-                const isLarge = idx === 0; // 2x2
-                const isTall = idx === 2 || idx === 6; // 1x2 
+                // Determine grid span based on index for "curated chaos" look
+                // Pattern repeats every 10 items approx
+                const isLarge = idx === 0 || idx === 6; // 2x2 (Now 40% width instead of 50%)
+                const isTall = idx === 2 || idx === 7; // 1x2
                 const isWide = idx === 5; // 2x1
 
                 let spanClass = "col-span-1 row-span-1";
-                if (isLarge) spanClass = "col-span-1 sm:col-span-2 row-span-1 sm:row-span-2";
-                else if (isTall) spanClass = "col-span-1 row-span-1 sm:row-span-2";
-                else if (isWide) spanClass = "col-span-1 sm:col-span-2 row-span-1";
+                if (isLarge) spanClass = "col-span-2 row-span-2";
+                else if (isTall) spanClass = "col-span-1 row-span-2";
+                else if (isWide) spanClass = "col-span-2 row-span-1";
 
                 return (
                   <FadeIn
                     key={cat.id || idx}
                     delay={idx * 50}
-                    className={`group cursor-pointer relative rounded-[2rem] ${spanClass}`}
+                    className={`group cursor-pointer relative overflow-hidden rounded-sm shadow-sm ${spanClass}`}
                   >
                     <div
                       onClick={() => {
@@ -371,33 +370,34 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                           handleCategoryChange(cat.title);
                         }
                       }}
-                      className="w-full h-full relative overflow-hidden rounded-[2rem] shadow-sm transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
+                      className="w-full h-full relative"
                     >
                       <img
                         src={cat.image}
                         alt={cat.title}
-                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
                       />
 
-                      {/* Glassmorphism Overlay - Full smooth gradient with glass card feel */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-700"></div>
+                      {/* Luxurious Dark Overlay - Minimal until hover */}
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-colors duration-700"></div>
+                      <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 ${isLarge ? 'via-black/20' : ''}`}></div>
 
-                      {/* Floating Content Badge */}
-                      <div className="absolute inset-x-4 bottom-4 md:inset-x-6 md:bottom-6">
-                        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 md:p-5 flex flex-col items-center text-center transform transition-all duration-500 group-hover:bg-white/20 group-hover:border-white/30">
+                      {/* Content - "Gallery Label" Style */}
+                      <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
+                        <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
                           {cat.caption && (
-                            <span className="font-serif italic text-white/90 text-[10px] md:text-xs mb-1.5 tracking-wide">
+                            <span className="font-serif italic text-white/90 text-xs md:text-sm mb-2 block opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
                               {cat.caption}
                             </span>
                           )}
-                          <h3 className={`font-serif text-white leading-none ${isLarge ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl'}`}>
+                          <h3 className={`font-serif text-white leading-none ${isLarge ? 'text-2xl md:text-4xl' : 'text-lg md:text-xl'}`}>
                             {cat.title}
                           </h3>
+
+                          {/* Elegant underline expansion */}
+                          <div className={`h-[1px] bg-white/60 mt-3 transition-all duration-700 ease-out w-0 group-hover:w-full max-w-[40px]`}></div>
                         </div>
                       </div>
-
-                      {/* Subtle Shine Effect on Hover */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                     </div>
                   </FadeIn>
                 );
