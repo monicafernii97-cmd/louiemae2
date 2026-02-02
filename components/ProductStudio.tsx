@@ -560,11 +560,14 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
         setIsGenerating(true);
         const collectionName = siteContent.collections.find(c => c.id === product.collection)?.title || 'Furniture';
 
-        const description = await generateProductDescription(
-            product.name || 'this item',
-            collectionName,
-            product.category || 'home decor'
-        );
+        const context: ProductContext = {
+            originalName: product.name || 'this item',
+            originalDescription: product.description || '',
+            category: product.category || 'home decor',
+            collection: collectionName,
+        };
+
+        const description = await generateProductDescriptionV2(context);
 
         onChange({ ...product, description });
         setIsGenerating(false);
