@@ -169,7 +169,7 @@ export const HomePage: React.FC = () => {
             <div
               id="fashion"
               onClick={() => navigateTo('#collection/fashion')}
-              className="relative group cursor-pointer aspect-[3/4] md:aspect-auto md:h-[500px] w-full overflow-hidden rounded-xl"
+              className="relative group cursor-pointer aspect-[4/3] md:aspect-auto md:h-[500px] w-full overflow-hidden rounded-xl"
             >
               <img
                 src={home.categoryImages.fashion}
@@ -186,7 +186,7 @@ export const HomePage: React.FC = () => {
             <div
               id="kids"
               onClick={() => navigateTo('#collection/kids')}
-              className="relative group cursor-pointer aspect-[3/4] md:aspect-auto md:h-[500px] w-full overflow-hidden rounded-xl"
+              className="relative group cursor-pointer aspect-[4/3] md:aspect-auto md:h-[500px] w-full overflow-hidden rounded-xl"
             >
               <img
                 src={home.categoryImages.kids}
@@ -203,7 +203,7 @@ export const HomePage: React.FC = () => {
             <div
               id="journal"
               onClick={() => navigateTo('#blog')}
-              className="relative group cursor-pointer aspect-[3/4] md:aspect-auto md:h-[500px] w-full overflow-hidden rounded-xl"
+              className="relative group cursor-pointer aspect-[4/3] md:aspect-auto md:h-[500px] w-full overflow-hidden rounded-xl"
             >
               <img
                 src={home.categoryImages.journal}
@@ -320,12 +320,12 @@ export const HomePage: React.FC = () => {
             </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 auto-rows-[minmax(300px,auto)]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:auto-rows-[minmax(300px,auto)]">
             {KIDS_CATEGORIES.map((cat, idx) => (
               <FadeIn
                 key={cat.id}
                 delay={idx * 150}
-                className={`group cursor-pointer relative overflow-hidden rounded-[2.5rem] shadow-sm border border-earth/5 ${idx === 0 ? 'md:row-span-2 h-[600px] md:h-auto' : 'h-[300px] md:h-[400px]'
+                className={`group cursor-pointer relative overflow-hidden rounded-[2.5rem] shadow-sm border border-earth/5 aspect-[4/3] md:aspect-auto ${idx === 0 ? 'md:row-span-2 md:h-auto' : 'md:h-[400px]'
                   }`}
               >
                 <div

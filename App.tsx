@@ -25,10 +25,35 @@ interface MobileNavLinkProps {
   depth?: number;
 }
 
-// Recursively render mobile navigation links
+// Recursively render mobile navigation links - Fully expanded when opened
 const MobileNavLink: React.FC<MobileNavLinkProps> = ({ link, handleNavigation, depth = 0 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = link.children && link.children.length > 0;
+
+  // Recursive function to render all nested children at once (fully expanded)
+  const renderAllChildren = (children: NavLink[], currentDepth: number) => {
+    return children.map((child) => (
+      <div key={child.label} className="w-full">
+        <button
+          onClick={() => handleNavigation(child.href)}
+          className={`w-full text-left font-serif text-earth transition-all duration-300 hover:text-bronze py-2 ${currentDepth === 1
+              ? 'text-lg pl-4 font-medium'
+              : currentDepth === 2
+                ? 'text-base pl-6 text-earth/80'
+                : 'text-sm pl-8 text-earth/70'
+            }`}
+        >
+          {child.label}
+        </button>
+        {/* Render nested children immediately if they exist */}
+        {child.children && child.children.length > 0 && (
+          <div className="border-l border-bronze/15 ml-4">
+            {renderAllChildren(child.children, currentDepth + 1)}
+          </div>
+        )}
+      </div>
+    ));
+  };
 
   return (
     <div className="w-full">
@@ -52,9 +77,10 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({ link, handleNavigation, d
         )}
       </div>
 
+      {/* Show ALL nested children when expanded - no separate collapsing */}
       {hasChildren && (
-        <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className={`flex flex-col space-y-2 mt-2 border-l border-bronze/20 ml-2 ${depth > 0 ? 'pl-2' : ''}`}>
+        <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="flex flex-col mt-2 border-l border-bronze/20 ml-2">
             {/* Clickable Parent Link inside submenu if it has separate destination */}
             <button
               onClick={() => handleNavigation(link.href)}
@@ -62,9 +88,8 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({ link, handleNavigation, d
             >
               View All {link.label}
             </button>
-            {link.children!.map(child => (
-              <MobileNavLink key={child.label} link={child} handleNavigation={handleNavigation} depth={depth + 1} />
-            ))}
+            {/* Render all children and grandchildren at once */}
+            {renderAllChildren(link.children!, 1)}
           </div>
         </div>
       )}
