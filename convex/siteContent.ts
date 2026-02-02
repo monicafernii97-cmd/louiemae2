@@ -485,3 +485,92 @@ export const migrateToNewMenuStructure = mutation({
         }
     },
 });
+// Migration to update collections with hierarchy flags for hierarchical navigation
+export const migrateToHierarchicalCategories = mutation({
+    args: {},
+    handler: async (ctx) => {
+        // Require authentication
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to run migrations");
+        }
+
+        // Updated Kids collection with isMainCategory and parentCategory flags
+        const kidsCollection = {
+            id: 'kids',
+            title: 'Louie Kids & Co.',
+            subtitle: 'Heirloom quality for little ones',
+            heroImage: 'https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?q=80&w=2000&auto=format&fit=crop',
+            subcategories: [
+                // Main Categories (shown on collection landing)
+                { id: 'girls', title: 'Girls', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Little Ladies', isMainCategory: true },
+                { id: 'boys', title: 'Boys', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Little Gentlemen', isMainCategory: true },
+                { id: 'toys', title: 'Toys', image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=800', caption: 'Play & Learn', isMainCategory: true },
+                { id: 'nursery-furniture', title: 'Nursery Furniture', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'The Dreamiest Space', isMainCategory: true },
+                { id: 'playroom-furniture', title: 'Playroom Furniture', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Create & Explore', isMainCategory: true },
+
+                // Girls Subcategories
+                { id: 'girls-dresses', title: 'Girls Dresses', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Pretty Dresses', parentCategory: 'Girls' },
+                { id: 'girls-outfits-sets', title: 'Girls Outfits & Sets', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Coordinated Looks', parentCategory: 'Girls' },
+                { id: 'girls-rompers', title: 'Girls Rompers', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Playful Style', parentCategory: 'Girls' },
+                { id: 'girls-tops', title: 'Girls Tops', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Cute Tops', parentCategory: 'Girls' },
+                { id: 'girls-layers', title: 'Girls Layers', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Sweet Layers', parentCategory: 'Girls' },
+                { id: 'girls-bottoms', title: 'Girls Bottoms', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Comfy Bottoms', parentCategory: 'Girls' },
+                { id: 'girls-leggings', title: 'Girls Leggings', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Stretchy Fun', parentCategory: 'Girls' },
+                { id: 'girls-shorts', title: 'Girls Shorts', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Summer Ready', parentCategory: 'Girls' },
+                { id: 'girls-pants', title: 'Girls Pants', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Everyday Pants', parentCategory: 'Girls' },
+                { id: 'girls-skirts', title: 'Girls Skirts', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Twirly Skirts', parentCategory: 'Girls' },
+                { id: 'girls-footwear', title: 'Girls Footwear', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Little Steps', parentCategory: 'Girls' },
+
+                // Boys Subcategories
+                { id: 'boys-tops', title: 'Boys Tops', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Cool Tops', parentCategory: 'Boys' },
+                { id: 'boys-bottoms', title: 'Boys Bottoms', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Comfy Bottoms', parentCategory: 'Boys' },
+                { id: 'boys-shorts', title: 'Boys Shorts', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Active Shorts', parentCategory: 'Boys' },
+                { id: 'boys-pants', title: 'Boys Pants', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Sturdy Pants', parentCategory: 'Boys' },
+                { id: 'boys-joggers', title: 'Boys Joggers', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Comfy Joggers', parentCategory: 'Boys' },
+                { id: 'boys-outfits-sets', title: 'Boys Outfits & Sets', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Matching Sets', parentCategory: 'Boys' },
+                { id: 'boys-layers', title: 'Boys Layers', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Layered Up', parentCategory: 'Boys' },
+                { id: 'boys-overalls', title: 'Boys Overalls', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Classic Overalls', parentCategory: 'Boys' },
+                { id: 'boys-footwear', title: 'Boys Footwear', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Little Steps', parentCategory: 'Boys' },
+
+                // Nursery Furniture Subcategories
+                { id: 'cribs-sleep', title: 'Cribs & Sleep Solutions', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Sweet Dreams', parentCategory: 'Nursery Furniture' },
+                { id: 'dressers-changing', title: 'Dressers & Changing Tables', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Organized Nursery', parentCategory: 'Nursery Furniture' },
+                { id: 'nursery-side-tables', title: 'Nursery Side Tables', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Bedside Essentials', parentCategory: 'Nursery Furniture' },
+                { id: 'nursery-storage', title: 'Nursery Storage', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Organized Space', parentCategory: 'Nursery Furniture' },
+                { id: 'nursery-decor', title: 'Nursery Decor', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Sweet Details', parentCategory: 'Nursery Furniture' },
+                { id: 'nursery-themes', title: 'Nursery Themes', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'Theme Inspiration', parentCategory: 'Nursery Furniture' },
+
+                // Playroom Furniture Subcategories
+                { id: 'playroom-tables-seating', title: 'Playroom Tables & Seating', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Activity Stations', parentCategory: 'Playroom Furniture' },
+                { id: 'playroom-soft-play', title: 'Playroom Soft Play', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Cozy Corners', parentCategory: 'Playroom Furniture' },
+                { id: 'playroom-art-furniture', title: 'Playroom Art Furniture', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Creative Spaces', parentCategory: 'Playroom Furniture' },
+                { id: 'playroom-pretend-play', title: 'Playroom Pretend Play', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Imaginary Worlds', parentCategory: 'Playroom Furniture' },
+                { id: 'toy-storage', title: 'Toy Storage', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Organized Play', parentCategory: 'Playroom Furniture' },
+                { id: 'playroom-shelving', title: 'Playroom Shelving', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Wall Storage', parentCategory: 'Playroom Furniture' },
+            ]
+        };
+
+        // Get existing site content
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) {
+            return { success: false, message: "No siteContent found to update" };
+        }
+
+        // Update only the kids collection, keep others as-is
+        const currentCollections = existing.collections || [];
+        const updatedCollections = currentCollections.map((col: any) => {
+            if (col.id === 'kids') {
+                return kidsCollection;
+            }
+            return col;
+        });
+
+        // Update the database
+        await ctx.db.patch(existing._id, {
+            collections: updatedCollections,
+        });
+
+        return { success: true, message: "Hierarchical categories migration complete for Kids collection" };
+    },
+});
