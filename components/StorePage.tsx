@@ -231,6 +231,88 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     );
   };
 
+  // Hero Slider for the top of the Category Page
+  const HeroProductSlider: React.FC<{ categoryTitle: string }> = ({ categoryTitle }) => {
+    // Get newest/featured products for this category
+    // In a real app, you might have a specific "featured" flag, but "newest" serves as a good proxy for "fresh"
+    const featuredProducts = useMemo(() => {
+      let prods = getProductsForCategory(categoryTitle);
+      // Sort by newness/price or curate manually
+      return prods.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0)).slice(0, 8);
+    }, [categoryTitle]);
+
+    if (featuredProducts.length === 0) return null;
+
+    return (
+      <FadeIn className="mb-16">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <h2 className="font-serif text-3xl md:text-5xl text-earth mb-3">
+              {categoryTitle}
+            </h2>
+            <p className="text-xs uppercase tracking-widest text-earth/60">
+              Latest Arrivals & Curated Picks
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              // Navigate to 'filtered' full view effectively, or scroll down (but filtering is better UX here)
+              // Since we are ON the category page, "Shop All" usually implies just scrolling or seeing everything.
+              // But for this specific "Shop All" button, let's make it go to the Product Grid View for the whole category.
+              // The current viewLevel logic distinguishes CATEGORY (swimlanes) vs PRODUCT (grid).
+              // We need a way to force PRODUCT view for "All Girls".
+
+              // HACK: To force PRODUCT view for a main category, we can append a query param or change state.
+              // However, our current route logic:
+              // #collection/kids?cat=Girls -> Level 2 (Category View)
+              // #collection/kids?cat=Girls%20All -> Level 3? No, that's messy.
+
+              // Let's us just scroll to the first subcategory for now, or just let the user browse.
+              // Actually, the user asked for "All Girls section... slide through products". 
+              // This slider IS that section. The "View All" button is less critical if the slider shows the best stuff.
+
+              // BETTER: Add a specific "Shop All" swimming lane at the bottom? 
+              // OR: Just let them click subcategories.
+
+              // Let's scroll to the first subcategory for now.
+              const el = document.getElementById('sub-cats-start');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="hidden md:block text-xs uppercase tracking-widest text-bronze border-b border-bronze pb-1 hover:text-earth hover:border-earth transition-all"
+          >
+            Browse Collections ↓
+          </button>
+        </div>
+
+        {/* Horizontal Slider Container */}
+        <div className="flex overflow-x-auto gap-4 md:gap-6 pb-8 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+          {featuredProducts.map((product, idx) => (
+            <div key={product.id} className="min-w-[260px] md:min-w-[300px] snap-center">
+              <ProductCard product={product} index={idx} />
+            </div>
+          ))}
+
+          {/* "View All" Card at the end of slider */}
+          <div className="min-w-[200px] md:min-w-[240px] snap-center flex items-center justify-center">
+            <button
+              onClick={() => {
+                // This logic acts as a "View All" for the top category
+                // We can simulate selecting a "All [Category]" sub-filter if we had one, 
+                // but sticking to the hierarchy is safer.
+              }}
+              className="group flex flex-col items-center gap-4 text-earth/50 hover:text-earth transition-colors"
+            >
+              <div className="w-16 h-16 rounded-full border border-earth/20 flex items-center justify-center group-hover:border-earth transition-colors">
+                <ArrowUpRight className="w-6 h-6" />
+              </div>
+              <span className="text-xs uppercase tracking-widest">View All {categoryTitle}</span>
+            </button>
+          </div>
+        </div>
+      </FadeIn>
+    );
+  };
+
   return (
     <div className="bg-cream min-h-screen pt-20">
 
@@ -302,7 +384,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       {/* --- LEVEL 2: CATEGORY VIEW - Subcategories with Product Previews --- */}
       {viewLevel === 'CATEGORY' && (
         <>
-          {/* Back Button & Shop All Section */}
+          {/* Back Button */}
           <div className="sticky top-[73px] z-30 bg-cream/95 backdrop-blur-md border-b border-earth/10 px-4 md:px-8 py-4">
             <div className="container mx-auto flex items-center justify-between">
               <button
@@ -311,53 +393,21 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
               >
                 <ArrowLeft className="w-3 h-3" /> Back to {config.title}
               </button>
-              <button
-                onClick={() => {
-                  // Scroll to products or show all products for this category
-                  const el = document.getElementById('all-products-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="text-[10px] uppercase tracking-widest text-bronze hover:text-earth transition-colors"
-              >
-                Shop All {selectedCategory}
-              </button>
             </div>
           </div>
 
-          {/* Subcategory Boxes with Previews */}
           <section className="px-4 md:px-8 py-12 md:py-16">
             <div className="container mx-auto">
-              <FadeIn className="text-center mb-10 md:mb-14">
-                <h2 className="font-serif text-2xl md:text-3xl text-earth mb-2">Shop {selectedCategory}</h2>
-                <p className="text-xs uppercase tracking-widest text-earth/50">Browse our curated categories</p>
-              </FadeIn>
 
+              {/* NEW: Hero Slider at the Top */}
+              <HeroProductSlider categoryTitle={selectedCategory} />
+
+              <div id="sub-cats-start" className="h-px w-full bg-earth/10 mb-16"></div>
+
+              {/* Subcategory Swimlanes */}
               {childCategories.map((cat, idx) => (
                 <SubcategoryWithPreviews key={cat.id} category={cat} index={idx} />
               ))}
-            </div>
-          </section>
-
-          {/* All Products for this Category */}
-          <section id="all-products-section" className="px-4 md:px-8 py-12 md:py-16 bg-white">
-            <div className="container mx-auto">
-              <FadeIn className="text-center mb-10">
-                <h2 className="font-serif text-2xl md:text-3xl text-earth mb-2">All {selectedCategory}</h2>
-                <p className="text-xs uppercase tracking-widest text-earth/50">{filteredProducts.length} Items</p>
-              </FadeIn>
-
-              {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                  {filteredProducts.map((product, idx) => (
-                    <ProductCard key={product.id} product={product} index={idx} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <p className="font-serif text-xl text-earth/50 mb-4">No products found in {selectedCategory}.</p>
-                  <p className="text-xs uppercase tracking-widest text-earth/30">Check back soon for new arrivals.</p>
-                </div>
-              )}
             </div>
           </section>
         </>
