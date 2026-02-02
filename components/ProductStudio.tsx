@@ -55,7 +55,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex flex-col pt-2 px-2 pb-0 animate-fade-in">
+        <div className="fixed inset-y-0 right-0 left-80 z-[500] bg-black/80 backdrop-blur-sm flex flex-col pt-2 px-2 pb-0 animate-fade-in">
             {/* Maximized Modal Container */}
             <div className="bg-[#FAFAF9] w-full h-full rounded-t-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/10">
 
