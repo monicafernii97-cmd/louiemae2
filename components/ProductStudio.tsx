@@ -59,44 +59,56 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
             {/* Floating Card Container */}
             <div className="pointer-events-auto w-full h-full max-w-[1600px] bg-[#FAFAF9] rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden relative border border-white/60 box-border">
 
-                {/* Luxury Header - Grid Layout for No Overlap */}
-                <div className="shrink-0 h-32 border-b border-earth/5 grid grid-cols-[1fr_auto_1fr] items-center px-10 bg-white/60 backdrop-blur-md z-20">
+                {/* Header Section - Two Floors */}
+                <div className="shrink-0 flex flex-col bg-white/60 backdrop-blur-md z-20 shadow-sm">
 
-                    {/* Left: Close & Branding */}
-                    <div className="flex items-center gap-6 min-w-0">
-                        <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-earth/5 text-earth/40 hover:text-earth transition-all group flex-shrink-0">
-                            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
-                        </button>
-
-                        <div className="h-10 w-px bg-earth/10 mx-2 flex-shrink-0"></div>
-
-                        <div className="flex flex-col gap-1 min-w-0">
-                            <span className="text-[10px] uppercase tracking-[0.3em] text-bronze font-medium">The Atelier</span>
-                            <h1 className="font-serif text-2xl text-earth tracking-tight truncate">
+                    {/* Floor 1: Identity (Clean Header) */}
+                    <div className="h-28 flex items-end justify-between px-10 pb-6 border-b border-earth/5 bg-white/40">
+                        <div className="flex flex-col gap-2">
+                            <span className="text-[10px] uppercase tracking-[0.3em] text-bronze font-medium flex items-center gap-2">
+                                <span className="w-6 h-px bg-bronze/30"></span>
+                                The Atelier
+                            </span>
+                            <h1 className="font-serif text-4xl text-earth tracking-tight max-w-2xl truncate leading-tight">
                                 {product.name || <span className="text-earth/20 italic">Untitled Creation</span>}
                             </h1>
                         </div>
-                    </div>
-
-                    {/* Center: Stage Indicator (No Absolute!) */}
-                    <div className="flex justify-center px-4">
-                        <StudioStepIndicator currentStep={step} />
-                    </div>
-
-                    {/* Right: Actions */}
-                    <div className="flex items-center justify-end gap-4">
-                        <div className="text-xs uppercase tracking-widest text-earth/30 hidden lg:block mr-4">
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-earth/30 mb-1">
                             {step === 'review' ? 'Final Polish' : 'Drafting Mode'}
                         </div>
-                        <button
-                            onClick={() => onSave(product)}
-                            className="group relative overflow-hidden bg-earth text-white px-8 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex-shrink-0"
-                        >
-                            <span className="relative z-10 flex items-center gap-2">
-                                <Send className="w-3 h-3" /> Save Product
-                            </span>
-                            <div className="absolute inset-0 bg-bronze opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </button>
+                    </div>
+
+                    {/* Floor 2: Control Deck */}
+                    <div className="h-20 px-8 grid grid-cols-[1fr_auto_1fr] items-center gap-8 bg-[#FAFAF9]/80 border-b border-earth/5">
+
+                        {/* Left: Exit */}
+                        <div className="flex justify-start">
+                            <button
+                                onClick={onClose}
+                                className="group flex items-center gap-3 text-earth/40 hover:text-red-900 transition-colors px-4 py-2 hover:bg-earth/5 rounded-full"
+                            >
+                                <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                                <span className="text-[10px] uppercase tracking-widest font-medium group-hover:opacity-100 opacity-60">Close Studio</span>
+                            </button>
+                        </div>
+
+                        {/* Center: Steps */}
+                        <div className="flex justify-center">
+                            <StudioStepIndicator currentStep={step} />
+                        </div>
+
+                        {/* Right: Save */}
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => onSave(product)}
+                                className="group relative overflow-hidden bg-earth text-white px-8 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                            >
+                                <span className="relative z-10 flex items-center gap-2">
+                                    <Send className="w-3 h-3" /> Save Product
+                                </span>
+                                <div className="absolute inset-0 bg-bronze opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
