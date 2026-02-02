@@ -1598,11 +1598,23 @@ export const AdminPage: React.FC = () => {
                isOpen={isEditingProduct}
                onClose={() => { setIsEditingProduct(false); setEditingProduct(null); }}
                initialProduct={editingProduct}
-               onSave={(prod) => {
+               onSave={async (prod) => {
                   if (prod.id) {
-                     updateProduct(prod.id, prod);
+                     // Updating existing product - just update
+                     await updateProduct(prod.id, prod);
                   } else {
-                     addProduct(prod as Omit<Product, 'id'>);
+                     // New product - set CJ sourcing status if it has a source URL
+                     const productWithSourcing = {
+                        ...prod,
+                        // Mark for CJ sourcing if product has a source URL (from AliExpress etc)
+                        cjSourcingStatus: prod.sourceUrl ? 'pending' as const : 'none' as const,
+                     };
+                     await addProduct(productWithSourcing as Omit<Product, 'id'>);
+
+                     // If marked as pending, the CJ cron job will handle submission
+                     if (prod.sourceUrl) {
+                        alert('Product saved! It has been submitted for CJ sourcing approval and will appear on your site once approved.');
+                     }
                   }
                   setIsEditingProduct(false);
                   setEditingProduct(null);

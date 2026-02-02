@@ -616,12 +616,23 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
         <div className="h-full flex animate-fade-in-up">
             {/* Editor Side */}
             <div className="w-1/2 p-12 border-r border-earth/10 flex flex-col h-full bg-white">
-                <div className="flex items-center gap-4 mb-8">
-                    <button onClick={onBack} className="text-earth/40 hover:text-earth p-2 rounded-full hover:bg-earth/5 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                    <div>
-                        <h2 className="font-serif text-3xl text-earth">Craft the Story</h2>
-                        <p className="text-earth/60 font-light">Describe the details that make this unique.</p>
+                <div className="flex items-center justify-between gap-4 mb-8">
+                    <div className="flex items-center gap-4">
+                        <button onClick={onBack} className="text-earth/40 hover:text-earth p-2 rounded-full hover:bg-earth/5 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+                        <div>
+                            <h2 className="font-serif text-3xl text-earth">Craft the Story</h2>
+                            <p className="text-earth/60 font-light">Describe the details that make this unique.</p>
+                        </div>
                     </div>
+                    {/* Generate Description button moved here - no longer overlaps textarea */}
+                    <button
+                        onClick={handleGenerateDescription}
+                        disabled={isGenerating || !product.name}
+                        className="flex items-center gap-2 bg-bronze/10 text-bronze px-4 py-2 rounded-full text-xs uppercase tracking-widest hover:bg-bronze hover:text-white transition-all disabled:opacity-50 shadow-sm shrink-0"
+                    >
+                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        Generate
+                    </button>
                 </div>
 
                 <div className="flex-1 relative">
@@ -629,19 +640,8 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
                         value={product.description}
                         onChange={(e) => onChange({ ...product, description: e.target.value })}
                         placeholder="Start writing..."
-                        className="w-full h-full resize-none focus:outline-none font-serif text-xl leading-relaxed text-earthplaceholder:text-earth/20 p-4"
+                        className="w-full h-full resize-none focus:outline-none font-serif text-xl leading-relaxed text-earth placeholder:text-earth/20 p-4 border border-earth/10 rounded-lg"
                     />
-
-                    <div className="absolute bottom-4 right-4">
-                        <button
-                            onClick={handleGenerateDescription}
-                            disabled={isGenerating || !product.name}
-                            className="flex items-center gap-2 bg-bronze/10 text-bronze px-4 py-2 rounded-full text-xs uppercase tracking-widest hover:bg-bronze hover:text-white transition-all disabled:opacity-50 shadow-sm"
-                        >
-                            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                            Generate Description
-                        </button>
-                    </div>
                 </div>
 
                 <div className="pt-8 flex justify-end">
