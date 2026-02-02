@@ -443,11 +443,265 @@ const FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
   ],
 };
 
+// Category-specific fallback descriptions for more tailored content
+// Used when AI quota is reached - provides descriptions that match the specific product category
+const CATEGORY_FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
+  // Girls Clothing Categories
+  'Girls Layers': [
+    'Cozy knit with button details. A sweet layer for little ones, perfect for chilly mornings and cozy afternoons.',
+    'Soft fleece cardigan with darling embroidery. The perfect sweater to layer over any outfit.',
+    'Lightweight cotton sweater in muted tones. Easy layering for your little lady.',
+    'Buttery-soft knit with raglan sleeves. Warmth and style for everyday adventures.',
+    'Gentle cotton blend with snap buttons. Sweet enough for special occasions, cozy enough for everyday.',
+  ],
+  'Girls Dresses': [
+    'Twirl-worthy cotton dress with delicate details. A sweet piece for any occasion.',
+    'Soft muslin with gentle gathers. Pretty and practical for playful days.',
+    'Floral cotton with flutter sleeves. Effortlessly charming for your little one.',
+    'Organic cotton dress with dreamy details. A timeless piece for precious moments.',
+    'Light and airy with vintage-inspired design. Perfect from playdates to portraits.',
+  ],
+  'Girls Rompers': [
+    'Soft cotton romper with snap closures. Easy dressing meets adorable style.',
+    'Breathable muslin romper with playful print. Perfect for warm-weather adventures.',
+    'Organic cotton with gentle stretch. Comfortable and cute for active little ones.',
+    'Lightweight romper with adjustable straps. Summer-ready and endlessly sweet.',
+  ],
+  'Girls Tops': [
+    'Soft cotton top with sweet details. A wardrobe essential for little ladies.',
+    'Breathable knit with playful print. Comfortable and easy to mix and match.',
+    'Gentle ruffle trim on soft cotton. Pretty everyday style for your little one.',
+    'Organic cotton tee with whimsical design. Soft, sweet, and made for play.',
+  ],
+  'Girls Bottoms': [
+    'Stretchy cotton blend for all-day comfort. Easy to move, easy to style.',
+    'Soft knit with gentle elastic waist. Comfort and style for active little ones.',
+    'Breathable cotton with playful details. Perfect for everyday adventures.',
+  ],
+  'Girls Leggings': [
+    'Buttery-soft cotton with gentle stretch. Comfortable from morning to bedtime.',
+    'Organic cotton leggings with cozy fit. A wardrobe staple for little ladies.',
+    'Lightweight knit with fun prints. Easy to pair with any top.',
+  ],
+  'Girls Outfits & Sets': [
+    'Coordinated cotton set with sweet details. Mix-and-match style made easy.',
+    'Matching pieces in soft organic cotton. Effortless dressing for any occasion.',
+    'Thoughtfully designed set with playful prints. Sweet from head to toe.',
+  ],
+  'Girls Footwear': [
+    'Soft-soled design for little feet. Sweet style meets barefoot comfort.',
+    'Gentle materials with secure fastenings. Perfect for first steps and beyond.',
+  ],
 
-// Helper to get random fallback for a collection
-const getCollectionFallback = (collection: string): string => {
+  // Boys Clothing Categories
+  'Boys Layers': [
+    'Cozy fleece pullover with easy closures. Built for active adventures.',
+    'Soft cotton hoodie with kangaroo pocket. Comfort and style for little guys.',
+    'Lightweight knit cardigan in classic tones. Easy layering for any occasion.',
+    'Warm cotton sweatshirt with sturdy details. Made for play, soft enough for naps.',
+    'Zip-up jacket in brushed cotton. Quick on, quick off for busy boys.',
+  ],
+  'Boys Tops': [
+    'Soft cotton tee with playful graphic. Comfortable and easy-care for everyday.',
+    'Breathable henley with heritage style. Classic comfort for little gentlemen.',
+    'Organic cotton polo with modern fit. Polished enough for any occasion.',
+    'Jersey knit with reinforced seams. Built for adventures, soft against skin.',
+  ],
+  'Boys Bottoms': [
+    'Durable cotton with stretchy comfort. Made for climbing, running, and exploring.',
+    'Soft joggers with elastic waist. Easy to dress, easy to play.',
+    'Classic cotton pants with adjustable fit. Comfort meets timeless style.',
+  ],
+  'Boys Shorts': [
+    'Lightweight cotton shorts for active days. Cool comfort for warm weather.',
+    'Soft knit with secure pockets. Ready for summer adventures.',
+  ],
+  'Boys Pants': [
+    'Durable cotton twill with gentle stretch. Built for active boys who love to explore.',
+    'Soft chinos with adjustable waist. Classic style for little gentlemen.',
+  ],
+  'Boys Joggers': [
+    'Cozy fleece joggers with tapered fit. Comfort for play and rest.',
+    'Soft cotton joggers with stretchy cuffs. Easy movement for active days.',
+  ],
+  'Boys Outfits & Sets': [
+    'Coordinated cotton set in classic style. Easy dressing for little guys.',
+    'Matching pieces with playful details. From playdates to picture day.',
+  ],
+  'Boys Overalls': [
+    'Classic denim overalls with adjustable straps. Timeless style for little ones.',
+    'Soft cotton overalls with easy closures. Perfect for everyday adventures.',
+  ],
+  'Boys Footwear': [
+    'Durable design with flexible soles. Built for active little explorers.',
+    'Soft materials with secure fit. Comfort and support for growing feet.',
+  ],
+
+  // Furniture Categories
+  'Accent Chairs': [
+    'Artisan-crafted with premium upholstery. A statement piece for curated corners.',
+    'Solid hardwood frame with bouclé seat. Nordic elegance, perfect proportions.',
+    'Hand-finished with organic curves. Sculptural comfort for intentional spaces.',
+  ],
+  'Dining Chairs': [
+    'Solid oak with handwoven detail. Scandinavian craftsmanship for gathering spaces.',
+    'Premium hardwood with ergonomic design. Where comfort meets the dinner table.',
+    'Natural materials with artisan finish. Built for generations of gatherings.',
+  ],
+  'Side Storage Cabinets': [
+    'Solid wood construction with artisan details. Functional beauty for every room.',
+    'Hand-finished with natural textures. Storage that tells a story.',
+  ],
+  'Barstools': [
+    'Solid oak with woven seat. Counter-height comfort with Nordic charm.',
+    'Premium hardwood with footrest detail. Elevated seating for kitchen gatherings.',
+  ],
+  'Counterstools': [
+    'Artisan-crafted with comfortable proportions. Perfect height for morning coffee.',
+    'Natural materials meet modern design. Counter seating with character.',
+  ],
+  'Dining Tables': [
+    'Solid hardwood with hand-rubbed finish. The heart of every gathering.',
+    'Sustainably sourced wood with timeless design. Built for generations of memories.',
+  ],
+  'Nightstands': [
+    'Compact design with thoughtful storage. Bedside beauty meets function.',
+    'Hand-finished wood with clean lines. The perfect nighttime companion.',
+  ],
+  'Nursery Furniture': [
+    'Crafted with little ones in mind. Safe, beautiful, and built to last.',
+    'Sustainably sourced wood with gentle curves. Timeless pieces for the nursery.',
+  ],
+  'Playroom Furniture': [
+    'Kid-friendly design with grown-up style. Built for play, designed for beauty.',
+    'Durable construction meets playful design. Furniture that grows with them.',
+  ],
+
+  // Decor Categories
+  'Vases': [
+    'Hand-thrown ceramic with organic glaze. An artisan touch for fresh blooms.',
+    'Sculptural form with matte finish. Beauty with or without flowers.',
+  ],
+  'Table Lamps': [
+    'Warm glow with artisan base. Ambient light for curated corners.',
+    'Natural materials with soft illumination. Lighting that sets the mood.',
+  ],
+  'Floor Lamps': [
+    'Statement lighting with sculptural presence. Ambient warmth for every space.',
+    'Artisan design with adjustable shade. Light that works as hard as you do.',
+  ],
+  'Rugs': [
+    'Hand-woven with natural fibers. Grounding texture for layered spaces.',
+    'Organic materials with subtle pattern. Underfoot luxury for curated homes.',
+  ],
+  'Decor Items': [
+    'Artisan-made with attention to detail. The finishing touch for thoughtful spaces.',
+    'Natural materials with collected character. Decor that tells your story.',
+  ],
+
+  // Fashion Categories
+  'Dresses': [
+    'Flowing silhouette in premium fabric. Effortless elegance for any occasion.',
+    'Flattering cut with feminine details. A dress that moves with you.',
+  ],
+  'Everyday Dresses': [
+    'Soft cotton with relaxed fit. From morning coffee to evening plans.',
+    'Breathable fabric with easy style. Your new everyday favorite.',
+  ],
+  'Formal Dresses': [
+    'Elegant drape with refined details. Statement dressing for special moments.',
+    'Sophisticated silhouette in luxe fabric. Dress to remember.',
+  ],
+  'Tops': [
+    'Soft fabric with flattering fit. A versatile essential for any wardrobe.',
+    'Breathable blend with modern details. Effortless style, endless possibilities.',
+  ],
+  'Blouses': [
+    'Flowing fabric with feminine finish. Polished style for work and beyond.',
+    'Light and airy with thoughtful details. The blouse you\'ll reach for daily.',
+  ],
+  'Casual Tops': [
+    'Soft cotton with relaxed fit. Easy style for everyday moments.',
+    'Comfortable blend with modern edge. Casual never looked this good.',
+  ],
+  'Bottoms': [
+    'Flattering fit with quality fabric. The foundation of effortless style.',
+    'Comfortable stretch with clean lines. Bottoms that work for you.',
+  ],
+  'Pants': [
+    'Tailored fit with comfortable stretch. Polished style from desk to dinner.',
+    'Premium fabric with modern silhouette. Pants that elevate any outfit.',
+  ],
+  'Skirts': [
+    'Feminine flow with flattering fit. Movement and style in every step.',
+    'Soft fabric with timeless design. The skirt you\'ll wear season after season.',
+  ],
+  'Denim': [
+    'Premium denim with perfect stretch. The jeans you\'ve been searching for.',
+    'Classic wash with modern fit. Denim that feels like home.',
+  ],
+  'Blazers': [
+    'Structured silhouette with modern ease. Power dressing meets everyday style.',
+    'Tailored fit with quality details. The blazer for all occasions.',
+  ],
+  'Layers': [
+    'Lightweight knit with effortless drape. The perfect finishing layer.',
+    'Soft cardigan with timeless appeal. Cozy elegance for cooler days.',
+  ],
+  'Blazers & Layers': [
+    'Versatile layering with polished finish. Warmth and style combined.',
+    'From boardroom to brunch. Layers that work as hard as you do.',
+  ],
+  'Active': [
+    'Performance fabric with flattering fit. Move freely, look amazing.',
+    'Breathable stretch with modern design. Active wear meets everyday style.',
+  ],
+  'Lounge': [
+    'Ultra-soft fabric for relaxed moments. Comfort you\'ll never want to take off.',
+    'Cozy blend with elevated style. Loungewear worth being seen in.',
+  ],
+  'Active & Lounge': [
+    'From workout to weekend. Comfort and style without compromise.',
+    'Soft stretch with versatile appeal. Rest and play in style.',
+  ],
+  'Outfits & Sets': [
+    'Coordinated pieces with effortless style. Matching made easy.',
+    'Curated set with endless options. Mix, match, and make it yours.',
+  ],
+  'Vacation Edit': [
+    'Pack light, look amazing. Vacation-ready style that travels well.',
+    'Breezy fabrics with destination appeal. Your getaway wardrobe, curated.',
+  ],
+
+  // Toys Category
+  'Toys': [
+    'Thoughtfully designed for imaginative play. Safe, beautiful, and built to inspire.',
+    'Natural materials with playful design. Toys that spark creativity.',
+    'Heirloom quality for hours of play. Made to be loved and passed down.',
+  ],
+};
+
+
+// Helper to get fallback description - category-aware with collection fallback
+const getCategoryFallback = (collection: string, category?: string): string => {
+  // Try category-specific first
+  if (category) {
+    const categoryDescriptions = CATEGORY_FALLBACK_DESCRIPTIONS[category];
+    if (categoryDescriptions && categoryDescriptions.length > 0) {
+      console.log('[Fallback] Using category-specific description for:', category);
+      return categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)];
+    }
+  }
+
+  // Fall back to collection-level
+  console.log('[Fallback] Using collection-level description for:', collection);
   const descriptions = FALLBACK_DESCRIPTIONS[collection] || FALLBACK_DESCRIPTIONS.default;
   return descriptions[Math.floor(Math.random() * descriptions.length)];
+};
+
+// Keep the old function name for backward compatibility
+const getCollectionFallback = (collection: string): string => {
+  return getCategoryFallback(collection);
 };
 
 
@@ -817,10 +1071,10 @@ export const generateProductNameV2 = async (context: ProductContext): Promise<st
  * Generate a sophisticated product description using full product context
  */
 export const generateProductDescriptionV2 = async (context: ProductContext): Promise<string> => {
-  // Collection-aware fallback using the shared helper
+  // Category-aware fallback using the enhanced helper
   const getFallback = () => {
-    console.warn('[AI Fallback V2] Using collection fallback for:', context.collection);
-    return getCollectionFallback(context.collection);
+    console.warn('[AI Fallback V2] Using category fallback for:', context.category, 'in', context.collection);
+    return getCategoryFallback(context.collection, context.category);
   };
 
   if (!apiKey) {
