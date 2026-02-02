@@ -460,8 +460,16 @@ const EssenceStep: React.FC<{
                             <select
                                 value={product.category || ''}
                                 onChange={(e) => onChange({ ...product, category: e.target.value })}
-                                className="w-full text-xl text-earth/80 border-b border-earth/10 py-2 focus:outline-none focus:border-bronze bg-transparent placeholder:text-earth/20 transition-colors"
-                            />
+                                className="w-full text-lg text-earth/80 border-b border-earth/10 py-3 focus:outline-none focus:border-bronze bg-transparent transition-colors cursor-pointer"
+                            >
+                                <option value="">Select a category...</option>
+                                {collections.find(c => c.id === product.collection)?.subcategories?.map((cat: any) => (
+                                    <option key={cat.id} value={cat.title}>
+                                        {cat.title.replace(collections.find(c => c.id === product.collection)?.title + ' ', '')}
+                                    </option>
+                                ))}
+                                <option value="Other">Other / Custom</option>
+                            </select>
                         </div>
 
                         <div className="space-y-4">
