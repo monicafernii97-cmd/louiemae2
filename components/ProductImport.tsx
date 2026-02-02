@@ -641,8 +641,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         setError(null);
 
         try {
-            // Updated: Call generic scraper action
+            // Call generic scraper action
+            console.log('[URL Import] Calling scraper for:', importUrl);
             const result = await scrapeProduct({ url: importUrl });
+            console.log('[URL Import] Scraper result:', result);
 
             if (!result) {
                 throw new Error("Failed to fetch product data");
@@ -651,6 +653,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             let importableProduct: ImportableProduct;
 
             if (result.source === 'aliexpress') {
+                console.log('[URL Import] Processing as AliExpress product');
                 // The scraper returns the raw API response in `result.data`.
                 // We need to transform it using the existing service logic if available, 
                 // or manually map it here. Ideally `aliexpressService.transformProduct` is exported?
@@ -686,7 +689,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     id: rawData.itemId || String(rawData.sku?.skuId) || 'unknown',
                     name: rawData.title || 'Unknown Product',
                     price: parseFloat(rawData.sku?.def?.promotionPrice || rawData.sku?.def?.price || '0'),
-                    description: 'Imported from AliExpress',
+                    description: rawData.description || 'Imported from AliExpress',
                     images: rawData.images || [],
                     category: '',
                     collection: targetCollection as CollectionType,
@@ -709,6 +712,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
                 // Generic source - still needs to satisfy AliExpressProduct structure
+                console.log('[URL Import] Processing as generic product:', result.data);
                 const data = result.data;
                 importableProduct = {
                     // Base Product fields
@@ -728,7 +732,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
                     reviewCount: 0,
                     averageRating: 0,
-                    productUrl: data.url || '',
+                    productUrl: data.url || importUrl,
                     source: 'generic',
                     // ImportableProduct fields
                     selected: true,
@@ -737,7 +741,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 };
             }
 
-            // Auto-AI Enhancement
+            console.log('[URL Import] Created importable product:', importableProduct.name, 'images:', importableProduct.images?.length);
+
+            // Auto-AI Enhancement (optional - preserves original data if fails)
             if (autoEnhanceAi) {
                 try {
                     const context: ProductContext = {
@@ -754,13 +760,21 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         generateProductDescriptionV2(context)
                     ]);
 
-                    importableProduct = {
-                        ...importableProduct,
-                        customName: enhancedName,
-                        customDescription: enhancedDescription
-                    };
+                    // Only use AI results if they look valid (not generic fallbacks)
+                    const isValidAiName = enhancedName && !enhancedName.includes('Chair') && !enhancedName.includes('Table') && !enhancedName.includes('Lamp');
+                    const isValidAiDesc = enhancedDescription && !enhancedDescription.includes('solid oak') && !enhancedDescription.includes('Nordic restraint');
 
-                    toast.success('Product found & AI enhanced');
+                    if (isValidAiName || isValidAiDesc) {
+                        importableProduct = {
+                            ...importableProduct,
+                            customName: isValidAiName ? enhancedName : importableProduct.name,
+                            customDescription: isValidAiDesc ? enhancedDescription : importableProduct.description
+                        };
+                        toast.success('Product found & AI enhanced');
+                    } else {
+                        console.warn('[URL Import] AI returned generic fallbacks, using original data');
+                        toast.success('Product found (AI used defaults)');
+                    }
                 } catch (aiErr) {
                     console.error('Auto-AI failed:', aiErr);
                     toast.error('Product found, but AI enhancement failed');
