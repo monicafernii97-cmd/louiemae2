@@ -26,6 +26,8 @@ export interface Category {
   caption?: string;
   collection?: CollectionType;
   redirect?: string; // For cross-linking (e.g. Decor > Accent Chairs -> Furniture)
+  parentCategory?: string;    // Parent category title for hierarchy (e.g., "Girls" for "Girls Dresses")
+  isMainCategory?: boolean;   // True for top-level categories like "Girls", "Boys"
 }
 
 export interface CollectionConfig {

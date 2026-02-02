@@ -2,14 +2,17 @@
 import React, { useState, useMemo } from 'react';
 import { FadeIn } from './FadeIn';
 import { useSite } from '../contexts/BlogContext';
-import { Product, CollectionType, ProductVariant } from '../types';
-import { ArrowLeft, X, ArrowUpRight } from 'lucide-react';
+import { Product, CollectionType, ProductVariant, Category } from '../types';
+import { ArrowLeft, X, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import { AddToCartButton } from './cart';
 
 interface StorePageProps {
   collection: CollectionType;
   initialCategory?: string;
 }
+
+// View levels for hierarchical navigation
+type ViewLevel = 'ROOT' | 'CATEGORY' | 'PRODUCT';
 
 export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategory = 'All' }) => {
   const { products, siteContent } = useSite();
@@ -37,13 +40,70 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     setSelectedVariant(undefined);
   };
 
-  // View State Logic
-  const isRootView = selectedCategory === 'All';
+  // Compute the view level based on selected category and available data
+  const viewLevel = useMemo<ViewLevel>(() => {
+    if (selectedCategory === 'All') {
+      return 'ROOT';
+    }
+
+    // Check if selectedCategory is a main category with children
+    const isMainCategory = config.subcategories.some(
+      sub => sub.title === selectedCategory && sub.isMainCategory
+    );
+    const hasChildren = config.subcategories.some(
+      sub => sub.parentCategory === selectedCategory
+    );
+
+    if (isMainCategory && hasChildren) {
+      return 'CATEGORY';
+    }
+
+    return 'PRODUCT';
+  }, [selectedCategory, config.subcategories]);
+
+  // Get main categories (for ROOT view)
+  const mainCategories = useMemo(() => {
+    return config.subcategories.filter(sub => sub.isMainCategory);
+  }, [config.subcategories]);
+
+  // Get child categories of the selected main category (for CATEGORY view)
+  const childCategories = useMemo(() => {
+    if (viewLevel !== 'CATEGORY') return [];
+    return config.subcategories.filter(sub => sub.parentCategory === selectedCategory);
+  }, [config.subcategories, selectedCategory, viewLevel]);
 
   // Filter products by collection
   const collectionProducts = useMemo(() => {
     return products.filter(p => p.collection === collection);
   }, [products, collection]);
+
+  // Get products for a specific category (for previews and product grid)
+  const getProductsForCategory = (categoryTitle: string, limit?: number) => {
+    const filtered = collectionProducts.filter(p =>
+      p.category === categoryTitle ||
+      p.category.startsWith(categoryTitle + ' ')
+    );
+    return limit ? filtered.slice(0, limit) : filtered;
+  };
+
+  // Filter and Sort for PRODUCT view
+  const filteredProducts = useMemo(() => {
+    let result = collectionProducts;
+
+    if (selectedCategory !== 'All') {
+      // Improved partial matching: "Girls" matches "Girls Tops"
+      result = result.filter(p =>
+        p.category === selectedCategory ||
+        p.category.startsWith(selectedCategory + ' ')
+      );
+    }
+
+    return result.sort((a, b) => {
+      if (sortOption === 'price-asc') return a.price - b.price;
+      if (sortOption === 'price-desc') return b.price - a.price;
+      return b.id.localeCompare(a.id);
+    });
+  }, [collectionProducts, selectedCategory, sortOption]);
 
   // Get unique categories for display in filter bar
   const categories = useMemo(() => {
@@ -63,25 +123,6 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     return ['All', ...list.sort()];
   }, [collectionProducts, selectedCategory, config.subcategories]);
 
-  // Filter and Sort
-  const filteredProducts = useMemo(() => {
-    let result = collectionProducts;
-
-    if (selectedCategory !== 'All') {
-      // Improved partial matching: "Girls" matches "Girls Tops"
-      result = result.filter(p =>
-        p.category === selectedCategory ||
-        p.category.startsWith(selectedCategory + ' ')
-      );
-    }
-
-    return result.sort((a, b) => {
-      if (sortOption === 'price-asc') return a.price - b.price;
-      if (sortOption === 'price-desc') return b.price - a.price;
-      return b.id.localeCompare(a.id);
-    });
-  }, [collectionProducts, selectedCategory, sortOption]);
-
   const handleCategoryChange = (cat: string) => {
     if (cat === selectedCategory) return;
 
@@ -97,16 +138,107 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     window.location.hash = newHash;
   };
 
+  // Get back destination based on current view
+  const getBackDestination = () => {
+    if (viewLevel === 'CATEGORY') {
+      return 'All'; // Go back to collection root
+    }
+    // For PRODUCT view, check if we came from a main category
+    const parentCat = config.subcategories.find(sub => sub.title === selectedCategory)?.parentCategory;
+    return parentCat || 'All';
+  };
+
+  // Render a product card (reusable for both preview and full grid)
+  const ProductCard: React.FC<{ product: Product; index: number; compact?: boolean }> = ({ product, index, compact }) => (
+    <FadeIn delay={index * 50} className="group cursor-pointer">
+      <div
+        className={`relative ${compact ? 'aspect-square' : 'aspect-[3/4]'} overflow-hidden bg-white mb-3 rounded-lg`}
+        onClick={() => handleSelectProduct(product)}
+      >
+        {product.isNew && !compact && (
+          <span className="absolute top-2 left-2 bg-white/90 px-2 py-1 text-[8px] uppercase tracking-widest text-earth z-10 rounded-sm">
+            New
+          </span>
+        )}
+        <img
+          src={product.images[0]}
+          alt={product.name}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+        {!compact && (
+          <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+            <button className="w-full bg-white/90 backdrop-blur-sm text-earth py-2 text-[9px] uppercase tracking-[0.15em] hover:bg-earth hover:text-white transition-colors shadow-lg rounded">
+              Quick View
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className={compact ? 'px-1' : ''}>
+        <h3 className={`font-serif ${compact ? 'text-sm' : 'text-base'} text-earth leading-tight mb-1 group-hover:text-bronze transition-colors truncate`}>
+          {product.name}
+        </h3>
+        <span className={`font-serif italic text-earth/80 ${compact ? 'text-sm' : 'text-base'}`}>${product.price}</span>
+      </div>
+    </FadeIn>
+  );
+
+  // Subcategory box with product previews
+  const SubcategoryWithPreviews: React.FC<{ category: Category; index: number }> = ({ category, index }) => {
+    const previewProducts = getProductsForCategory(category.title, 4);
+
+    return (
+      <FadeIn delay={index * 100} className="mb-16">
+        {/* Category Header with Box */}
+        <div
+          className="relative group cursor-pointer h-[280px] md:h-[320px] overflow-hidden rounded-2xl mb-6"
+          onClick={() => handleCategoryChange(category.title)}
+        >
+          <img
+            src={category.image}
+            alt={category.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+            {category.caption && (
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/70 mb-2 block">{category.caption}</span>
+            )}
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-2xl md:text-3xl text-white">{category.title}</h3>
+              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowUpRight className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Previews */}
+        {previewProducts.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {previewProducts.map((product, idx) => (
+              <ProductCard key={product.id} product={product} index={idx} compact />
+            ))}
+          </div>
+        )}
+        {previewProducts.length === 0 && (
+          <p className="text-center text-earth/50 text-sm italic py-4">Coming soon...</p>
+        )}
+      </FadeIn>
+    );
+  };
+
   return (
     <div className="bg-cream min-h-screen pt-20">
 
       {/* Hero Section */}
-      <section className="relative h-[60vh] overflow-hidden">
+      <section className="relative h-[50vh] md:h-[60vh] overflow-hidden">
         <div className="absolute inset-0 bg-black/20 z-10"></div>
         <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
           <FadeIn>
-            <h1 className="font-serif text-5xl md:text-7xl text-white mb-4 drop-shadow-lg">
+            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white mb-4 drop-shadow-lg">
               {selectedCategory === 'All' ? config.title : selectedCategory}
             </h1>
             <p className="font-sans text-white/90 text-xs md:text-sm uppercase tracking-[0.3em]">
@@ -116,22 +248,21 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         </div>
       </section>
 
-      {/* --- LEVEL 1: ROOT CATEGORIES (Asymmetrical Grid) --- */}
-      {isRootView && config.subcategories.length > 0 && (
-        <section className="px-6 py-20 md:py-32">
+      {/* --- LEVEL 1: ROOT VIEW - Main Categories Only --- */}
+      {viewLevel === 'ROOT' && mainCategories.length > 0 && (
+        <section className="px-4 md:px-8 py-16 md:py-24">
           <div className="container mx-auto">
-            <FadeIn className="text-center mb-16">
-              <h2 className="font-serif text-4xl text-earth mb-4">Explore {config.title}</h2>
+            <FadeIn className="text-center mb-12 md:mb-16">
+              <h2 className="font-serif text-3xl md:text-4xl text-earth mb-4">Explore {config.title}</h2>
               <p className="text-xs uppercase tracking-widest text-earth/50">Select a category to begin</p>
             </FadeIn>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 auto-rows-[minmax(300px,auto)]">
-              {config.subcategories.map((cat, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 md:auto-rows-[minmax(300px,auto)]">
+              {mainCategories.map((cat, idx) => (
                 <FadeIn
                   key={cat.id || idx}
                   delay={idx * 100}
-                  className={`group cursor-pointer relative overflow-hidden rounded-[2.5rem] shadow-sm border border-earth/5 ${idx === 0 ? 'md:row-span-2 h-[500px] md:h-auto' : 'h-[300px] md:h-[400px]'
-                    }`}
+                  className={`group cursor-pointer relative overflow-hidden rounded-[2rem] shadow-sm border border-earth/5 aspect-[4/3] md:aspect-auto ${idx === 0 ? 'md:row-span-2 md:h-auto' : 'md:h-[350px]'}`}
                 >
                   <div
                     onClick={() => handleCategoryChange(cat.title)}
@@ -147,12 +278,12 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
 
                     {/* Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10 flex flex-col justify-end items-start transform transition-transform duration-500 group-hover:-translate-y-2">
+                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 flex flex-col justify-end items-start transform transition-transform duration-500 group-hover:-translate-y-2">
                       {cat.caption && (
                         <span className="text-[10px] uppercase tracking-[0.3em] text-white/80 mb-2">{cat.caption}</span>
                       )}
                       <div className="flex items-center justify-between w-full">
-                        <h3 className="font-serif text-3xl md:text-5xl text-white leading-none">{cat.title}</h3>
+                        <h3 className="font-serif text-2xl md:text-4xl text-white leading-none">{cat.title}</h3>
                         <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
                           <ArrowUpRight className="w-5 h-5 text-white" />
                         </div>
@@ -166,20 +297,84 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         </section>
       )}
 
-      {/* --- LEVEL 3: PRODUCT GRID (Leaf View) --- */}
-      {(!isRootView || config.subcategories.length === 0) && (
+      {/* --- LEVEL 2: CATEGORY VIEW - Subcategories with Product Previews --- */}
+      {viewLevel === 'CATEGORY' && (
+        <>
+          {/* Back Button & Shop All Section */}
+          <div className="sticky top-[73px] z-30 bg-cream/95 backdrop-blur-md border-b border-earth/10 px-4 md:px-8 py-4">
+            <div className="container mx-auto flex items-center justify-between">
+              <button
+                onClick={() => handleCategoryChange(getBackDestination())}
+                className="text-[10px] uppercase tracking-widest text-earth/50 hover:text-earth flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3 h-3" /> Back to {config.title}
+              </button>
+              <button
+                onClick={() => {
+                  // Scroll to products or show all products for this category
+                  const el = document.getElementById('all-products-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="text-[10px] uppercase tracking-widest text-bronze hover:text-earth transition-colors"
+              >
+                Shop All {selectedCategory}
+              </button>
+            </div>
+          </div>
+
+          {/* Subcategory Boxes with Previews */}
+          <section className="px-4 md:px-8 py-12 md:py-16">
+            <div className="container mx-auto">
+              <FadeIn className="text-center mb-10 md:mb-14">
+                <h2 className="font-serif text-2xl md:text-3xl text-earth mb-2">Shop {selectedCategory}</h2>
+                <p className="text-xs uppercase tracking-widest text-earth/50">Browse our curated categories</p>
+              </FadeIn>
+
+              {childCategories.map((cat, idx) => (
+                <SubcategoryWithPreviews key={cat.id} category={cat} index={idx} />
+              ))}
+            </div>
+          </section>
+
+          {/* All Products for this Category */}
+          <section id="all-products-section" className="px-4 md:px-8 py-12 md:py-16 bg-white">
+            <div className="container mx-auto">
+              <FadeIn className="text-center mb-10">
+                <h2 className="font-serif text-2xl md:text-3xl text-earth mb-2">All {selectedCategory}</h2>
+                <p className="text-xs uppercase tracking-widest text-earth/50">{filteredProducts.length} Items</p>
+              </FadeIn>
+
+              {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                  {filteredProducts.map((product, idx) => (
+                    <ProductCard key={product.id} product={product} index={idx} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <p className="font-serif text-xl text-earth/50 mb-4">No products found in {selectedCategory}.</p>
+                  <p className="text-xs uppercase tracking-widest text-earth/30">Check back soon for new arrivals.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* --- LEVEL 3: PRODUCT VIEW - Full Product Grid --- */}
+      {viewLevel === 'PRODUCT' && (
         <>
           {/* Filter & Toolbar */}
-          <div className="sticky top-[73px] z-30 bg-cream/95 backdrop-blur-md border-b border-earth/10 px-6 py-4 transition-all duration-300">
+          <div className="sticky top-[73px] z-30 bg-cream/95 backdrop-blur-md border-b border-earth/10 px-4 md:px-8 py-4 transition-all duration-300">
             <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-6 overflow-x-auto no-scrollbar w-full md:w-auto pb-2 md:pb-0">
+              <div className="flex items-center gap-4 md:gap-6 overflow-x-auto no-scrollbar w-full md:w-auto pb-2 md:pb-0">
                 <button
-                  onClick={() => handleCategoryChange('All')}
+                  onClick={() => handleCategoryChange(getBackDestination())}
                   className="whitespace-nowrap text-[10px] uppercase tracking-widest text-earth/50 hover:text-earth flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3 h-3" /> Back
                 </button>
-                {categories.map(cat => (
+                {categories.slice(0, 8).map(cat => (
                   <button
                     key={cat}
                     onClick={() => handleCategoryChange(cat)}
@@ -205,20 +400,18 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             </div>
           </div>
 
-          <section className="px-6 py-12 md:py-20 min-h-[60vh]">
+          <section className="px-4 md:px-8 py-12 md:py-16 min-h-[60vh]">
             <div className="container mx-auto">
               {filteredProducts.length === 0 ? (
                 <div className="text-center py-20 animate-fade-in-up">
                   <p className="font-serif text-2xl text-earth/50 mb-4">No products found in {selectedCategory}.</p>
                   <p className="text-xs uppercase tracking-widest text-earth/30">Check back soon for new arrivals.</p>
-                  {selectedCategory !== 'All' && (
-                    <button onClick={() => handleCategoryChange('All')} className="mt-8 text-xs uppercase tracking-widest text-bronze border-b border-bronze pb-1 hover:text-earth hover:border-earth transition-colors">
-                      View All {config.title}
-                    </button>
-                  )}
+                  <button onClick={() => handleCategoryChange(getBackDestination())} className="mt-8 text-xs uppercase tracking-widest text-bronze border-b border-bronze pb-1 hover:text-earth hover:border-earth transition-colors">
+                    Go Back
+                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
                   {filteredProducts.map((product, idx) => (
                     <FadeIn key={product.id} delay={idx * 50} className="group cursor-pointer">
                       <div
@@ -285,22 +478,22 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto bg-cream flex flex-col">
+            <div className="w-full md:w-1/2 p-6 md:p-10 overflow-y-auto bg-cream flex flex-col">
               <div className="mb-auto">
                 <div className="flex items-center gap-3 mb-4 text-[10px] uppercase tracking-widest text-earth/50">
                   <span>{config.title}</span>
                   <span className="w-1 h-1 bg-bronze rounded-full"></span>
                   <span>{selectedProduct.category}</span>
                 </div>
-                <h2 className="font-serif text-3xl md:text-5xl text-earth mb-4 leading-tight">{selectedProduct.name}</h2>
-                <p className="font-serif text-2xl italic text-bronze mb-8">
+                <h2 className="font-serif text-2xl md:text-4xl text-earth mb-4 leading-tight">{selectedProduct.name}</h2>
+                <p className="font-serif text-xl md:text-2xl italic text-bronze mb-6">
                   ${(selectedProduct.price + (selectedVariant?.priceAdjustment || 0)).toFixed(2)}
                 </p>
-                <div className="h-px w-full bg-earth/10 mb-8"></div>
+                <div className="h-px w-full bg-earth/10 mb-6"></div>
 
                 {/* Variant Selector */}
                 {selectedProduct.variants && selectedProduct.variants.length > 0 && (
-                  <div className="mb-8">
+                  <div className="mb-6">
                     <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Option</span>
                     <div className="flex flex-wrap gap-2">
                       {selectedProduct.variants.map(v => (
@@ -322,8 +515,8 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                   </div>
                 )}
 
-                <p className="font-sans text-earth/70 leading-loose mb-8 text-sm">{selectedProduct.description}</p>
-                <div className="space-y-4 mb-8">
+                <p className="font-sans text-earth/70 leading-relaxed mb-6 text-sm">{selectedProduct.description}</p>
+                <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-2 text-xs text-green-700">
                     <span className="w-2 h-2 rounded-full bg-green-600"></span>
                     {selectedProduct.inStock ? 'In Stock & Ready to Ship' : 'Made to Order'}
@@ -334,7 +527,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                 product={selectedProduct}
                 selectedVariant={selectedVariant}
                 variantRequired={!!(selectedProduct.variants && selectedProduct.variants.length > 0)}
-                className="mt-8"
+                className="mt-6"
               />
             </div>
           </div>
