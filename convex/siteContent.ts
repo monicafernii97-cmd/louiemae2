@@ -556,26 +556,22 @@ export const migrateAllCollectionsHierarchy = mutation({
             ]
         };
 
-        // --- 3. Decor Collection ---
+        // --- 3. Decor Collection - Swimlane Layout (like Kids) ---
         const decorCollection = {
             id: 'decor',
-            title: 'Accent Decor',
+            title: 'Home Decor',
             subtitle: 'The details that tell your story',
             heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2000&auto=format&fit=crop',
             subcategories: [
-                // Main Categories
-                { id: 'lighting', title: 'Lighting', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Warm Glow', isMainCategory: true },
-                { id: 'home-accents', title: 'Home Accents', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Finishing Touches', isMainCategory: true },
-                { id: 'textiles', title: 'Textiles', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Soft Layers', isMainCategory: true },
-
-                // Subcategories
-                { id: 'table-lamps', title: 'Table Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Ambient Light', parentCategory: 'Lighting' },
-                { id: 'floor-lamps', title: 'Floor Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Corner Brightening', parentCategory: 'Lighting' },
-
-                { id: 'decor-items', title: 'Decor Items', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Objects', parentCategory: 'Home Accents' },
-                { id: 'vases', title: 'Vases', image: 'https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800', caption: 'Ceramic & Glass', parentCategory: 'Home Accents' },
-
-                { id: 'rugs', title: 'Rugs', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Grounding Textures', parentCategory: 'Textiles' },
+                // Main Parent Category - triggers swimlane view when selected
+                { id: 'home-decor', title: 'Home Decor', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Accents', isMainCategory: true },
+                // Child Categories - displayed as swimlanes with product cards
+                { id: 'decor-items', title: 'Decor Items', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Objects', parentCategory: 'Home Decor' },
+                { id: 'table-lamps', title: 'Table Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Ambient Light', parentCategory: 'Home Decor' },
+                { id: 'vases', title: 'Vases', image: 'https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800', caption: 'Ceramic & Glass', parentCategory: 'Home Decor' },
+                { id: 'floor-lamps', title: 'Floor Lamps', image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?q=80&w=800', caption: 'Corner Brightening', parentCategory: 'Home Decor' },
+                { id: 'rugs', title: 'Rugs', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Grounding Textures', parentCategory: 'Home Decor' },
+                { id: 'accent-chairs', title: 'Accent Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Statement Seating', parentCategory: 'Home Decor' },
             ]
         };
 
