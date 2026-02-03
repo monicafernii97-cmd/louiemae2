@@ -336,7 +336,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     <div className="bg-cream min-h-screen pt-20">
 
       {/* Hero Section */}
-      <section className={`relative transition-all duration-700 ${collection === 'kids' ? 'h-[85vh]' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
+      <section className={`relative transition-all duration-700 w-full ${collection === 'kids' ? 'min-h-screen flex flex-col' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
 
         {/* Background/Backdrop - For Kids, this is the carousel container background */}
         <div className="absolute inset-0 bg-cream z-0"></div>
@@ -362,10 +362,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         {/* VOGUE LAYOUT: Kids Collection Concave Carousel */}
         {collection === 'kids' && viewLevel === 'ROOT' && (
           <>
-            {/* Header Title (Above Carousel) */}
-            <div className="absolute top-0 left-0 right-0 z-30 pt-24 md:pt-32 pb-8 text-center bg-transparent pointer-events-none">
+            {/* Header Title - Static Block with dedicated space */}
+            <div className="relative z-30 pt-32 pb-8 md:pb-12 text-center bg-transparent pointer-events-none">
               <FadeIn>
-                <h1 className="font-serif text-5xl md:text-7xl text-earth drop-shadow-sm mb-2 mix-blend-multiply opacity-90">
+                <h1 className="font-serif text-5xl md:text-8xl text-earth drop-shadow-sm mb-4 mix-blend-multiply opacity-90">
                   {config.title}
                 </h1>
                 <p className="font-sans text-earth/80 text-xs md:text-sm uppercase tracking-[0.3em]">
@@ -374,55 +374,50 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
               </FadeIn>
             </div>
 
-            {/* Carousel Container - Full size of section */}
-            <div className="absolute inset-0 z-10 pt-32 pb-0 h-full">
-              <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
-                {mainCategories.map((cat, idx) => (
-                  <div
-                    key={cat.id || idx}
-                    className="min-w-[70vw] md:min-w-[25vw] h-full snap-center relative"
-                    onClick={() => handleCategoryChange(cat.title)}
-                  >
-                    <div className="w-full h-full relative group cursor-pointer overflow-hidden border-r border-white/10">
-                      {/* Image - SHARP corners, Object Cover, Full Height */}
-                      <img src={cat.image} alt={cat.title} className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105" />
+            {/* Carousel Container - Fills remaining height */}
+            <div className="relative flex-1 w-full min-h-[60vh] md:min-h-[70vh] z-10">
+              {/* Inner Absolute wrapper to handle scroll properly */}
+              <div className="absolute inset-0 pb-0">
+                <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                  {mainCategories.map((cat, idx) => (
+                    <div
+                      key={cat.id || idx}
+                      className="min-w-[85vw] md:min-w-[28vw] h-full snap-center relative"
+                      onClick={() => handleCategoryChange(cat.title)}
+                    >
+                      <div className="w-full h-full relative group cursor-pointer overflow-hidden border-r border-white/10">
+                        {/* Image - SHARP corners, Object Cover, Full Height */}
+                        <img src={cat.image} alt={cat.title} className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105" />
 
-                      {/* Overlay - High Fashion / Minimal */}
-                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500"></div>
+                        {/* Overlay - High Fashion / Minimal */}
+                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500"></div>
 
-                      {/* Label - Bottom Overlay style */}
-                      {/* Adjusted padding to be visible ABOVE the concave scoop */}
-                      <div className="absolute bottom-20 md:bottom-32 left-0 right-0 p-6 text-center z-20">
-                        <h3 className="font-serif text-white text-3xl md:text-5xl tracking-tight leading-none mb-2 drop-shadow-lg">
-                          {cat.title}
-                        </h3>
-                        <div className="flex items-center justify-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <span className="text-white text-xs uppercase tracking-[0.2em]">{cat.caption || 'Explore'}</span>
+                        {/* Label - Positioned "Elegantly" above the curve */}
+                        {/* Moved higher to accommodate steep curve and ensure seamless look */}
+                        <div className="absolute bottom-32 md:bottom-48 left-0 right-0 p-6 text-center z-20">
+                          <h3 className="font-serif text-white text-4xl md:text-6xl tracking-tight leading-none mb-3 drop-shadow-xl transform group-hover:-translate-y-2 transition-transform duration-500">
+                            {cat.title}
+                          </h3>
+                          <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                            <span className="text-white text-xs uppercase tracking-[0.2em] border-b border-white/50 pb-1">View Collection</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                {/* Peek Element - Extra width to ensure scroll */}
-                <div className="min-w-[10vw] h-full bg-cream"></div>
+                  {/* Peek Element - Extra width to ensure scroll */}
+                  <div className="min-w-[10vw] h-full bg-cream"></div>
+                </div>
               </div>
             </div>
 
             {/* CONCAVE CURVE DIVIDER (Bottom) */}
             {/* Dramatically increased height and steepness of the curve */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 h-24 md:h-40 w-full pointer-events-none text-cream filter drop-shadow-xl-up">
+            <div className="absolute bottom-0 left-0 right-0 z-20 h-24 md:h-48 w-full pointer-events-none text-cream filter drop-shadow-xl-up">
               <svg viewBox="0 0 1440 100" preserveAspectRatio="none" className="w-full h-full fill-current">
-                {/* 
-                        CONCAVE SCOOP (U Shape)
-                        Start Top-Left (0,0) -> Curve Down -> End Top-Right (1440,0).
-                        Fill everything OUTSIDE the U? No, the DIVIDER is the Cream Color.
-                        If Image needs to look Scooped (U), Divider must be Hill (n).
-                        Let's make a STEEP HILL.
-                        Path: M-100,100 L1540,100 L1540,100 Q720,-100 -100,100 Z
-                        This covers the bottom.
-                     */}
-                <path d="M0,100 L1440,100 L1440,40 Q720,-40 0,40 Z" className="fill-cream" />
+                {/* Steep Hill Curve for dramatic scoop */}
+                <path d="M0,100 L1440,100 L1440,30 Q720,-50 0,30 Z" className="fill-cream" />
               </svg>
             </div>
           </>
