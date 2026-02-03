@@ -132,10 +132,11 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                 >
                     {categories.map((cat, idx) => {
                         // Static curvature based on position in list
+                        // Reduced rotation for more subtle effect - max 12 degrees total
                         const centerIdx = (categories.length - 1) / 2;
                         const offset = idx - centerIdx;
-                        const rotateY = offset * 8;
-                        const translateZ = Math.abs(offset) * -20;
+                        const rotateY = Math.max(-12, Math.min(12, offset * 4)); // 4 deg per step, capped at ±12
+                        const translateZ = Math.min(0, Math.abs(offset) * -8); // Reduced depth
 
                         return (
                             <button
