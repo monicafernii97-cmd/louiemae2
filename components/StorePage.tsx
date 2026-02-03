@@ -338,13 +338,13 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     <div className="bg-cream min-h-screen pt-20">
 
       {/* Hero Section */}
-      <section className={`relative transition-all duration-700 w-full ${collection === 'kids' ? 'min-h-screen flex flex-col' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
+      <section className={`relative transition-all duration-700 w-full ${(collection === 'kids' || collection === 'decor') ? 'min-h-screen flex flex-col' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
 
         {/* Background/Backdrop - For Kids, this is the carousel container background */}
         <div className="absolute inset-0 bg-cream z-0"></div>
 
         {/* Standard Hero Image (Non-Kids) */}
-        {collection !== 'kids' && (
+        {collection !== 'kids' && collection !== 'decor' && (
           <>
             <div className="absolute inset-0 bg-black/20 z-10"></div>
             <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />
@@ -362,7 +362,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         )}
 
         {/* VOGUE LAYOUT: Kids Collection Concave Carousel */}
-        {collection === 'kids' && viewLevel === 'ROOT' && (
+        {(collection === 'kids' || collection === 'decor') && viewLevel === 'ROOT' && (
           <>
             {/* Header Title - Static Block with dedicated space */}
             <div className="relative z-30 pt-32 pb-8 md:pb-12 text-center bg-transparent pointer-events-none">
@@ -385,7 +385,6 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                   style={{ perspective: '1200px' }}
                 >
                   {mainCategories
-                    .filter(cat => ['Girls', 'Boys', 'Toys', 'Nursery Furniture', 'Playroom Furniture'].includes(cat.title))
                     .map((cat, idx, arr) => {
                       // Calculate rotation for curved effect - center cards flat, edges tilted inward
                       const centerIdx = (arr.length - 1) / 2;
@@ -451,7 +450,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       </section>
 
       {/* --- LEVEL 1: ROOT VIEW - Curved Category Carousel (Standard Collections) --- */}
-      {viewLevel === 'ROOT' && collection !== 'kids' && config.subcategories.length > 0 && (
+      {viewLevel === 'ROOT' && collection !== 'kids' && collection !== 'decor' && config.subcategories.length > 0 && (
         <section className="py-12 md:py-16">
           <CurvedCategoryCarousel
             categories={mainCategories.map(cat => ({
@@ -475,7 +474,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       )}
 
       {/* --- LEVEL 1: ROOT VIEW - Kids Product Feed (New Arrivals) --- */}
-      {viewLevel === 'ROOT' && collection === 'kids' && (
+      {viewLevel === 'ROOT' && (collection === 'kids' || collection === 'decor') && (
         <section className="px-4 md:px-8 pb-12 md:pb-16 -mt-8 relative z-30">
           {/* Negative margin to pull it up into the concave scoop if needed, but let's keep it safe below */}
           <div className="container mx-auto">
