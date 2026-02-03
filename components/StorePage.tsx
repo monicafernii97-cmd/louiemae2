@@ -365,7 +365,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             {/* Header Title - Static Block with dedicated space */}
             <div className="relative z-30 pt-32 pb-8 md:pb-12 text-center bg-transparent pointer-events-none">
               <FadeIn>
-                <h1 className="font-serif text-5xl md:text-8xl text-earth drop-shadow-sm mb-4 mix-blend-multiply opacity-90">
+                <h1 className="font-serif text-5xl md:text-7xl text-earth drop-shadow-sm mb-4 mix-blend-multiply opacity-90">
                   {config.title}
                 </h1>
                 <p className="font-sans text-earth/80 text-xs md:text-sm uppercase tracking-[0.3em]">
@@ -414,10 +414,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
 
             {/* CONCAVE CURVE DIVIDER (Bottom) */}
             {/* Dramatically increased height and steepness of the curve */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 h-24 md:h-48 w-full pointer-events-none text-cream filter drop-shadow-xl-up">
+            <div className="absolute bottom-0 left-0 right-0 z-20 h-24 md:h-40 w-full pointer-events-none text-cream">
               <svg viewBox="0 0 1440 100" preserveAspectRatio="none" className="w-full h-full fill-current">
-                {/* Steep Hill Curve for dramatic scoop */}
-                <path d="M0,100 L1440,100 L1440,30 Q720,-50 0,30 Z" className="fill-cream" />
+                {/* Gentle Hill Curve */}
+                <path d="M0,100 L1440,100 L1440,40 Q720,-40 0,40 Z" className="fill-cream" />
               </svg>
             </div>
           </>
