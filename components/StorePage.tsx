@@ -40,6 +40,25 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     setSelectedVariant(undefined);
   };
 
+  // Get main categories for logic checks
+  const mainCategoriesForRedirect = useMemo(() => {
+    const flagged = config.subcategories.filter(sub => sub.isMainCategory);
+    return flagged.length > 0 ? flagged : config.subcategories;
+  }, [config.subcategories]);
+
+  // Auto-redirect to main category if there's only one (to show swimlane view immediately)
+  React.useEffect(() => {
+    if (selectedCategory === 'All' && mainCategoriesForRedirect.length === 1) {
+      const singleMain = mainCategoriesForRedirect[0];
+      // Only redirect if this category has children (would show swimlanes)
+      const hasChildren = config.subcategories.some(sub => sub.parentCategory === singleMain.title);
+      if (hasChildren) {
+        const newHash = `#collection/${collection}?cat=${encodeURIComponent(singleMain.title)}`;
+        window.location.hash = newHash;
+      }
+    }
+  }, [selectedCategory, mainCategoriesForRedirect, config.subcategories, collection]);
+
   // Compute the view level based on selected category and available data
   const viewLevel = useMemo<ViewLevel>(() => {
     if (selectedCategory === 'All') {
