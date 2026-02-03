@@ -145,7 +145,7 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                 onClick={() => onCategoryClick(cat)}
                                 className="
                   group relative flex-shrink-0 overflow-hidden rounded-2xl
-                  w-[320px] md:w-[380px] lg:w-[420px]
+                  w-[200px] md:w-[240px] lg:w-[280px]
                   aspect-[3/4] md:aspect-[2/3]
                   bg-stone-100 
                   shadow-lg hover:shadow-2xl
@@ -212,7 +212,7 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                 onClick={() => {
                                     const container = scrollContainerRef.current;
                                     if (container) {
-                                        const cardWidth = 320 + 24; // card width + gap
+                                        const cardWidth = 200 + 16; // card width + gap (smaller cards)
                                         container.scrollTo({ left: idx * cardWidth, behavior: 'smooth' });
                                     }
                                 }}
