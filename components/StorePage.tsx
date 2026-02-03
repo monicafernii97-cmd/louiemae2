@@ -336,46 +336,90 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     <div className="bg-cream min-h-screen pt-20">
 
       {/* Hero Section */}
-      <section className={`relative h-[50vh] md:h-[60vh] ${collection === 'kids' ? 'rounded-b-[50px] md:rounded-b-[80px] overflow-hidden' : 'overflow-hidden'}`}>
-        <div className="absolute inset-0 bg-black/20 z-10"></div>
-        <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />
-        <div className={`absolute inset-0 z-20 flex flex-col items-center pt-20 text-center px-4 ${collection === 'kids' ? 'justify-start' : 'justify-center'}`}>
-          <FadeIn>
-            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white mb-4 drop-shadow-lg">
-              {selectedCategory === 'All' ? config.title : selectedCategory}
-            </h1>
-            <p className="font-sans text-white/90 text-xs md:text-sm uppercase tracking-[0.3em]">
-              {selectedCategory === 'All' ? config.subtitle : `Curated ${selectedCategory} Selection`}
-            </p>
-          </FadeIn>
-        </div>
+      <section className={`relative transition-all duration-700 ${collection === 'kids' ? 'h-[85vh]' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
 
-        {/* Kids Collection: Integrated Category Navigation INSIDE Hero */}
+        {/* Background/Backdrop - For Kids, this is the carousel container background */}
+        <div className="absolute inset-0 bg-cream z-0"></div>
+
+        {/* Standard Hero Image (Non-Kids) */}
+        {collection !== 'kids' && (
+          <>
+            <div className="absolute inset-0 bg-black/20 z-10"></div>
+            <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
+              <FadeIn>
+                <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white mb-4 drop-shadow-lg">
+                  {selectedCategory === 'All' ? config.title : selectedCategory}
+                </h1>
+                <p className="font-sans text-white/90 text-xs md:text-sm uppercase tracking-[0.3em]">
+                  {selectedCategory === 'All' ? config.subtitle : `Curated ${selectedCategory} Selection`}
+                </p>
+              </FadeIn>
+            </div>
+          </>
+        )}
+
+        {/* VOGUE LAYOUT: Kids Collection Concave Carousel */}
         {collection === 'kids' && viewLevel === 'ROOT' && (
-          <div className="absolute bottom-0 left-0 right-0 z-30 pb-8 md:pb-12 bg-gradient-to-t from-black/60 to-transparent pt-32">
-            <div className="container mx-auto px-4">
-              <div className="flex overflow-x-auto gap-4 md:gap-6 snap-x snap-mandatory scrollbar-hide pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+          <>
+            {/* Header Title (Above Carousel) */}
+            <div className="absolute top-0 left-0 right-0 z-30 pt-24 md:pt-32 pb-8 text-center bg-transparent pointer-events-none">
+              <FadeIn>
+                <h1 className="font-serif text-5xl md:text-7xl text-earth drop-shadow-sm mb-2 mix-blend-multiply opacity-90">
+                  {config.title}
+                </h1>
+                <p className="font-sans text-earth/80 text-xs md:text-sm uppercase tracking-[0.3em]">
+                  {config.subtitle}
+                </p>
+              </FadeIn>
+            </div>
+
+            {/* Carousel Container - Full size of section */}
+            <div className="absolute inset-0 z-10 pt-48 md:pt-56 pb-20 md:pb-32">
+              <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 md:px-0">
+                {/* Spacer for left edge on desktop */}
+                <div className="hidden md:block min-w-[2vw]"></div>
+
                 {mainCategories.map((cat, idx) => (
                   <div
                     key={cat.id || idx}
-                    className="min-w-[42%] md:min-w-[22%] snap-center first:pl-2 last:pr-2"
+                    className="min-w-[70vw] md:min-w-[23vw] h-full snap-center pl-1 md:pl-0 pr-2 md:pr-1 first:pl-4 last:pr-4"
                     onClick={() => handleCategoryChange(cat.title)}
                   >
-                    <div className="aspect-[3/4] rounded-xl overflow-hidden relative group cursor-pointer border border-white/20 hover:border-white/60 transition-colors shadow-lg">
-                      <img src={cat.image} alt={cat.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
-                      <div className="absolute bottom-4 left-0 right-0 text-center">
-                        <h3 className="font-serif text-white text-xl md:text-2xl drop-shadow-md">{cat.title}</h3>
-                        <div className="h-[1px] bg-white/60 w-0 group-hover:w-1/2 mx-auto mt-2 transition-all duration-500"></div>
+                    <div className="w-full h-full relative group cursor-pointer overflow-hidden shadow-sm">
+                      {/* Image - SHARP corners, Object Cover */}
+                      <img src={cat.image} alt={cat.title} className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110" />
+
+                      {/* Overlay - High Fashion / Minimal */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500"></div>
+
+                      {/* Label - Bottom Overlay style */}
+                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+                        <h3 className="font-serif text-white text-3xl md:text-4xl tracking-tight leading-none mb-2 transform group-hover:-translate-y-1 transition-transform duration-500">
+                          {cat.title}
+                        </h3>
+                        <div className="flex items-center gap-2 overflow-hidden h-0 group-hover:h-6 transition-all duration-500">
+                          <span className="text-white/90 text-xs uppercase tracking-widest">Explore Collection</span>
+                          <ArrowUpRight className="w-3 h-3 text-white" />
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
-                {/* Peek element padding */}
-                <div className="min-w-[5%]"></div>
+
+                {/* Peek Element for 5th item encouragement */}
+                <div className="min-w-[5vw]"></div>
               </div>
             </div>
-          </div>
+
+            {/* CONCAVE CURVE DIVIDER (Bottom) */}
+            {/* Creates a 'Hill' of cream color, making the image above look scooped/concave */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 h-16 md:h-24 w-full pointer-events-none text-cream">
+              <svg viewBox="0 0 1440 100" preserveAspectRatio="none" className="w-full h-full fill-current">
+                <path d="M0,100 L1440,100 L1440,30 Q720,-20 0,30 Z" className="fill-cream" />
+              </svg>
+            </div>
+          </>
         )}
       </section>
 
@@ -455,22 +499,21 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
 
       {/* --- LEVEL 1: ROOT VIEW - Kids Product Feed (New Arrivals) --- */}
       {viewLevel === 'ROOT' && collection === 'kids' && (
-        <section className="px-4 md:px-8 py-12 md:py-16">
+        <section className="px-4 md:px-8 pb-12 md:pb-16 -mt-8 relative z-30">
+          {/* Negative margin to pull it up into the concave scoop if needed, but let's keep it safe below */}
           <div className="container mx-auto">
-            <FadeIn className="mb-8">
+            <FadeIn className="mb-8 text-center md:text-left">
               <h2 className="font-serif text-3xl md:text-4xl text-earth mb-3 ml-2">New Arrivals</h2>
               <p className="text-xs uppercase tracking-widest text-earth/50 ml-2">Latest collections for the little ones</p>
             </FadeIn>
 
             <div className="flex overflow-x-auto gap-4 md:gap-6 pb-8 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-              {/* Only showing first 8 products for "New Arrivals" feed */}
               {collectionProducts.slice(0, 8).map((product, idx) => (
                 <div key={product.id} className="min-w-[260px] md:min-w-[300px] snap-center">
                   <ProductCard product={product} index={idx} />
                 </div>
               ))}
 
-              {/* View All / Peek Card */}
               <div className="min-w-[200px] md:min-w-[240px] snap-center flex items-center justify-center">
                 <button className="group flex flex-col items-center gap-4 text-earth/50 hover:text-earth transition-colors">
                   <div className="w-16 h-16 rounded-full border border-earth/20 flex items-center justify-center group-hover:border-earth transition-colors">
