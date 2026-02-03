@@ -476,14 +476,16 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         </section>
       )}
 
-      {/* --- LEVEL 1: ROOT VIEW - Kids Product Feed (New Arrivals) --- */}
+      {/* --- LEVEL 1: ROOT VIEW - New Arrivals Feed (Kids & Decor) --- */}
       {viewLevel === 'ROOT' && (collection === 'kids' || collection === 'decor') && (
         <section className="px-4 md:px-8 pb-12 md:pb-16 -mt-8 relative z-30">
           {/* Negative margin to pull it up into the concave scoop if needed, but let's keep it safe below */}
           <div className="container mx-auto">
             <FadeIn className="mb-8 text-center md:text-left">
               <h2 className="font-serif text-3xl md:text-4xl text-earth mb-3 ml-2">New Arrivals</h2>
-              <p className="text-xs uppercase tracking-widest text-earth/50 ml-2">Latest collections for the little ones</p>
+              <p className="text-xs uppercase tracking-widest text-earth/50 ml-2">
+                {collection === 'decor' ? 'Latest curated pieces for your home' : 'Latest collections for the little ones'}
+              </p>
             </FadeIn>
 
             <div className="flex overflow-x-auto gap-4 md:gap-6 pb-8 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
@@ -498,7 +500,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                   <div className="w-16 h-16 rounded-full border border-earth/20 flex items-center justify-center group-hover:border-earth transition-colors">
                     <ArrowUpRight className="w-6 h-6" />
                   </div>
-                  <span className="text-xs uppercase tracking-widest">Shop All Kids</span>
+                  <span className="text-xs uppercase tracking-widest">Shop All {config.title}</span>
                 </button>
               </div>
             </div>
