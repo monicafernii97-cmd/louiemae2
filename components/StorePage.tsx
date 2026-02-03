@@ -375,58 +375,73 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
               </FadeIn>
             </div>
 
-            {/* Premium 5-Card Category Grid */}
+            {/* Premium 5-Card Category Grid with Curved Effect */}
             <div className="px-4 md:px-8 pb-16 md:pb-24">
               <div className="container mx-auto">
-                {/* 5 Large Category Cards - Editorial Grid Layout */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
+                {/* 5 Large Category Cards - Editorial Grid with 3D Curve */}
+                <div
+                  className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6"
+                  style={{ perspective: '1200px' }}
+                >
                   {mainCategories
                     .filter(cat => ['Girls', 'Boys', 'Toys', 'Nursery Furniture', 'Playroom Furniture'].includes(cat.title))
-                    .map((cat, idx) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => handleCategoryChange(cat.title)}
-                        className={`
-                          group relative overflow-hidden rounded-2xl
-                          aspect-[3/4] md:aspect-[2/3]
-                          bg-stone-100 
-                          shadow-lg hover:shadow-2xl
-                          transition-all duration-500 ease-out
-                          hover:scale-[1.02]
-                          ${idx === 0 ? 'col-span-2 md:col-span-1' : ''}
-                        `}
-                      >
-                        {/* Image */}
-                        <img
-                          src={cat.image}
-                          alt={cat.title}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
+                    .map((cat, idx, arr) => {
+                      // Calculate rotation for curved effect - center cards flat, edges tilted inward
+                      const centerIdx = (arr.length - 1) / 2;
+                      const offset = idx - centerIdx;
+                      const rotateY = offset * 8; // Degrees of rotation per step from center
+                      const translateZ = Math.abs(offset) * -20; // Push edge cards back slightly
 
-                        {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleCategoryChange(cat.title)}
+                          className={`
+                            group relative overflow-hidden rounded-2xl
+                            aspect-[3/4] md:aspect-[2/3]
+                            bg-stone-100 
+                            shadow-lg hover:shadow-2xl
+                            transition-all duration-500 ease-out
+                            hover:scale-[1.02]
+                            ${idx === 0 ? 'col-span-2 md:col-span-1' : ''}
+                          `}
+                          style={{
+                            transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
+                            transformStyle: 'preserve-3d',
+                          }}
+                        >
+                          {/* Image */}
+                          <img
+                            src={cat.image}
+                            alt={cat.title}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
 
-                        {/* Text Content */}
-                        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                          <h3 className="font-serif text-2xl md:text-3xl lg:text-4xl text-white font-light tracking-wide mb-2">
-                            {cat.title}
-                          </h3>
-                          <p className="text-white/70 text-xs md:text-sm uppercase tracking-[0.2em]">
-                            {cat.caption || 'Shop Now'}
-                          </p>
+                          {/* Gradient Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                          {/* Hover Arrow */}
-                          <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <span className="inline-flex items-center text-white text-sm">
-                              Explore
-                              <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                              </svg>
-                            </span>
+                          {/* Text Content */}
+                          <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                            <h3 className="font-serif text-2xl md:text-3xl lg:text-4xl text-white font-light tracking-wide mb-2">
+                              {cat.title}
+                            </h3>
+                            <p className="text-white/70 text-xs md:text-sm uppercase tracking-[0.2em]">
+                              {cat.caption || 'Shop Now'}
+                            </p>
+
+                            {/* Hover Arrow */}
+                            <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <span className="inline-flex items-center text-white text-sm">
+                                Explore
+                                <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             </div>
