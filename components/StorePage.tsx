@@ -336,10 +336,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     <div className="bg-cream min-h-screen pt-20">
 
       {/* Hero Section */}
-      <section className="relative h-[50vh] md:h-[60vh] overflow-hidden">
+      <section className={`relative h-[50vh] md:h-[60vh] ${collection === 'kids' ? 'rounded-b-[50px] md:rounded-b-[80px] overflow-hidden' : 'overflow-hidden'}`}>
         <div className="absolute inset-0 bg-black/20 z-10"></div>
         <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
+        <div className={`absolute inset-0 z-20 flex flex-col items-center pt-20 text-center px-4 ${collection === 'kids' ? 'justify-start' : 'justify-center'}`}>
           <FadeIn>
             <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white mb-4 drop-shadow-lg">
               {selectedCategory === 'All' ? config.title : selectedCategory}
@@ -349,10 +349,38 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             </p>
           </FadeIn>
         </div>
+
+        {/* Kids Collection: Integrated Category Navigation INSIDE Hero */}
+        {collection === 'kids' && viewLevel === 'ROOT' && (
+          <div className="absolute bottom-0 left-0 right-0 z-30 pb-8 md:pb-12 bg-gradient-to-t from-black/60 to-transparent pt-32">
+            <div className="container mx-auto px-4">
+              <div className="flex overflow-x-auto gap-4 md:gap-6 snap-x snap-mandatory scrollbar-hide pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+                {mainCategories.map((cat, idx) => (
+                  <div
+                    key={cat.id || idx}
+                    className="min-w-[42%] md:min-w-[22%] snap-center first:pl-2 last:pr-2"
+                    onClick={() => handleCategoryChange(cat.title)}
+                  >
+                    <div className="aspect-[3/4] rounded-xl overflow-hidden relative group cursor-pointer border border-white/20 hover:border-white/60 transition-colors shadow-lg">
+                      <img src={cat.image} alt={cat.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+                      <div className="absolute bottom-4 left-0 right-0 text-center">
+                        <h3 className="font-serif text-white text-xl md:text-2xl drop-shadow-md">{cat.title}</h3>
+                        <div className="h-[1px] bg-white/60 w-0 group-hover:w-1/2 mx-auto mt-2 transition-all duration-500"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {/* Peek element padding */}
+                <div className="min-w-[5%]"></div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* --- LEVEL 1: ROOT VIEW - All Categories Grid --- */}
-      {viewLevel === 'ROOT' && config.subcategories.length > 0 && (
+      {/* --- LEVEL 1: ROOT VIEW - All Categories Grid (Standard Collections) --- */}
+      {viewLevel === 'ROOT' && collection !== 'kids' && config.subcategories.length > 0 && (
         <section className="px-4 md:px-8 py-12 md:py-16">
           <div className="container mx-auto">
             <FadeIn className="text-center mb-8 md:mb-12">
@@ -420,6 +448,37 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                   </FadeIn>
                 );
               })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* --- LEVEL 1: ROOT VIEW - Kids Product Feed (New Arrivals) --- */}
+      {viewLevel === 'ROOT' && collection === 'kids' && (
+        <section className="px-4 md:px-8 py-12 md:py-16">
+          <div className="container mx-auto">
+            <FadeIn className="mb-8">
+              <h2 className="font-serif text-3xl md:text-4xl text-earth mb-3 ml-2">New Arrivals</h2>
+              <p className="text-xs uppercase tracking-widest text-earth/50 ml-2">Latest collections for the little ones</p>
+            </FadeIn>
+
+            <div className="flex overflow-x-auto gap-4 md:gap-6 pb-8 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+              {/* Only showing first 8 products for "New Arrivals" feed */}
+              {collectionProducts.slice(0, 8).map((product, idx) => (
+                <div key={product.id} className="min-w-[260px] md:min-w-[300px] snap-center">
+                  <ProductCard product={product} index={idx} />
+                </div>
+              ))}
+
+              {/* View All / Peek Card */}
+              <div className="min-w-[200px] md:min-w-[240px] snap-center flex items-center justify-center">
+                <button className="group flex flex-col items-center gap-4 text-earth/50 hover:text-earth transition-colors">
+                  <div className="w-16 h-16 rounded-full border border-earth/20 flex items-center justify-center group-hover:border-earth transition-colors">
+                    <ArrowUpRight className="w-6 h-6" />
+                  </div>
+                  <span className="text-xs uppercase tracking-widest">Shop All Kids</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
