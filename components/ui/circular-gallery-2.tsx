@@ -39,6 +39,16 @@ interface CircularGalleryProps
      */
     borderRadius?: number;
     /**
+     * Width of the gallery items (pixels).
+     * @default 700
+     */
+    itemWidth?: number;
+    /**
+     * Height of the gallery items (pixels).
+     * @default 900
+     */
+    itemHeight?: number;
+    /**
      * Multiplier for scroll interaction speed.
      * @default 2
      */
@@ -202,6 +212,8 @@ class Media {
     textColor: string;
     borderRadius: number;
     font: string;
+    itemWidth: number;
+    itemHeight: number;
     program!: Program;
     plane!: Mesh;
     title!: Title;
@@ -230,6 +242,8 @@ class Media {
         textColor,
         borderRadius = 0,
         font,
+        itemWidth = 700,
+        itemHeight = 900,
     }: {
         geometry: Plane;
         gl: OGLRenderingContext;
@@ -245,6 +259,8 @@ class Media {
         textColor: string;
         borderRadius: number;
         font: string;
+        itemWidth?: number;
+        itemHeight?: number;
     }) {
         this.geometry = geometry;
         this.gl = gl;
@@ -260,6 +276,8 @@ class Media {
         this.textColor = textColor;
         this.borderRadius = borderRadius;
         this.font = font;
+        this.itemWidth = itemWidth;
+        this.itemHeight = itemHeight;
         this.createShader();
         this.createMesh();
         this.createTitle();
@@ -430,9 +448,9 @@ class Media {
         }
         this.scale = this.screen.height / 1500;
         this.plane.scale.y =
-            (this.viewport.height * (900 * this.scale)) / this.screen.height;
+            (this.viewport.height * (this.itemHeight * this.scale)) / this.screen.height;
         this.plane.scale.x =
-            (this.viewport.width * (700 * this.scale)) / this.screen.width;
+            (this.viewport.width * (this.itemWidth * this.scale)) / this.screen.width;
         this.program.uniforms.uPlaneSizes.value = [
             this.plane.scale.x,
             this.plane.scale.y,
@@ -475,6 +493,8 @@ class App {
     boundOnTouchMove: (e: MouseEvent | TouchEvent) => void;
     boundOnTouchUp: (e: MouseEvent | TouchEvent) => void;
     onItemClick?: (item: GalleryItem, index: number) => void;
+    itemWidth?: number;
+    itemHeight?: number;
 
     constructor(
         container: HTMLElement,
@@ -497,12 +517,16 @@ class App {
             scrollEase: number;
             onItemClick?: (item: GalleryItem, index: number) => void;
         },
+        itemWidth: number = 700,
+        itemHeight: number = 900
     ) {
         this.container = container;
         this.scrollSpeed = scrollSpeed;
         this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
         this.onCheckDebounce = debounce(this.onCheck.bind(this), 200);
         this.onItemClick = onItemClick;
+        this.itemWidth = itemWidth;
+        this.itemHeight = itemHeight;
 
         autoBind(this);
 
@@ -581,6 +605,8 @@ class App {
                 textColor,
                 borderRadius,
                 font,
+                itemWidth: this.itemWidth,
+                itemHeight: this.itemHeight,
             });
         });
     }
@@ -732,6 +758,8 @@ const CircularGallery = ({
     items,
     bend = 3,
     borderRadius = 0.05,
+    itemWidth = 700,
+    itemHeight = 900,
     scrollSpeed = 2,
     scrollEase = 0.05,
     className,
@@ -762,12 +790,12 @@ const CircularGallery = ({
             scrollSpeed,
             scrollEase,
             onItemClick,
-        });
+        }, itemWidth, itemHeight);
 
         return () => {
             app.destroy();
         };
-    }, [items, bend, borderRadius, scrollSpeed, scrollEase, fontClassName, onItemClick]);
+    }, [items, bend, borderRadius, scrollSpeed, scrollEase, fontClassName, onItemClick, itemWidth, itemHeight]);
 
     return (
         <div

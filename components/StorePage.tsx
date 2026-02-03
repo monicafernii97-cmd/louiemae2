@@ -378,14 +378,18 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             {/* Carousel Container - CircularGallery WebGL Component */}
             <div className="relative flex-1 w-full min-h-[60vh] md:min-h-[70vh] z-10">
               <CircularGallery
-                items={mainCategories.map(cat => ({
-                  image: cat.image,
-                  text: cat.title,
-                }))}
+                items={mainCategories
+                  .filter(cat => ['Girls', 'Boys', 'Toys', 'Nursery Furniture', 'Playroom Furniture'].includes(cat.title))
+                  .map(cat => ({
+                    image: cat.image,
+                    text: cat.title,
+                  }))}
                 bend={3}
                 borderRadius={0.05}
-                scrollEase={0.02}
-                scrollSpeed={2}
+                scrollEase={0.05}
+                scrollSpeed={3}
+                itemWidth={900}
+                itemHeight={1200}
                 onItemClick={(item) => {
                   const category = mainCategories.find(c => c.title === item.text);
                   if (category) {
