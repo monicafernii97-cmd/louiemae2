@@ -168,8 +168,8 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                 {/* Gradient Overlay */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                                {/* Text Content */}
-                                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                                {/* Text Content - Centered */}
+                                <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6 md:p-8">
                                     <h3 className="font-serif text-2xl md:text-3xl text-white font-light tracking-wide mb-2">
                                         {cat.title}
                                     </h3>
@@ -216,8 +216,8 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                     }
                                 }}
                                 className={`w-2 h-2 rounded-full transition-all duration-300 ${visibleCards.includes(idx)
-                                        ? 'bg-earth w-6'
-                                        : 'bg-earth/30 hover:bg-earth/50'
+                                    ? 'bg-earth w-6'
+                                    : 'bg-earth/30 hover:bg-earth/50'
                                     }`}
                                 aria-label={`Go to card ${idx + 1}`}
                             />

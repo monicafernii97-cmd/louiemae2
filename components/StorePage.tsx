@@ -421,8 +421,8 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                           {/* Gradient Overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                          {/* Text Content */}
-                          <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                          {/* Text Content - Centered */}
+                          <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6 md:p-8">
                             <h3 className="font-serif text-2xl md:text-3xl lg:text-4xl text-white font-light tracking-wide mb-2">
                               {cat.title}
                             </h3>
