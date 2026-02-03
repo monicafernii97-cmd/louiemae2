@@ -49,7 +49,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   }, [config.subcategories]);
 
   // Auto-redirect to main category if there's only one (to show swimlane view immediately)
+  // Skip this for 'kids' and 'decor' collections which have premium grid layouts at root level
   React.useEffect(() => {
+    if (collection === 'kids' || collection === 'decor') return; // Don't auto-redirect for premium layouts
+
     if (selectedCategory === 'All' && mainCategoriesForRedirect.length === 1) {
       const singleMain = mainCategoriesForRedirect[0];
       // Only redirect if this category has children (would show swimlanes)

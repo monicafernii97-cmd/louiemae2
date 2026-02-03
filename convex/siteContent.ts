@@ -650,7 +650,7 @@ export const migrateAllCollectionsHierarchy = mutation({
     },
 });
 
-// One-time fix for Home Decor collection - NO AUTH FOR EMERGENCY FIX
+// One-time fix for Home Decor collection - Premium Grid Layout like Kids
 export const fixHomeDecorCollection = mutation({
     args: {},
     handler: async (ctx) => {
@@ -662,22 +662,20 @@ export const fixHomeDecorCollection = mutation({
         // Get current collections
         const collections = existing.collections || [];
 
-        // Create updated decor collection with swimlane structure
+        // Create updated decor collection with MULTIPLE MAIN CATEGORIES for premium grid
+        // This matches the Louie Kids & Co. layout with 5 category cards
         const updatedDecorCollection = {
             id: 'decor',
             title: 'Home Decor',
             subtitle: 'The details that tell your story',
             heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2000&auto=format&fit=crop',
             subcategories: [
-                // Main Parent Category - triggers swimlane view
-                { id: 'home-decor', title: 'Home Decor', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Accents', isMainCategory: true },
-                // Child Categories - displayed as swimlanes with product cards
-                { id: 'decor-items', title: 'Decor Items', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Objects', parentCategory: 'Home Decor' },
-                { id: 'table-lamps', title: 'Table Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Ambient Light', parentCategory: 'Home Decor' },
-                { id: 'vases', title: 'Vases', image: 'https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800', caption: 'Ceramic & Glass', parentCategory: 'Home Decor' },
-                { id: 'floor-lamps', title: 'Floor Lamps', image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?q=80&w=800', caption: 'Corner Brightening', parentCategory: 'Home Decor' },
-                { id: 'rugs', title: 'Rugs', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Grounding Textures', parentCategory: 'Home Decor' },
-                { id: 'accent-chairs', title: 'Accent Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Statement Seating', parentCategory: 'Home Decor' },
+                // Main Categories - displayed in premium grid (like Kids)
+                { id: 'decor-items', title: 'Decor Items', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Objects', isMainCategory: true },
+                { id: 'table-lamps', title: 'Table Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Ambient Light', isMainCategory: true },
+                { id: 'vases', title: 'Vases', image: 'https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800', caption: 'Ceramic & Glass', isMainCategory: true },
+                { id: 'floor-lamps', title: 'Floor Lamps', image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?q=80&w=800', caption: 'Corner Brightening', isMainCategory: true },
+                { id: 'rugs', title: 'Rugs', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Grounding Textures', isMainCategory: true },
             ]
         };
 
@@ -688,7 +686,7 @@ export const fixHomeDecorCollection = mutation({
 
         await ctx.db.patch(existing._id, { collections: updatedCollections });
 
-        return { success: true, message: "Home Decor collection fixed with swimlane layout" };
+        return { success: true, message: "Home Decor collection updated with premium grid layout" };
     },
 });
 
