@@ -1,10 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { FadeIn } from './FadeIn';
 import { useSite } from '../contexts/BlogContext';
 import { Product, CollectionType, ProductVariant, Category } from '../types';
 import { ArrowLeft, X, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import { AddToCartButton } from './cart';
+import { CircularGallery, GalleryItem } from './ui/circular-gallery-2';
 
 interface StorePageProps {
   collection: CollectionType;
@@ -374,42 +375,25 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
               </FadeIn>
             </div>
 
-            {/* Carousel Container - Fills remaining height */}
+            {/* Carousel Container - CircularGallery WebGL Component */}
             <div className="relative flex-1 w-full min-h-[60vh] md:min-h-[70vh] z-10">
-              {/* Inner Absolute wrapper to handle scroll properly */}
-              <div className="absolute inset-0 pb-0">
-                <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
-                  {mainCategories.map((cat, idx) => (
-                    <div
-                      key={cat.id || idx}
-                      className="min-w-[85vw] md:min-w-[28vw] h-full snap-center relative"
-                      onClick={() => handleCategoryChange(cat.title)}
-                    >
-                      <div className="w-full h-full relative group cursor-pointer overflow-hidden border-r border-white/10">
-                        {/* Image - SHARP corners, Object Cover, Full Height */}
-                        <img src={cat.image} alt={cat.title} className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105" />
-
-                        {/* Overlay - High Fashion / Minimal */}
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500"></div>
-
-                        {/* Label - Positioned "Elegantly" above the curve */}
-                        {/* Moved higher to accommodate steep curve and ensure seamless look */}
-                        <div className="absolute bottom-32 md:bottom-48 left-0 right-0 p-6 text-center z-20">
-                          <h3 className="font-serif text-white text-4xl md:text-6xl tracking-tight leading-none mb-3 drop-shadow-xl transform group-hover:-translate-y-2 transition-transform duration-500">
-                            {cat.title}
-                          </h3>
-                          <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                            <span className="text-white text-xs uppercase tracking-[0.2em] border-b border-white/50 pb-1">View Collection</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Peek Element - Extra width to ensure scroll */}
-                  <div className="min-w-[10vw] h-full bg-cream"></div>
-                </div>
-              </div>
+              <CircularGallery
+                items={mainCategories.map(cat => ({
+                  image: cat.image,
+                  text: cat.title,
+                }))}
+                bend={3}
+                borderRadius={0.05}
+                scrollEase={0.02}
+                scrollSpeed={2}
+                onItemClick={(item) => {
+                  const category = mainCategories.find(c => c.title === item.text);
+                  if (category) {
+                    handleCategoryChange(category.title);
+                  }
+                }}
+                className="w-full h-full"
+              />
             </div>
 
             {/* CONCAVE CURVE DIVIDER (Bottom) */}
