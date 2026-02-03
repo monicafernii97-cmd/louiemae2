@@ -1,0 +1,232 @@
+"use client";
+
+import React, { useRef, useState, useEffect } from 'react';
+
+interface CategoryItem {
+    id: string;
+    title: string;
+    image: string;
+    caption?: string;
+    redirect?: string;
+}
+
+interface CurvedCategoryCarouselProps {
+    categories: CategoryItem[];
+    onCategoryClick: (category: CategoryItem) => void;
+    title?: string;
+    subtitle?: string;
+}
+
+/**
+ * A horizontally scrollable category carousel with 3D curved perspective effect.
+ * Features:
+ * - 3D inverted curvature (edge cards tilt inward)
+ * - Horizontal scroll with peek effect (shows partial cards on edges)
+ * - Works with any number of categories
+ * - Premium hover effects with image zoom and text reveal
+ */
+export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
+    categories,
+    onCategoryClick,
+    title,
+    subtitle,
+}) => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [scrollProgress, setScrollProgress] = useState(0);
+    const [visibleCards, setVisibleCards] = useState<number[]>([]);
+
+    // Track scroll position for dynamic curvature
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            const { scrollLeft, scrollWidth, clientWidth } = container;
+            const maxScroll = scrollWidth - clientWidth;
+            setScrollProgress(maxScroll > 0 ? scrollLeft / maxScroll : 0);
+
+            // Calculate which cards are currently visible
+            const cardElements = container.querySelectorAll('[data-card-index]');
+            const containerRect = container.getBoundingClientRect();
+            const visible: number[] = [];
+
+            cardElements.forEach((card) => {
+                const cardRect = card.getBoundingClientRect();
+                const cardCenter = cardRect.left + cardRect.width / 2;
+                if (cardCenter >= containerRect.left && cardCenter <= containerRect.right) {
+                    visible.push(parseInt(card.getAttribute('data-card-index') || '0'));
+                }
+            });
+
+            setVisibleCards(visible);
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        handleScroll(); // Initial call
+
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [categories.length]);
+
+    // Calculate 3D transform for each card based on its position
+    const getCardTransform = (index: number) => {
+        const container = scrollContainerRef.current;
+        if (!container) return {};
+
+        const containerRect = container.getBoundingClientRect();
+        const containerCenter = containerRect.width / 2;
+
+        // Get card element position
+        const cardElement = container.querySelector(`[data-card-index="${index}"]`) as HTMLElement;
+        if (!cardElement) return {};
+
+        const cardRect = cardElement.getBoundingClientRect();
+        const cardCenter = cardRect.left - containerRect.left + cardRect.width / 2 + container.scrollLeft;
+        const viewportCardCenter = cardRect.left - containerRect.left + cardRect.width / 2;
+
+        // Calculate offset from center of viewport
+        const offsetFromCenter = (viewportCardCenter - containerCenter) / containerCenter;
+
+        // Rotation: cards on left rotate right, cards on right rotate left
+        const rotateY = offsetFromCenter * 12; // Max 12 degrees
+
+        // Depth: cards further from center are pushed back
+        const translateZ = Math.abs(offsetFromCenter) * -30;
+
+        return {
+            transform: `perspective(1200px) rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
+            transformStyle: 'preserve-3d' as const,
+        };
+    };
+
+    return (
+        <div className="w-full">
+            {/* Header */}
+            {(title || subtitle) && (
+                <div className="text-center mb-8 md:mb-12 px-4">
+                    {title && (
+                        <h2 className="font-serif text-3xl md:text-4xl text-earth mb-3">{title}</h2>
+                    )}
+                    {subtitle && (
+                        <p className="text-xs uppercase tracking-widest text-earth/50">{subtitle}</p>
+                    )}
+                </div>
+            )}
+
+            {/* Scrollable Carousel Container */}
+            <div className="relative">
+                {/* Peek fade effect - left */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 md:w-16 bg-gradient-to-r from-cream to-transparent z-10 pointer-events-none" />
+
+                {/* Peek fade effect - right */}
+                <div className="absolute right-0 top-0 bottom-0 w-8 md:w-16 bg-gradient-to-l from-cream to-transparent z-10 pointer-events-none" />
+
+                {/* Scroll Container */}
+                <div
+                    ref={scrollContainerRef}
+                    className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-8 md:px-16 pb-4 scroll-smooth"
+                    style={{
+                        scrollSnapType: 'x mandatory',
+                        WebkitOverflowScrolling: 'touch',
+                        perspective: '1200px',
+                    }}
+                >
+                    {categories.map((cat, idx) => {
+                        // Static curvature based on position in list
+                        const centerIdx = (categories.length - 1) / 2;
+                        const offset = idx - centerIdx;
+                        const rotateY = offset * 8;
+                        const translateZ = Math.abs(offset) * -20;
+
+                        return (
+                            <button
+                                key={cat.id || idx}
+                                data-card-index={idx}
+                                onClick={() => onCategoryClick(cat)}
+                                className="
+                  group relative flex-shrink-0 overflow-hidden rounded-2xl
+                  w-[280px] md:w-[320px] lg:w-[360px]
+                  aspect-[3/4]
+                  bg-stone-100 
+                  shadow-lg hover:shadow-2xl
+                  transition-all duration-500 ease-out
+                  hover:scale-[1.02]
+                  scroll-snap-align-center
+                "
+                                style={{
+                                    transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
+                                    transformStyle: 'preserve-3d',
+                                    scrollSnapAlign: 'center',
+                                }}
+                            >
+                                {/* Image */}
+                                <img
+                                    src={cat.image}
+                                    alt={cat.title}
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                />
+
+                                {/* Gradient Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                                {/* Text Content */}
+                                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+                                    <h3 className="font-serif text-2xl md:text-3xl text-white font-light tracking-wide mb-2">
+                                        {cat.title}
+                                    </h3>
+                                    <p className="text-white/70 text-xs md:text-sm uppercase tracking-[0.2em]">
+                                        {cat.caption || 'Shop Now'}
+                                    </p>
+
+                                    {/* Hover Arrow */}
+                                    <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <span className="inline-flex items-center text-white text-sm">
+                                            Explore
+                                            <svg
+                                                className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                                                />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Scroll Indicator Dots */}
+                {categories.length > 3 && (
+                    <div className="flex justify-center gap-2 mt-6">
+                        {categories.map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => {
+                                    const container = scrollContainerRef.current;
+                                    if (container) {
+                                        const cardWidth = 320 + 24; // card width + gap
+                                        container.scrollTo({ left: idx * cardWidth, behavior: 'smooth' });
+                                    }
+                                }}
+                                className={`w-2 h-2 rounded-full transition-all duration-300 ${visibleCards.includes(idx)
+                                        ? 'bg-earth w-6'
+                                        : 'bg-earth/30 hover:bg-earth/50'
+                                    }`}
+                                aria-label={`Go to card ${idx + 1}`}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default CurvedCategoryCarousel;

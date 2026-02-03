@@ -6,6 +6,7 @@ import { Product, CollectionType, ProductVariant, Category } from '../types';
 import { ArrowLeft, X, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import { AddToCartButton } from './cart';
 import { CircularGallery, GalleryItem } from './ui/circular-gallery-2';
+import { CurvedCategoryCarousel } from './ui/CurvedCategoryCarousel';
 
 interface StorePageProps {
   collection: CollectionType;
@@ -449,77 +450,27 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         )}
       </section>
 
-      {/* --- LEVEL 1: ROOT VIEW - All Categories Grid (Standard Collections) --- */}
+      {/* --- LEVEL 1: ROOT VIEW - Curved Category Carousel (Standard Collections) --- */}
       {viewLevel === 'ROOT' && collection !== 'kids' && config.subcategories.length > 0 && (
-        <section className="px-4 md:px-8 py-12 md:py-16">
-          <div className="container mx-auto">
-            <FadeIn className="text-center mb-8 md:mb-12">
-              <h2 className="font-serif text-3xl md:text-4xl text-earth mb-4">Explore {config.title}</h2>
-              <p className="text-xs uppercase tracking-widest text-earth/50">Select a category to begin</p>
-            </FadeIn>
-
-            {/* Premium "Mosaic Gallery" Layout - Organic & Editorial */}
-            {/* Switched to 4 columns (balanced size) and increased row height */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[200px] md:auto-rows-[280px] grid-flow-dense">
-              {mainCategories.map((cat, idx) => {
-                // Determine grid span based on index for "curated chaos" look
-                // Removed the massive 2x2 blocks to keep size ratios closer (max 2:1)
-                const isWide = idx === 0 || idx === 5 || idx === 8; // 2x1
-                const isTall = idx === 2 || idx === 6; // 1x2
-
-                let spanClass = "col-span-1 row-span-1";
-                // Priority: Wide then Tall (no overlapping logic here, distinct indices)
-                if (isWide) spanClass = "col-span-2 row-span-1";
-                else if (isTall) spanClass = "col-span-1 row-span-2";
-
-                return (
-                  <FadeIn
-                    key={cat.id || idx}
-                    delay={idx * 50}
-                    className={`group cursor-pointer relative overflow-hidden rounded-3xl shadow-sm ${spanClass}`}
-                  >
-                    <div
-                      onClick={() => {
-                        if (cat.redirect) {
-                          window.location.hash = cat.redirect.replace('#', '');
-                        } else {
-                          handleCategoryChange(cat.title);
-                        }
-                      }}
-                      className="w-full h-full relative"
-                    >
-                      <img
-                        src={cat.image}
-                        alt={cat.title}
-                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
-                      />
-
-                      {/* Luxurious Dark Overlay - Minimal until hover */}
-                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-colors duration-700"></div>
-                      <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80`}></div>
-
-                      {/* Content - "Gallery Label" Style */}
-                      <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
-                        <div className="transform transition-transform duration-500 group-hover:-translate-y-1">
-                          {cat.caption && (
-                            <span className="font-serif italic text-white/90 text-xs md:text-sm mb-2 block opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                              {cat.caption}
-                            </span>
-                          )}
-                          <h3 className={`font-serif text-white leading-none ${isWide ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'}`}>
-                            {cat.title}
-                          </h3>
-
-                          {/* Elegant underline expansion */}
-                          <div className={`h-[1px] bg-white/60 mt-3 transition-all duration-700 ease-out w-0 group-hover:w-full max-w-[40px]`}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </FadeIn>
-                );
-              })}
-            </div>
-          </div>
+        <section className="py-12 md:py-16">
+          <CurvedCategoryCarousel
+            categories={mainCategories.map(cat => ({
+              id: cat.id,
+              title: cat.title,
+              image: cat.image,
+              caption: cat.caption,
+              redirect: cat.redirect,
+            }))}
+            onCategoryClick={(cat) => {
+              if (cat.redirect) {
+                window.location.hash = cat.redirect.replace('#', '');
+              } else {
+                handleCategoryChange(cat.title);
+              }
+            }}
+            title={`Explore ${config.title}`}
+            subtitle="Select a category to begin"
+          />
         </section>
       )}
 
