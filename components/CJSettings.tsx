@@ -4,6 +4,7 @@ import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
 import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2 } from 'lucide-react';
 import { FadeIn } from './FadeIn';
+import { CJVariantManager } from './CJVariantManager';
 
 export const CJSettings: React.FC = () => {
     const testConnection = useAction(api.cjActions.testConnection);
@@ -389,6 +390,19 @@ export const CJSettings: React.FC = () => {
 
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Size Variant Mapping Section */}
+            <div className="mt-12 relative z-10">
+                <FadeIn delay={550}>
+                    <h2 className="font-serif text-2xl text-earth mb-6 flex items-center gap-3">
+                        <Package className="w-5 h-5 text-bronze/60" />
+                        Variant Mapping
+                    </h2>
+                </FadeIn>
+                <div className="lg:w-2/3">
+                    <CJVariantManager />
                 </div>
             </div>
 

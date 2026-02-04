@@ -37,6 +37,9 @@ export const CartDrawer: React.FC = () => {
                     productId: item.product.id,
                     variantId: item.selectedVariant?.id,
                     variantName: item.selectedVariant?.name,
+                    // CJ fulfillment mapping - pass variant-level CJ IDs for correct fulfillment
+                    cjVariantId: item.selectedVariant?.cjVariantId,
+                    cjSku: item.selectedVariant?.cjSku,
                     name: itemName,
                     price: item.product.price + variantAdjustment,
                     quantity: item.quantity,

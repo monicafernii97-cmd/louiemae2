@@ -111,6 +111,9 @@ http.route({
                         productId: item.productId,
                         variantId: item.variantId,
                         variantName: item.variantName,
+                        // CJ fulfillment - pass variant-level CJ IDs
+                        cjVariantId: item.cjVariantId,
+                        cjSku: item.cjSku,
                         name: item.name,
                         price: item.price,
                         quantity: item.quantity,
@@ -325,10 +328,20 @@ http.route({
                     break;
 
                 case "PRODUCT":
+                    // Product status update (approval/rejection)
+                    console.log(`CJ PRODUCT update:`, params);
+                    await handleCjProductWebhook(ctx, params);
+                    break;
+
                 case "VARIANT":
+                    // Variant info from CJ - contains the vid we need for fulfillment
+                    console.log(`CJ VARIANT update:`, params);
+                    await handleCjVariantWebhook(ctx, params);
+                    break;
+
                 case "STOCK":
-                    // Product updates - log for now
-                    console.log(`CJ ${type} update:`, params);
+                    // Stock updates - log for now
+                    console.log(`CJ STOCK update:`, params);
                     break;
 
                 default:
@@ -403,6 +416,116 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
         console.error("Failed to process CJ logistics webhook:", error.message);
     }
 }
+
+// Handle CJ Product webhook (approval/rejection status)
+async function handleCjProductWebhook(ctx: any, params: any) {
+    const { pid, productName, productStatus, statusReason } = params;
+
+    if (!pid) {
+        console.error("CJ Product webhook missing pid");
+        return;
+    }
+
+    // Find product by CJ product ID
+    const products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, { cjProductId: pid });
+
+    if (!products || products.length === 0) {
+        console.log(`CJ Product webhook: No product found for pid=${pid}, storing for later matching`);
+        // Product might not be linked yet - store the CJ product ID for later reference
+        return;
+    }
+
+    for (const product of products) {
+        console.log(`CJ Product update for ${product.name}: status=${productStatus}`);
+
+        // Status 22 = approved/active
+        if (productStatus === 22) {
+            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                productId: product._id,
+                status: "approved",
+                cjProductId: pid,
+            });
+        } else if (productStatus === 5 || productStatus === 6) {
+            // Status 5/6 = rejected
+            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                productId: product._id,
+                status: "rejected",
+                cjProductId: pid,
+                error: statusReason || "Product rejected by CJ",
+            });
+        }
+    }
+}
+
+// Handle CJ Variant webhook (variant IDs for fulfillment)
+async function handleCjVariantWebhook(ctx: any, params: any) {
+    const {
+        pid,
+        vid,
+        variantSku,
+        variantName,
+        variantStatus,
+        variantImage,
+        variantSellPrice,
+        variantValue1,
+        variantValue2,
+    } = params;
+
+    if (!pid || !vid) {
+        console.error("CJ Variant webhook missing pid or vid");
+        return;
+    }
+
+    console.log(`Processing CJ Variant: pid=${pid}, vid=${vid}, sku=${variantSku}`);
+
+    // Find product by CJ product ID
+    const products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, { cjProductId: pid });
+
+    // If not found by CJ product ID, try to find pending products and link them
+    if (!products || products.length === 0) {
+        console.log(`CJ Variant webhook: No product found for pid=${pid}, trying to find pending products`);
+
+        // Try to find pending products that might match this CJ product
+        const pendingProducts = await ctx.runQuery(internal.cjHelpers.getProductsPendingSourcing, {});
+
+        if (pendingProducts && pendingProducts.length > 0) {
+            // Log available pending products for manual linking if needed
+            console.log(`Found ${pendingProducts.length} pending products that could be linked to CJ pid=${pid}`);
+        }
+        return;
+    }
+
+    // Only process if variant is active (status 22)
+    if (variantStatus !== 22) {
+        console.log(`CJ Variant ${vid} has status ${variantStatus}, skipping (not active)`);
+        return;
+    }
+
+    // Build a friendly variant name from available data
+    const friendlyName = variantName ||
+        (variantValue1 && variantValue2 ? `${variantValue1} - ${variantValue2}` :
+            variantValue1 || variantValue2 || `Variant ${vid}`);
+
+    // Build the CJ variant object
+    const cjVariant = {
+        vid: vid,
+        sku: variantSku || "",
+        name: friendlyName,
+        price: variantSellPrice ? parseFloat(variantSellPrice) : undefined,
+        image: variantImage,
+    };
+
+    // Append variant to each matching product
+    for (const product of products) {
+        console.log(`Appending CJ variant to ${product.name}: vid=${vid}, name=${friendlyName}`);
+
+        await ctx.runMutation(internal.cjHelpers.appendCjVariant, {
+            productId: product._id,
+            cjVariant,
+        });
+    }
+}
+
 
 // Map CJ order status strings to our status
 function mapCjOrderStatus(cjStatus: string): string {

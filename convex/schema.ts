@@ -16,12 +16,16 @@ export default defineSchema({
         collection: v.string(),
         isNew: v.optional(v.boolean()),
         inStock: v.optional(v.boolean()),
+        // Customer-facing variants (sizes, colors, etc.)
         variants: v.optional(v.array(v.object({
             id: v.string(),
             name: v.string(),
             image: v.optional(v.string()),
             priceAdjustment: v.number(),
             inStock: v.boolean(),
+            // CJ fulfillment mapping - links customer variant to CJ variant
+            cjVariantId: v.optional(v.string()),  // CJ vid for this variant
+            cjSku: v.optional(v.string()),         // CJ SKU for this variant
         }))),
         // CJ Dropshipping Sourcing Fields
         cjSourcingStatus: v.optional(v.union(
@@ -31,12 +35,20 @@ export default defineSchema({
             v.literal("none")         // Not submitted to CJ (manual product)
         )),
         cjSourcingId: v.optional(v.string()),    // CJ sourcing request ID
-        cjVariantId: v.optional(v.string()),     // CJ vid (after approval)
-        cjSku: v.optional(v.string()),           // CJ SKU (after approval)
+        cjVariantId: v.optional(v.string()),     // CJ vid (default/legacy)
+        cjSku: v.optional(v.string()),           // CJ SKU (default/legacy)
         cjProductId: v.optional(v.string()),     // CJ product ID
         cjSourcingError: v.optional(v.string()), // Rejection reason
         sourceUrl: v.optional(v.string()),       // Original AliExpress/source URL
         cjApprovedAt: v.optional(v.string()),    // When CJ approved the product
+        // All CJ variants received from webhooks (for admin linking)
+        cjVariants: v.optional(v.array(v.object({
+            vid: v.string(),                       // CJ variant ID
+            sku: v.string(),                       // CJ SKU
+            name: v.string(),                      // CJ variant name (e.g., "Size: 3T - Blue")
+            price: v.optional(v.number()),         // CJ price
+            image: v.optional(v.string()),         // CJ variant image
+        }))),
     }).index("by_cj_sourcing_status", ["cjSourcingStatus"]),
 
     // Blog posts table

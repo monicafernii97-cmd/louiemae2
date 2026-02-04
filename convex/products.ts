@@ -34,6 +34,8 @@ export const create = mutation({
             image: v.optional(v.string()),
             priceAdjustment: v.number(),
             inStock: v.boolean(),
+            cjVariantId: v.optional(v.string()),
+            cjSku: v.optional(v.string()),
         }))),
         // CJ Sourcing fields
         sourceUrl: v.optional(v.string()),
@@ -71,6 +73,8 @@ export const update = mutation({
             image: v.optional(v.string()),
             priceAdjustment: v.number(),
             inStock: v.boolean(),
+            cjVariantId: v.optional(v.string()),
+            cjSku: v.optional(v.string()),
         }))),
     },
     handler: async (ctx, args) => {
@@ -185,5 +189,103 @@ export const getRejectedProducts = query({
             .query("products")
             .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
             .collect();
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CJ VARIANT MANAGEMENT (Admin)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Link a CJ variant to a customer-facing variant (size option)
+ * Used by admin UI to map CJ variants to sizes for correct fulfillment
+ */
+export const linkCjVariant = mutation({
+    args: {
+        productId: v.id("products"),
+        customerVariantId: v.string(),  // The internal variant ID (e.g., "size_3t")
+        cjVariantId: v.string(),         // CJ vid to link
+        cjSku: v.optional(v.string()),   // CJ sku to link
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to manage variants");
+        }
+
+        const product = await ctx.db.get(args.productId);
+        if (!product) {
+            throw new Error("Product not found");
+        }
+
+        if (!product.variants) {
+            throw new Error("Product has no variants to link");
+        }
+
+        // Find and update the customer variant
+        const updatedVariants = product.variants.map(v => {
+            if (v.id === args.customerVariantId) {
+                return {
+                    ...v,
+                    cjVariantId: args.cjVariantId,
+                    cjSku: args.cjSku,
+                };
+            }
+            return v;
+        });
+
+        await ctx.db.patch(args.productId, {
+            variants: updatedVariants,
+        });
+    },
+});
+
+/**
+ * Unlink a CJ variant from a customer-facing variant
+ */
+export const unlinkCjVariant = mutation({
+    args: {
+        productId: v.id("products"),
+        customerVariantId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to manage variants");
+        }
+
+        const product = await ctx.db.get(args.productId);
+        if (!product || !product.variants) {
+            throw new Error("Product or variants not found");
+        }
+
+        const updatedVariants = product.variants.map(v => {
+            if (v.id === args.customerVariantId) {
+                // Remove CJ variant link while keeping other properties
+                const { cjVariantId, cjSku, ...rest } = v as any;
+                return rest;
+            }
+            return v;
+        });
+
+        await ctx.db.patch(args.productId, {
+            variants: updatedVariants,
+        });
+    },
+});
+
+/**
+ * Get products with CJ variants for admin variant management
+ */
+export const getProductsWithCjVariants = query({
+    args: {},
+    handler: async (ctx) => {
+        const products = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "approved"))
+            .collect();
+
+        // Only return products that have CJ variants to manage
+        return products.filter(p => p.cjVariants && p.cjVariants.length > 0);
     },
 });

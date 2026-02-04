@@ -454,18 +454,35 @@ export const submitForSourcing = internalAction({
 
             const data = await response.json();
 
-            if (data.result && data.data?.sourcingId) {
+            // Log full response for debugging
+            console.log(`CJ Sourcing response for product ${args.productId}:`, JSON.stringify(data, null, 2));
+
+            // Try to extract sourcingId from various possible response formats
+            const sourcingId = data.data?.sourcingId ||
+                data.data?.id ||
+                data.sourcingId ||
+                data.id ||
+                (typeof data.data === 'string' ? data.data : null);
+
+            if (data.result && sourcingId) {
                 // Update product with sourcing ID
                 await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                     productId: args.productId,
                     status: "pending",
-                    sourcingId: data.data.sourcingId,
+                    sourcingId: String(sourcingId),
                 });
 
-                console.log(`CJ Sourcing submitted for product ${args.productId}: ${data.data.sourcingId}`);
-                return { success: true, sourcingId: data.data.sourcingId };
+                console.log(`CJ Sourcing submitted for product ${args.productId}: ${sourcingId}`);
+                return { success: true, sourcingId: String(sourcingId) };
             } else {
                 const errorMsg = data.message || "Unknown error submitting to CJ";
+                console.error(`CJ Sourcing failed for product ${args.productId}:`, {
+                    message: errorMsg,
+                    result: data.result,
+                    hasData: !!data.data,
+                    dataType: typeof data.data,
+                    fullResponse: JSON.stringify(data).slice(0, 500),
+                });
                 await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                     productId: args.productId,
                     status: "rejected",
@@ -535,17 +552,34 @@ export const checkSourcingStatus = internalAction({
 
                     const data = await response.json();
 
-                    if (data.result && data.data?.sourcingId) {
+                    // Log full response for debugging
+                    console.log(`CJ Sourcing response for ${product.name}:`, JSON.stringify(data, null, 2));
+
+                    // Try to extract sourcingId from various possible response formats
+                    const sourcingId = data.data?.sourcingId ||
+                        data.data?.id ||
+                        data.sourcingId ||
+                        data.id ||
+                        (typeof data.data === 'string' ? data.data : null);
+
+                    if (data.result && sourcingId) {
                         // Update product with sourcing ID
                         await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                             productId: product._id,
                             status: "pending",
-                            sourcingId: data.data.sourcingId,
+                            sourcingId: String(sourcingId),
                         });
                         submitted++;
-                        console.log(`CJ Auto-submitted: ${product.name} -> sourcingId=${data.data.sourcingId}`);
+                        console.log(`CJ Auto-submitted: ${product.name} -> sourcingId=${sourcingId}`);
                     } else {
-                        console.error(`CJ Auto-submit failed for ${product.name}: ${data.message || 'Unknown error'}`);
+                        // Log detailed error for debugging
+                        console.error(`CJ Auto-submit failed for ${product.name}:`, {
+                            message: data.message || 'Unknown error',
+                            result: data.result,
+                            hasData: !!data.data,
+                            dataType: typeof data.data,
+                            fullResponse: JSON.stringify(data).slice(0, 500),
+                        });
                     }
                 } catch (error: any) {
                     console.error(`Error auto-submitting ${product.name}:`, error.message);

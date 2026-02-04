@@ -267,6 +267,20 @@ export const updateProductSourcingStatus = internalMutation({
 });
 
 /**
+ * Get product by CJ product ID
+ */
+export const getProductByCjProductId = internalQuery({
+    args: { cjProductId: v.string() },
+    handler: async (ctx, args) => {
+        const products = await ctx.db
+            .query("products")
+            .filter((q) => q.eq(q.field("cjProductId"), args.cjProductId))
+            .collect();
+        return products;
+    },
+});
+
+/**
  * Get products pending CJ sourcing approval
  */
 export const getProductsPendingSourcing = internalQuery({
@@ -329,5 +343,126 @@ export const deleteProduct = internalMutation({
     },
     handler: async (ctx, args) => {
         await ctx.db.delete(args.productId);
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CJ VARIANT MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Append a CJ variant from webhook (upsert by vid)
+ * Called when CJ sends VARIANT webhooks with size/color options
+ */
+export const appendCjVariant = internalMutation({
+    args: {
+        productId: v.id("products"),
+        cjVariant: v.object({
+            vid: v.string(),
+            sku: v.string(),
+            name: v.string(),
+            price: v.optional(v.number()),
+            image: v.optional(v.string()),
+        }),
+    },
+    handler: async (ctx, args) => {
+        const product = await ctx.db.get(args.productId);
+        if (!product) {
+            console.error(`Product ${args.productId} not found for CJ variant append`);
+            return;
+        }
+
+        // Get existing CJ variants or initialize empty array
+        const existingVariants = product.cjVariants || [];
+
+        // Check if this vid already exists (upsert)
+        const existingIndex = existingVariants.findIndex(v => v.vid === args.cjVariant.vid);
+
+        if (existingIndex >= 0) {
+            // Update existing variant
+            existingVariants[existingIndex] = args.cjVariant;
+        } else {
+            // Add new variant
+            existingVariants.push(args.cjVariant);
+        }
+
+        await ctx.db.patch(args.productId, {
+            cjVariants: existingVariants,
+            cjSourcingStatus: "approved", // Mark as approved since we're receiving variants
+        });
+
+        console.log(`Appended CJ variant ${args.cjVariant.vid} to product ${product.name}`);
+    },
+});
+
+/**
+ * Link a CJ variant to a customer-facing variant (size option)
+ * Called from admin UI when user maps CJ variants to sizes
+ */
+export const linkCjVariantToSize = internalMutation({
+    args: {
+        productId: v.id("products"),
+        customerVariantId: v.string(),  // The internal variant ID (e.g., "size_3t")
+        cjVariantId: v.string(),         // CJ vid to link
+        cjSku: v.optional(v.string()),   // CJ sku to link
+    },
+    handler: async (ctx, args) => {
+        const product = await ctx.db.get(args.productId);
+        if (!product) {
+            throw new Error(`Product ${args.productId} not found`);
+        }
+
+        if (!product.variants) {
+            throw new Error("Product has no variants to link");
+        }
+
+        // Find and update the customer variant
+        const updatedVariants = product.variants.map(v => {
+            if (v.id === args.customerVariantId) {
+                return {
+                    ...v,
+                    cjVariantId: args.cjVariantId,
+                    cjSku: args.cjSku,
+                };
+            }
+            return v;
+        });
+
+        await ctx.db.patch(args.productId, {
+            variants: updatedVariants,
+        });
+
+        console.log(`Linked CJ variant ${args.cjVariantId} to customer variant ${args.customerVariantId}`);
+    },
+});
+
+/**
+ * Unlink a CJ variant from a customer-facing variant
+ */
+export const unlinkCjVariant = internalMutation({
+    args: {
+        productId: v.id("products"),
+        customerVariantId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const product = await ctx.db.get(args.productId);
+        if (!product || !product.variants) {
+            throw new Error("Product or variants not found");
+        }
+
+        const updatedVariants = product.variants.map(v => {
+            if (v.id === args.customerVariantId) {
+                return {
+                    ...v,
+                    cjVariantId: undefined,
+                    cjSku: undefined,
+                };
+            }
+            return v;
+        });
+
+        await ctx.db.patch(args.productId, {
+            variants: updatedVariants,
+        });
     },
 });

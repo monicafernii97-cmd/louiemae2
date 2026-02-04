@@ -177,6 +177,9 @@ export interface ProductVariant {
   image?: string;
   priceAdjustment: number; // +/- from base price
   inStock: boolean;
+  // CJ fulfillment mapping - links to CJ variant for correct fulfillment
+  cjVariantId?: string;  // CJ vid for this variant
+  cjSku?: string;         // CJ SKU for this variant
 }
 
 export interface AliExpressProduct extends Product {
