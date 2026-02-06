@@ -216,4 +216,11 @@ export default defineSchema({
         value: v.any(),
         updatedAt: v.string(),
     }).index("by_key", ["key"]),
+
+    // CJ Webhook Log - tracks processed messageIds to prevent duplicate processing
+    cjWebhookLog: defineTable({
+        messageId: v.string(),
+        type: v.string(), // ORDER, LOGISTIC, PRODUCT, VARIANT
+        processedAt: v.string(), // ISO timestamp
+    }).index("by_message_id", ["messageId"]),
 });

@@ -310,6 +310,16 @@ http.route({
                 });
             }
 
+            // DEDUPLICATION: Check if we've already processed this webhook
+            const alreadyProcessed = await ctx.runQuery(internal.cjHelpers.wasWebhookProcessed, { messageId });
+            if (alreadyProcessed) {
+                console.log(`CJ Webhook: Already processed messageId=${messageId}, skipping`);
+                return new Response(JSON.stringify({ success: true, skipped: true }), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                });
+            }
+
             // Handle different webhook types
             switch (type) {
                 case "ORDER":
@@ -347,6 +357,12 @@ http.route({
                 default:
                     console.log(`Unknown CJ webhook type: ${type}`, params);
             }
+
+            // Record this messageId as processed to prevent duplicates
+            await ctx.runMutation(internal.cjHelpers.recordProcessedWebhook, {
+                messageId,
+                type,
+            });
 
             // CJ requires 200 response within 3 seconds
             return new Response(JSON.stringify({ success: true }), {

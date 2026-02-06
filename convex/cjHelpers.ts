@@ -239,6 +239,19 @@ export const updateProductSourcingStatus = internalMutation({
         error: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        // Idempotency check: if product is already in the desired status, skip update
+        const product = await ctx.db.get(args.productId);
+        if (!product) {
+            console.log(`updateProductSourcingStatus: Product ${args.productId} not found`);
+            return;
+        }
+
+        // Skip if already approved (prevents duplicate webhook processing)
+        if (args.status === "approved" && product.cjSourcingStatus === "approved") {
+            console.log(`updateProductSourcingStatus: Product ${args.productId} already approved, skipping`);
+            return;
+        }
+
         const updateData: Record<string, any> = {
             cjSourcingStatus: args.status,
         };
@@ -463,6 +476,44 @@ export const unlinkCjVariant = internalMutation({
 
         await ctx.db.patch(args.productId, {
             variants: updatedVariants,
+        });
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WEBHOOK DEDUPLICATION HELPERS
+// Prevent duplicate processing of CJ webhooks
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Check if a webhook messageId has already been processed
+ */
+export const wasWebhookProcessed = internalQuery({
+    args: {
+        messageId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("cjWebhookLog")
+            .withIndex("by_message_id", (q) => q.eq("messageId", args.messageId))
+            .first();
+        return existing !== null;
+    },
+});
+
+/**
+ * Record a processed webhook messageId
+ */
+export const recordProcessedWebhook = internalMutation({
+    args: {
+        messageId: v.string(),
+        type: v.string(),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.insert("cjWebhookLog", {
+            messageId: args.messageId,
+            type: args.type,
+            processedAt: new Date().toISOString(),
         });
     },
 });
