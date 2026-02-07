@@ -32,13 +32,13 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 "relative group overflow-hidden transition-all duration-300 ease-out",
                 "flex items-center justify-center gap-2",
                 "cursor-pointer", // Ensure pointer cursor even for divs
-                "rounded-full", // Organic, premium capsule shape
+                "rounded-md", // Rounded corners, but not full pill
 
                 // Typography
                 "uppercase tracking-[0.2em] font-light",
 
-                // Glass Effect Base
-                "backdrop-blur-md border shadow-lg",
+                // Glass Effect Base (Clear Glass)
+                "border shadow-lg", // Removed backdrop-blur-md per user request
 
                 // Hover Transformation
                 "hover:scale-[1.03] hover:shadow-xl active:scale-95",
