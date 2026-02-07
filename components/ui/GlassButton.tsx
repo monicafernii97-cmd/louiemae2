@@ -56,9 +56,10 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 ],
 
                 variant === "dark" && [
-                    "bg-[rgba(74,59,50,0.9)] text-white border-[rgba(74,59,50,0.4)]", // Earth brown at 90%
-                    "hover:bg-[rgba(74,59,50,1)] hover:border-white/30", // Solid on hover
-                    "shadow-lg",
+                    "bg-[rgba(74,59,50,0.9)] text-white", // Earth brown at 90%
+                    "border border-white/30", // Glass edge highlight
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.15)]", // Top glow + bottom shadow + depth
+                    "hover:bg-[rgba(74,59,50,1)] hover:shadow-[inset_0_2px_0_rgba(255,255,255,0.35),0_6px_20px_rgba(0,0,0,0.2)]",
                 ],
 
                 // Sizes
