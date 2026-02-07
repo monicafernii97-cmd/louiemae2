@@ -11,6 +11,19 @@ export const get = query({
     },
 });
 
+// Clear siteContent to trigger re-seed with fresh defaults
+export const clearForReseed = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (existing) {
+            await ctx.db.delete(existing._id);
+            return { success: true, message: "SiteContent cleared. Refresh page to re-seed." };
+        }
+        return { success: false, message: "No siteContent found to clear." };
+    },
+});
+
 // Protected mutation - require authentication
 export const update = mutation({
     args: {
