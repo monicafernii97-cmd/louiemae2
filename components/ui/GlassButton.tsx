@@ -32,7 +32,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 "relative group overflow-hidden transition-all duration-300 ease-out",
                 "flex items-center justify-center gap-2",
                 "cursor-pointer", // Ensure pointer cursor even for divs
-                "rounded-sm", // Slight rounding, almost sharp for luxury feel
+                "rounded-full", // Organic, premium capsule shape
 
                 // Typography
                 "uppercase tracking-[0.2em] font-light",
