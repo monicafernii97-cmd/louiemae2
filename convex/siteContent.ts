@@ -24,6 +24,26 @@ export const clearForReseed = mutation({
     },
 });
 
+// One-time migration to fix decor category image
+export const fixDecorImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (existing) {
+            const updatedHome = {
+                ...existing.home,
+                categoryImages: {
+                    ...(existing.home?.categoryImages || {}),
+                    decor: "/images/brand/rustic-bench.png",
+                },
+            };
+            await ctx.db.patch(existing._id, { home: updatedHome });
+            return { success: true, message: "Decor image updated to rustic-bench.png" };
+        }
+        return { success: false, message: "No siteContent found" };
+    },
+});
+
 // Protected mutation - require authentication
 export const update = mutation({
     args: {
