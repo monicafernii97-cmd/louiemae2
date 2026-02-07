@@ -12,17 +12,21 @@ import { internal } from "./_generated/api";
 
 const CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
 
-// Token cache (in-memory, will refresh on cold start)
-let cachedToken: { accessToken: string; expiresAt: number } | null = null;
+// Token expiration buffer (refresh tokens 1 day before they expire)
+const ACCESS_TOKEN_BUFFER_MS = 24 * 60 * 60 * 1000; // 1 day
+const REFRESH_TOKEN_BUFFER_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTHENTICATION
+// Now uses database-stored tokens to avoid rate limiting on token requests
+// Flow: 1) Check DB for valid token → 2) Refresh if expired → 3) New token as last resort
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Get CJ API access token using API Key authentication
- * Per CJ docs: use apiKey to get accessToken (15 day life)
- * Tokens are cached in memory
+ * Get CJ API access token with proper refresh token handling
+ * - First checks database for existing valid token
+ * - Uses refresh token if access token expired
+ * - Only requests new token with API key when refresh token also expired
  */
 export const getAccessToken = internalAction({
     args: {},
@@ -34,42 +38,121 @@ export const getAccessToken = internalAction({
             return null;
         }
 
-        // Check if we have a valid cached token
-        if (cachedToken && cachedToken.expiresAt > Date.now()) {
-            return cachedToken.accessToken;
-        }
-
         try {
-            const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ apiKey }),
-            });
+            // Step 1: Check database for existing tokens
+            const storedTokens = await ctx.runQuery(internal.cjHelpers.getCjTokens, {});
 
-            const data = await response.json();
+            if (storedTokens) {
+                const now = Date.now();
 
-            // Log full response for debugging
-            console.log("CJ Auth API response:", JSON.stringify(data, null, 2));
+                // Parse CJ's expiry date strings to timestamps
+                const accessExpiry = new Date(storedTokens.accessTokenExpiryDate).getTime();
+                const refreshExpiry = new Date(storedTokens.refreshTokenExpiryDate).getTime();
 
-            if (!data.result || !data.data?.accessToken) {
-                console.error("CJ Auth failed:", data.message || "Unknown error", "Full response:", JSON.stringify(data));
-                return null;
+                // If access token is still valid (with 1 day buffer), use it
+                if (accessExpiry - ACCESS_TOKEN_BUFFER_MS > now) {
+                    console.log("CJ: Using stored access token (valid until " + storedTokens.accessTokenExpiryDate + ")");
+                    return storedTokens.accessToken;
+                }
+
+                // If access token expired but refresh token is valid, use refresh token
+                if (refreshExpiry - REFRESH_TOKEN_BUFFER_MS > now) {
+                    console.log("CJ: Access token expired, using refresh token...");
+                    const refreshedToken = await refreshAccessToken(ctx, storedTokens.refreshToken, storedTokens.accessToken);
+                    if (refreshedToken) {
+                        return refreshedToken;
+                    }
+                    // If refresh failed, fall through to new token request
+                    console.log("CJ: Refresh failed, requesting new token...");
+                }
             }
 
-            // Cache token (expires in 15 days, we'll refresh at 14 days)
-            cachedToken = {
-                accessToken: data.data.accessToken,
-                expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000, // 14 days
-            };
+            // Step 2: No valid tokens - request new tokens with API key
+            console.log("CJ: Requesting new access token with API key...");
+            return await requestNewTokens(ctx, apiKey);
 
-            console.log("CJ API token obtained successfully");
-            return cachedToken.accessToken;
         } catch (error: any) {
             console.error("CJ Auth error:", error.message);
             return null;
         }
     },
 });
+
+/**
+ * Refresh access token using refresh token (avoids rate limit)
+ * Per CJ docs: Returns data: true on success (NOT a new token)
+ * This extends the existing token's validity - we update the expiry and keep using the same token
+ */
+async function refreshAccessToken(ctx: any, refreshToken: string, currentAccessToken: string): Promise<string | null> {
+    try {
+        const response = await fetch(`${CJ_API_BASE}/authentication/refreshAccessToken`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+        });
+
+        const data = await response.json();
+        console.log("CJ Refresh token response:", JSON.stringify(data, null, 2));
+
+        // CJ returns data: true on success, not a new token
+        if (data.result && data.data === true) {
+            // Extend the existing token's validity by 15 days
+            const newExpiryDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString();
+
+            await ctx.runMutation(internal.cjHelpers.updateAccessToken, {
+                accessToken: currentAccessToken, // Keep the same token
+                accessTokenExpiryDate: newExpiryDate,
+            });
+
+            console.log("CJ: Token validity extended until:", newExpiryDate);
+            return currentAccessToken; // Return the same token with extended expiry
+        }
+
+        console.error("CJ Refresh token failed:", data.message || "Unknown error");
+        return null;
+    } catch (error: any) {
+        console.error("CJ Refresh token error:", error.message);
+        return null;
+    }
+}
+
+/**
+ * Request new tokens using API key (rate limited to 1 per 300 seconds)
+ */
+async function requestNewTokens(ctx: any, apiKey: string): Promise<string | null> {
+    try {
+        const response = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ apiKey }),
+        });
+
+        const data = await response.json();
+        console.log("CJ Auth API response:", JSON.stringify(data, null, 2));
+
+        if (!data.result || !data.data?.accessToken) {
+            console.error("CJ Auth failed:", data.message || "Unknown error");
+            return null;
+        }
+
+        // Save tokens to database using CJ's actual expiry dates
+        const tokenData = data.data;
+        await ctx.runMutation(internal.cjHelpers.saveCjTokens, {
+            openId: tokenData.openId?.toString(),
+            accessToken: tokenData.accessToken,
+            accessTokenExpiryDate: tokenData.accessTokenExpiryDate || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+            refreshToken: tokenData.refreshToken || tokenData.accessToken,
+            refreshTokenExpiryDate: tokenData.refreshTokenExpiryDate || new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+            createDate: tokenData.createDate,
+        });
+
+        console.log("CJ: New tokens saved. Access expires:", tokenData.accessTokenExpiryDate, "Refresh expires:", tokenData.refreshTokenExpiryDate);
+        return tokenData.accessToken;
+    } catch (error: any) {
+        console.error("CJ New token request error:", error.message);
+        return null;
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ORDER CREATION
@@ -460,11 +543,11 @@ export const submitForSourcing = internalAction({
             // Log full response for debugging
             console.log(`CJ Sourcing response for product ${args.productId}:`, JSON.stringify(data, null, 2));
 
-            // Try to extract sourcingId from various possible response formats
-            const sourcingId = data.data?.sourcingId ||
+
+            // Per CJ docs: response contains data.cjSourcingId
+            const sourcingId = data.data?.cjSourcingId ||
+                data.data?.sourcingId ||
                 data.data?.id ||
-                data.sourcingId ||
-                data.id ||
                 (typeof data.data === 'string' ? data.data : null);
 
             if (data.result && sourcingId) {
@@ -525,24 +608,28 @@ export const checkSourcingStatus = internalAction({
             // If product doesn't have a cjSourcingId yet, auto-submit it to CJ
             if (!product.cjSourcingId && product.sourceUrl) {
                 try {
-                    // Build sourcing payload with full product details
+                    // Per CJ docs: productImage is REQUIRED - skip if no images
+                    if (!product.images || product.images.length === 0) {
+                        console.log(`CJ Auto-submit skipped for ${product.name}: No product images`);
+                        continue;
+                    }
+
+                    // Build sourcing payload with required fields per CJ docs
                     const sourcingPayload: Record<string, any> = {
                         productUrl: product.sourceUrl,
                         productName: product.name,
+                        productImage: product.images[0], // Required by CJ
                     };
 
-                    // Add image if available (use first product image)
-                    if (product.images && product.images.length > 0) {
-                        sourcingPayload.productImage = product.images[0];
-                    }
-
-                    // Add description as remark
+                    // Add optional fields
                     if (product.description) {
-                        sourcingPayload.remark = product.description.slice(0, 500);
+                        sourcingPayload.remark = product.description.slice(0, 200); // CJ length limit
                     }
-
-                    // Add price (the cost price, not retail)
-                    // We don't have the original cost stored, but CJ will determine their price anyway
+                    if (product.price) {
+                        sourcingPayload.price = product.price.toString();
+                    }
+                    // thirdProductId could be our internal product ID for tracking
+                    sourcingPayload.thirdProductId = product._id;
 
                     const response = await fetch(`${CJ_API_BASE}/product/sourcing/create`, {
                         method: "POST",
@@ -558,11 +645,10 @@ export const checkSourcingStatus = internalAction({
                     // Log full response for debugging
                     console.log(`CJ Sourcing response for ${product.name}:`, JSON.stringify(data, null, 2));
 
-                    // Try to extract sourcingId from various possible response formats
-                    const sourcingId = data.data?.sourcingId ||
+                    // Per CJ docs: response contains data.cjSourcingId
+                    const sourcingId = data.data?.cjSourcingId ||
+                        data.data?.sourcingId ||
                         data.data?.id ||
-                        data.sourcingId ||
-                        data.id ||
                         (typeof data.data === 'string' ? data.data : null);
 
                     if (data.result && sourcingId) {
@@ -573,7 +659,7 @@ export const checkSourcingStatus = internalAction({
                             sourcingId: String(sourcingId),
                         });
                         submitted++;
-                        console.log(`CJ Auto-submitted: ${product.name} -> sourcingId=${sourcingId}`);
+                        console.log(`CJ Auto-submitted: ${product.name} -> cjSourcingId=${sourcingId}`);
                     } else {
                         // Log detailed error for debugging
                         console.error(`CJ Auto-submit failed for ${product.name}:`, {
@@ -597,43 +683,59 @@ export const checkSourcingStatus = internalAction({
             if (!product.cjSourcingId) continue;
 
             try {
-                // Query CJ for sourcing status
-                const response = await fetch(`${CJ_API_BASE}/product/sourcing/query?sourcingId=${product.cjSourcingId}`, {
-                    method: "GET",
+                // Query CJ for sourcing status - per CJ docs: POST with sourceIds array
+                const response = await fetch(`${CJ_API_BASE}/product/sourcing/query`, {
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "CJ-Access-Token": token,
                     },
+                    body: JSON.stringify({
+                        sourceIds: [product.cjSourcingId],
+                    }),
                 });
 
                 const data = await response.json();
+                console.log(`CJ Sourcing query for ${product.name}:`, JSON.stringify(data, null, 2));
 
                 if (data.result && data.data) {
-                    const sourcing = data.data;
+                    // Response can be an array or single object
+                    const sourcing = Array.isArray(data.data) ? data.data[0] : data.data;
 
-                    // Check if sourcing is complete
-                    if (sourcing.status === "completed" || sourcing.cjProductId) {
-                        // Approved! Update product with CJ IDs
-                        await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
-                            productId: product._id,
-                            status: "approved",
-                            cjProductId: sourcing.cjProductId,
-                            cjVariantId: sourcing.cjVariantId,
-                            cjSku: sourcing.cjVariantSku,
-                        });
-                        approved++;
-                        console.log(`CJ Sourcing approved for ${product.name}: vid=${sourcing.cjVariantId}`);
-                    } else if (sourcing.status === "failed" || sourcing.failReason) {
-                        // Rejected
-                        await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
-                            productId: product._id,
-                            status: "rejected",
-                            error: sourcing.failReason || "Sourcing request was rejected",
-                        });
-                        rejected++;
-                        console.log(`CJ Sourcing rejected for ${product.name}: ${sourcing.failReason}`);
+                    if (sourcing) {
+                        // Per CJ docs: sourceStatus is the status field, cjProductId indicates success
+                        // Status values: 1=pending, 2=processing, 3=success, 4=failed, 5=search failed
+                        const isApproved = sourcing.cjProductId ||
+                            sourcing.sourceStatus === "3" ||
+                            sourcing.sourceStatus === 3;
+                        const isFailed = sourcing.sourceStatus === "4" ||
+                            sourcing.sourceStatus === "5" ||
+                            sourcing.sourceStatus === 4 ||
+                            sourcing.sourceStatus === 5;
+
+                        if (isApproved) {
+                            // Approved! Update product with CJ IDs
+                            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                                productId: product._id,
+                                status: "approved",
+                                cjProductId: sourcing.cjProductId,
+                                cjVariantId: sourcing.variantId,
+                                cjSku: sourcing.cjVariantSku,
+                            });
+                            approved++;
+                            console.log(`CJ Sourcing approved for ${product.name}: cjProductId=${sourcing.cjProductId}`);
+                        } else if (isFailed) {
+                            // Rejected
+                            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                                productId: product._id,
+                                status: "rejected",
+                                error: sourcing.sourceStatusStr || "Sourcing request was rejected",
+                            });
+                            rejected++;
+                            console.log(`CJ Sourcing rejected for ${product.name}: ${sourcing.sourceStatusStr}`);
+                        }
+                        // If still pending (status 1 or 2), leave it as is
                     }
-                    // If still pending, leave it as is
                 }
             } catch (error: any) {
                 console.error(`Error checking sourcing for ${product.name}:`, error.message);

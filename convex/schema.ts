@@ -223,4 +223,16 @@ export default defineSchema({
         type: v.string(), // ORDER, LOGISTIC, PRODUCT, VARIANT
         processedAt: v.string(), // ISO timestamp
     }).index("by_message_id", ["messageId"]),
+
+    // CJ API Tokens - stores access and refresh tokens persistently
+    // Matches CJ API response structure from /authentication/getAccessToken
+    cjTokens: defineTable({
+        openId: v.optional(v.string()), // CJ Open ID (Long 20 in their docs)
+        accessToken: v.string(),
+        accessTokenExpiryDate: v.string(), // CJ's expiry date string
+        refreshToken: v.string(),
+        refreshTokenExpiryDate: v.string(), // CJ's expiry date string
+        createDate: v.optional(v.string()), // CJ's create date
+        updatedAt: v.string(), // Our update timestamp
+    }),
 });

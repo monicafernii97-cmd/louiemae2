@@ -517,3 +517,73 @@ export const recordProcessedWebhook = internalMutation({
         });
     },
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CJ TOKEN STORAGE HELPERS
+// Persist tokens in database to avoid rate limiting from frequent token requests
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get stored CJ tokens from database
+ */
+export const getCjTokens = internalQuery({
+    args: {},
+    handler: async (ctx) => {
+        // Get the most recent token record
+        const tokens = await ctx.db.query("cjTokens").order("desc").first();
+        return tokens;
+    },
+});
+
+/**
+ * Save CJ tokens to database (creates or updates)
+ * Uses CJ's actual expiry date strings from their API response
+ */
+export const saveCjTokens = internalMutation({
+    args: {
+        openId: v.optional(v.string()),
+        accessToken: v.string(),
+        accessTokenExpiryDate: v.string(), // CJ's date string
+        refreshToken: v.string(),
+        refreshTokenExpiryDate: v.string(), // CJ's date string
+        createDate: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        // Delete any existing tokens
+        const existingTokens = await ctx.db.query("cjTokens").collect();
+        for (const token of existingTokens) {
+            await ctx.db.delete(token._id);
+        }
+
+        // Insert new tokens with CJ's expiry dates
+        await ctx.db.insert("cjTokens", {
+            openId: args.openId,
+            accessToken: args.accessToken,
+            accessTokenExpiryDate: args.accessTokenExpiryDate,
+            refreshToken: args.refreshToken,
+            refreshTokenExpiryDate: args.refreshTokenExpiryDate,
+            createDate: args.createDate,
+            updatedAt: new Date().toISOString(),
+        });
+    },
+});
+
+/**
+ * Update only the access token (when refreshing)
+ */
+export const updateAccessToken = internalMutation({
+    args: {
+        accessToken: v.string(),
+        accessTokenExpiryDate: v.string(), // CJ's date string
+    },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db.query("cjTokens").order("desc").first();
+        if (existing) {
+            await ctx.db.patch(existing._id, {
+                accessToken: args.accessToken,
+                accessTokenExpiryDate: args.accessTokenExpiryDate,
+                updatedAt: new Date().toISOString(),
+            });
+        }
+    },
+});
