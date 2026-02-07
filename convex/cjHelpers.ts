@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery, mutation } from "./_generated/server";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CJ DROPSHIPPING DATABASE HELPERS
@@ -585,5 +585,40 @@ export const updateAccessToken = internalMutation({
                 updatedAt: new Date().toISOString(),
             });
         }
+    },
+});
+
+/**
+ * Public mutation to manually seed CJ tokens into the database
+ * Used to break the rate limit cycle by inserting tokens obtained via curl
+ */
+export const seedCjTokens = mutation({
+    args: {
+        openId: v.optional(v.string()),
+        accessToken: v.string(),
+        accessTokenExpiryDate: v.string(),
+        refreshToken: v.string(),
+        refreshTokenExpiryDate: v.string(),
+        createDate: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        // Delete any existing tokens
+        const existingTokens = await ctx.db.query("cjTokens").collect();
+        for (const token of existingTokens) {
+            await ctx.db.delete(token._id);
+        }
+
+        // Insert new tokens
+        await ctx.db.insert("cjTokens", {
+            openId: args.openId,
+            accessToken: args.accessToken,
+            accessTokenExpiryDate: args.accessTokenExpiryDate,
+            refreshToken: args.refreshToken,
+            refreshTokenExpiryDate: args.refreshTokenExpiryDate,
+            createDate: args.createDate,
+            updatedAt: new Date().toISOString(),
+        });
+
+        return { success: true, message: "CJ tokens seeded successfully" };
     },
 });
