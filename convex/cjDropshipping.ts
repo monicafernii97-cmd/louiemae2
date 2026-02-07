@@ -48,8 +48,11 @@ export const getAccessToken = internalAction({
 
             const data = await response.json();
 
+            // Log full response for debugging
+            console.log("CJ Auth API response:", JSON.stringify(data, null, 2));
+
             if (!data.result || !data.data?.accessToken) {
-                console.error("CJ Auth failed:", data.message || "Unknown error");
+                console.error("CJ Auth failed:", data.message || "Unknown error", "Full response:", JSON.stringify(data));
                 return null;
             }
 
