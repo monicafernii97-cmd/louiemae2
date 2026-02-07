@@ -227,12 +227,12 @@ export const HomePage: React.FC = () => {
             Shop The Mae Collective
           </h2>
           <div className="flex justify-center">
-            <button
+            <GlassButton
               onClick={() => navigateTo('#collection/fashion')}
-              className="bg-bronze hover:bg-earth text-white px-10 py-3 uppercase tracking-[0.2em] text-xs transition-colors duration-300 rounded-sm"
+              variant="primary"
             >
               Shop All
-            </button>
+            </GlassButton>
           </div>
         </FadeIn>
 
