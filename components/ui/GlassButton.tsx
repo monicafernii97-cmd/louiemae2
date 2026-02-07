@@ -77,7 +77,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
 
             {/* Shimmer Effect Overlay */}
             <div
-                className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
+                className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
                 aria-hidden="true"
             />
         </Component>
