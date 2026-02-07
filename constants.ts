@@ -473,7 +473,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
     },
     categoryImages: {
       furniture: "https://images.unsplash.com/photo-1533090368676-1fd25485db88?q=80&w=1200&auto=format&fit=crop",
-      decor: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=1200&auto=format&fit=crop",
+      decor: "/images/brand/rustic-bench.png",
       fashion: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000&auto=format&fit=crop",
       kids: "https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?q=80&w=1000&auto=format&fit=crop",
       journal: "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1000&auto=format&fit=crop"
