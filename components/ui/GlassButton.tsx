@@ -45,8 +45,8 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
 
                 // Variants
                 variant === "primary" && [
-                    "bg-white/10 text-white border-white/20",
-                    "hover:bg-white/20 hover:border-white/40",
+                    "bg-earth/20 text-white border-white/20", // Tinted glass
+                    "hover:bg-earth/30 hover:border-white/40",
                 ],
 
                 variant === "secondary" && [
