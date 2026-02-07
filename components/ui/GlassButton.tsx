@@ -56,8 +56,9 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 ],
 
                 variant === "dark" && [
-                    "bg-earth/90 text-white border-transparent",
-                    "hover:bg-earth hover:text-white"
+                    "bg-earth/80 text-white border-earth/20", // Brand color glass
+                    "bg-gradient-to-b from-white/20 to-transparent", // Glossy reflection
+                    "hover:bg-earth/90 hover:border-white/30",
                 ],
 
                 // Sizes

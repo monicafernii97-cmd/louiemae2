@@ -229,7 +229,7 @@ export const HomePage: React.FC = () => {
           <div className="flex justify-center">
             <GlassButton
               onClick={() => navigateTo('#collection/fashion')}
-              variant="primary"
+              variant="dark"
             >
               Shop All
             </GlassButton>
