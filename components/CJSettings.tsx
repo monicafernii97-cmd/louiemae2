@@ -273,8 +273,8 @@ export const CJSettings: React.FC = () => {
                         <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-5 shadow-xl">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm ${tokenStatus?.connected
-                                        ? 'bg-green-50/50 border border-green-100'
-                                        : 'bg-red-50/50 border border-red-100'
+                                    ? 'bg-green-50/50 border border-green-100'
+                                    : 'bg-red-50/50 border border-red-100'
                                     }`}>
                                     <Key className={`w-4 h-4 ${tokenStatus?.connected ? 'text-green-600' : 'text-red-500'}`} />
                                 </div>
@@ -511,15 +511,78 @@ export const CJSettings: React.FC = () => {
                                     {rejectedProducts.length === 0 ? (
                                         <div className="py-8 text-center text-earth/30 text-sm">No issues found</div>
                                     ) : (
-                                        <div className="space-y-3 relative z-10 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="space-y-3 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                             {rejectedProducts.map((product) => (
                                                 <div key={product._id} className="group/item bg-red-50/30 border border-red-100/50 p-4 rounded-xl backdrop-blur-sm hover:bg-red-50/50 transition-colors">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <h4 className="font-medium text-earth text-sm truncate pr-2 font-serif">{product.name}</h4>
+                                                    {/* Header with image and name */}
+                                                    <div className="flex items-start gap-3 mb-3">
+                                                        {/* Image Preview */}
+                                                        <div className="h-12 w-12 rounded-lg bg-white/50 backdrop-blur-sm border border-red-100/50 overflow-hidden flex-shrink-0 relative shadow-sm">
+                                                            {product.images && product.images[0] ? (
+                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center text-red-300">
+                                                                    <Package className="w-4 h-4" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-medium text-earth text-sm truncate font-serif leading-tight mb-1">{product.name}</h4>
+
+                                                            {/* CJ Info */}
+                                                            {product.cjSourcingId && (
+                                                                <div className="flex items-center gap-1.5 font-mono text-[10px] text-red-600/60 bg-red-50/40 px-2 py-0.5 rounded-md w-fit">
+                                                                    <Link2 className="w-2.5 h-2.5" />
+                                                                    CJ ID: {product.cjSourcingId.slice(-12)}...
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Error Message */}
+                                                    <div className="flex items-start gap-2 p-2 bg-red-100/40 rounded-lg mb-3">
+                                                        <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+                                                        <p className="text-[11px] text-red-700/80 leading-snug">
+                                                            {product.cjSourcingError || 'Rejected by CJ - no specific reason provided'}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Actions */}
+                                                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-red-100/50">
+                                                        {/* Resubmit */}
+                                                        <button
+                                                            onClick={() => handleResubmit(product._id, product.name)}
+                                                            disabled={resubmittingId === product._id}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
+                                                            title="Retry submission to CJ"
+                                                        >
+                                                            {resubmittingId === product._id ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <RotateCcw className="w-3 h-3" />
+                                                            )}
+                                                            Retry
+                                                        </button>
+
+                                                        {/* Source URL */}
+                                                        {product.sourceUrl && (
+                                                            <a
+                                                                href={product.sourceUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-1 px-2 py-1.5 text-xs text-earth/50 hover:text-earth hover:bg-white/50 rounded-lg transition-all"
+                                                                title="View source"
+                                                            >
+                                                                <ExternalLink className="w-3 h-3" />
+                                                            </a>
+                                                        )}
+
+                                                        {/* Delete */}
                                                         <button
                                                             onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                                             disabled={deletingId === product._id}
-                                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-100/50 rounded-full transition-all disabled:opacity-50"
+                                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-100/50 rounded-lg transition-all disabled:opacity-50"
                                                             title="Remove from catalog"
                                                         >
                                                             {deletingId === product._id ? (
@@ -528,12 +591,6 @@ export const CJSettings: React.FC = () => {
                                                                 <Trash2 className="w-3.5 h-3.5" />
                                                             )}
                                                         </button>
-                                                    </div>
-                                                    <div className="flex items-start gap-2">
-                                                        <AlertTriangle className="w-3.5 h-3.5 text-red-400 mt-0.5 flex-shrink-0" />
-                                                        <p className="text-[10px] text-red-600/80 leading-snug">
-                                                            {product.cjSourcingError || 'Rejected by CJ'}
-                                                        </p>
                                                     </div>
                                                 </div>
                                             ))}
