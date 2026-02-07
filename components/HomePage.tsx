@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { FadeIn } from './FadeIn';
+import { GlassButton } from './ui/GlassButton';
 import { PRODUCTS, FASHION_CATEGORIES, KIDS_CATEGORIES } from '../constants';
 import { useSite } from '../contexts/BlogContext';
 import { useNewsletter } from '../contexts/NewsletterContext';
@@ -103,12 +104,11 @@ export const HomePage: React.FC = () => {
             </h2>
           </FadeIn>
           <FadeIn delay={400}>
-            <button
+            <GlassButton
               onClick={() => navigateTo('#shop')}
-              className="bg-bronze/90 hover:bg-earth text-white px-10 py-4 uppercase tracking-widest text-sm transition-all duration-300 backdrop-blur-sm hover:scale-105"
             >
               {home.hero.buttonText}
-            </button>
+            </GlassButton>
           </FadeIn>
         </div>
       </section>

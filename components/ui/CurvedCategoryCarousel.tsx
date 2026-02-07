@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
+import { GlassButton } from './GlassButton';
 
 interface CategoryItem {
     id: string;
@@ -174,9 +175,14 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                     <h3 className="font-serif text-2xl md:text-3xl text-white font-light tracking-wide mb-2">
                                         {cat.title}
                                     </h3>
-                                    <p className="text-white/70 text-xs md:text-sm uppercase tracking-[0.2em]">
+                                    <GlassButton
+                                        as="div"
+                                        size="sm"
+                                        variant="primary"
+                                        className="mt-2 pointer-events-none border-white/30 bg-white/5"
+                                    >
                                         {cat.caption || 'Shop Now'}
-                                    </p>
+                                    </GlassButton>
 
                                     {/* Hover Arrow */}
                                     <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

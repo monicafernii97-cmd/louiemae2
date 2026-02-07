@@ -7,6 +7,7 @@ import { ArrowLeft, X, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import { AddToCartButton } from './cart';
 import { CircularGallery, GalleryItem } from './ui/circular-gallery-2';
 import { CurvedCategoryCarousel } from './ui/CurvedCategoryCarousel';
+import { GlassButton } from './ui/GlassButton';
 
 interface StorePageProps {
   collection: CollectionType;
@@ -194,9 +195,14 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
         {!compact && (
           <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-            <button className="w-full bg-white/90 backdrop-blur-sm text-earth py-2 text-[9px] uppercase tracking-[0.15em] hover:bg-earth hover:text-white transition-colors shadow-lg rounded">
+            <GlassButton
+              variant="primary"
+              size="sm"
+              fullWidth
+              className="py-2 md:py-2 text-[10px] bg-white/80 hover:bg-earth hover:text-white text-earth border-white/40"
+            >
               Quick View
-            </button>
+            </GlassButton>
           </div>
         )}
       </div>
