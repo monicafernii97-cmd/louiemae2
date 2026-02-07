@@ -472,7 +472,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
       text: "From Timeless Artistry to Unique Finds. Create your own Curated Style with Well-Made, Authentic Pieces."
     },
     categoryImages: {
-      furniture: "/images/brand/hero-living-organic.jpg",
+      furniture: "/images/brand/hero-living-organic.png",
       decor: "/images/brand/rustic-bench.png",
       fashion: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000&auto=format&fit=crop",
       kids: "https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?q=80&w=1000&auto=format&fit=crop",

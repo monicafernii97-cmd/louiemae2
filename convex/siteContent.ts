@@ -54,11 +54,11 @@ export const fixFurnitureImage = mutation({
                 ...existing.home,
                 categoryImages: {
                     ...(existing.home?.categoryImages || {}),
-                    furniture: "/images/brand/hero-living-organic.jpg",
+                    furniture: "/images/brand/hero-living-organic.png",
                 },
             };
             await ctx.db.patch(existing._id, { home: updatedHome });
-            return { success: true, message: "Furniture image updated to hero-living-organic.jpg" };
+            return { success: true, message: "Furniture image updated to hero-living-organic.png" };
         }
         return { success: false, message: "No siteContent found" };
     },
