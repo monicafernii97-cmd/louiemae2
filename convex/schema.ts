@@ -41,6 +41,8 @@ export default defineSchema({
         cjSourcingError: v.optional(v.string()), // Rejection reason
         sourceUrl: v.optional(v.string()),       // Original AliExpress/source URL
         cjApprovedAt: v.optional(v.string()),    // When CJ approved the product
+        cjSubmittedAt: v.optional(v.string()),   // When product was submitted to CJ
+        cjLastCheckedAt: v.optional(v.string()), // Last time we checked CJ for status
         // All CJ variants received from webhooks (for admin linking)
         cjVariants: v.optional(v.array(v.object({
             vid: v.string(),                       // CJ variant ID

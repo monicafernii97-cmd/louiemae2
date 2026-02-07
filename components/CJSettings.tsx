@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAction, useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
-import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2 } from 'lucide-react';
+import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2, RotateCcw, Key, Link2, Zap } from 'lucide-react';
 import { FadeIn } from './FadeIn';
 import { CJVariantManager } from './CJVariantManager';
 
@@ -11,6 +11,8 @@ export const CJSettings: React.FC = () => {
     const configureWebhooks = useAction(api.cjActions.configureWebhooks);
     const syncTracking = useAction(api.cjActions.syncTracking);
     const checkSourcing = useAction(api.cjActions.checkSourcingStatus);
+    const resubmitProduct = useAction(api.cjActions.resubmitProduct);
+    const getTokenStatus = useAction(api.cjActions.getTokenStatus);
 
     // Product sourcing queries
     const pendingProducts = useQuery(api.products.getPendingSourcing) || [];
@@ -23,6 +25,20 @@ export const CJSettings: React.FC = () => {
     const [checkingSourcing, setCheckingSourcing] = useState(false);
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
     const [deletingId, setDeletingId] = useState<Id<"products"> | null>(null);
+    const [resubmittingId, setResubmittingId] = useState<Id<"products"> | null>(null);
+    const [tokenStatus, setTokenStatus] = useState<{
+        connected: boolean;
+        accessTokenValid: boolean;
+        accessTokenExpiresAt?: string;
+        refreshTokenValid: boolean;
+        refreshTokenExpiresAt?: string;
+        message: string;
+    } | null>(null);
+
+    // Fetch token status on mount
+    useEffect(() => {
+        getTokenStatus({}).then(setTokenStatus).catch(() => null);
+    }, [getTokenStatus]);
 
     // Use the admin products.adminRemove mutation for deleting (no auth required)
     const deleteProduct = useMutation(api.products.adminRemove);
@@ -53,6 +69,34 @@ export const CJSettings: React.FC = () => {
             console.log("Deletion process complete, resetting state");
             setDeletingId(null);
         }
+    };
+
+    const handleResubmit = async (id: Id<"products">, productName: string) => {
+        setResubmittingId(id);
+        setResult(null);
+
+        try {
+            const res = await resubmitProduct({ productId: id });
+            setResult({ success: res.success, message: res.message });
+            // Refresh token status after action
+            getTokenStatus({}).then(setTokenStatus).catch(() => null);
+        } catch (error: any) {
+            setResult({ success: false, message: error.message || 'Failed to resubmit product' });
+        } finally {
+            setResubmittingId(null);
+        }
+    };
+
+    // Helper to format time since submission
+    const getTimeSinceSubmission = (submittedAt?: string) => {
+        if (!submittedAt) return null;
+        const diff = Date.now() - new Date(submittedAt).getTime();
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(hours / 24);
+        if (days > 0) return `${days}d ${hours % 24}h`;
+        if (hours > 0) return `${hours}h`;
+        const mins = Math.floor(diff / (1000 * 60));
+        return `${mins}m`;
     };
 
     const handleTestConnection = async () => {
@@ -223,6 +267,50 @@ export const CJSettings: React.FC = () => {
                             />
                         </div>
                     </FadeIn>
+
+                    {/* Token Status Card */}
+                    <FadeIn delay={150}>
+                        <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-5 shadow-xl">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm ${tokenStatus?.connected
+                                        ? 'bg-green-50/50 border border-green-100'
+                                        : 'bg-red-50/50 border border-red-100'
+                                    }`}>
+                                    <Key className={`w-4 h-4 ${tokenStatus?.connected ? 'text-green-600' : 'text-red-500'}`} />
+                                </div>
+                                <div>
+                                    <h3 className="font-serif text-base text-earth">API Connection</h3>
+                                    <span className={`text-[10px] uppercase tracking-wider font-medium ${tokenStatus?.connected ? 'text-green-600/70' : 'text-red-600/70'
+                                        }`}>
+                                        {tokenStatus?.connected ? '✓ Connected' : '✗ Disconnected'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {tokenStatus && (
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex items-center justify-between p-2 bg-white/40 rounded-lg">
+                                        <span className="text-earth/60">Access Token</span>
+                                        <span className={`font-medium ${tokenStatus.accessTokenValid ? 'text-green-600' : 'text-amber-600'}`}>
+                                            {tokenStatus.accessTokenValid
+                                                ? `Valid until ${new Date(tokenStatus.accessTokenExpiresAt!).toLocaleDateString()}`
+                                                : 'Expired (will auto-refresh)'
+                                            }
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-2 bg-white/40 rounded-lg">
+                                        <span className="text-earth/60">Refresh Token</span>
+                                        <span className={`font-medium ${tokenStatus.refreshTokenValid ? 'text-green-600' : 'text-red-600'}`}>
+                                            {tokenStatus.refreshTokenValid
+                                                ? `Valid until ${new Date(tokenStatus.refreshTokenExpiresAt!).toLocaleDateString()}`
+                                                : 'Expired - reconnect required'
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </FadeIn>
                 </div>
 
                 {/* Panel 2 & 3: Product Import Pipeline */}
@@ -260,42 +348,108 @@ export const CJSettings: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className="space-y-3 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {pendingProducts.map((product) => (
-                                            <div key={product._id} className="group/item flex items-center justify-between bg-white/40 hover:bg-white/60 border border-white/40 p-3 rounded-xl transition-all hover:shadow-md hover:scale-[1.01]">
-                                                <div className="flex items-center flex-1 min-w-0 mr-4">
-                                                    {/* Image Preview */}
-                                                    <div className="h-10 w-10 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 overflow-hidden flex-shrink-0 mr-3 relative shadow-sm">
-                                                        {product.images && product.images[0] ? (
-                                                            <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
-                                                        ) : (
-                                                            <div className="h-full w-full flex items-center justify-center text-earth/20">
-                                                                <Package className="w-4 h-4" />
+                                        {pendingProducts.map((product) => {
+                                            const timeSince = getTimeSinceSubmission(product.cjSubmittedAt);
+                                            const hasNoSourcingId = !product.cjSourcingId;
+
+                                            return (
+                                                <div key={product._id} className="group/item bg-white/40 hover:bg-white/60 border border-white/40 p-4 rounded-xl transition-all hover:shadow-md">
+                                                    <div className="flex items-start gap-3">
+                                                        {/* Image Preview */}
+                                                        <div className="h-14 w-14 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 overflow-hidden flex-shrink-0 relative shadow-sm">
+                                                            {product.images && product.images[0] ? (
+                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <div className="h-full w-full flex items-center justify-center text-earth/20">
+                                                                    <Package className="w-5 h-5" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-medium text-earth text-sm truncate font-serif leading-tight mb-1">{product.name}</h4>
+
+                                                            {/* Status Row */}
+                                                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-earth/40 mb-2">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                                                <span>Awaiting CJ</span>
+                                                                {timeSince && (
+                                                                    <>
+                                                                        <span className="text-earth/20">•</span>
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Clock className="w-2.5 h-2.5" />
+                                                                            {timeSince} ago
+                                                                        </span>
+                                                                    </>
+                                                                )}
                                                             </div>
-                                                        )}
+
+                                                            {/* CJ Info */}
+                                                            <div className="space-y-1 text-[10px] text-earth/50">
+                                                                {product.cjSourcingId ? (
+                                                                    <div className="flex items-center gap-1.5 font-mono bg-green-50/40 text-green-700/70 px-2 py-0.5 rounded-md w-fit">
+                                                                        <Link2 className="w-2.5 h-2.5" />
+                                                                        CJ ID: {product.cjSourcingId.slice(-12)}...
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-1.5 text-amber-600/70 bg-amber-50/40 px-2 py-0.5 rounded-md w-fit">
+                                                                        <AlertTriangle className="w-2.5 h-2.5" />
+                                                                        No CJ ID yet
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="min-w-0">
-                                                        <h4 className="font-medium text-earth text-sm truncate font-serif leading-tight">{product.name}</h4>
-                                                        <p className="text-[10px] uppercase tracking-wider text-earth/40 mt-0.5 flex items-center gap-1">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                                                            Awaiting CJ
-                                                        </p>
+                                                    {/* Action Buttons */}
+                                                    <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-earth/5">
+                                                        {/* Resubmit for products without CJ ID */}
+                                                        {hasNoSourcingId && (
+                                                            <button
+                                                                onClick={() => handleResubmit(product._id, product.name)}
+                                                                disabled={resubmittingId === product._id}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
+                                                                title="Resubmit to CJ"
+                                                            >
+                                                                {resubmittingId === product._id ? (
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                ) : (
+                                                                    <RotateCcw className="w-3 h-3" />
+                                                                )}
+                                                                Resubmit
+                                                            </button>
+                                                        )}
+
+                                                        {/* Source URL link */}
+                                                        {product.sourceUrl && (
+                                                            <a
+                                                                href={product.sourceUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-1 px-2 py-1.5 text-xs text-earth/50 hover:text-earth hover:bg-white/50 rounded-lg transition-all"
+                                                                title="View source"
+                                                            >
+                                                                <ExternalLink className="w-3 h-3" />
+                                                            </a>
+                                                        )}
+
+                                                        {/* Delete */}
+                                                        <button
+                                                            onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
+                                                            disabled={deletingId === product._id}
+                                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50/50 rounded-lg transition-all disabled:opacity-50"
+                                                            title="Remove from import"
+                                                        >
+                                                            {deletingId === product._id ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
-                                                    disabled={deletingId === product._id}
-                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50/50 rounded-full transition-all disabled:opacity-50 backdrop-blur-sm"
-                                                    title="Remove from import"
-                                                >
-                                                    {deletingId === product._id ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                    ) : (
-                                                        <Trash2 className="w-4 h-4" />
-                                                    )}
-                                                </button>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

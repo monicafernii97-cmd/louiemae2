@@ -558,6 +558,11 @@ export const submitForSourcing = internalAction({
                     sourcingId: String(sourcingId),
                 });
 
+                // Set submission timestamp for admin tracking
+                await ctx.runMutation(internal.cjHelpers.updateProductSubmittedAt, {
+                    productId: args.productId,
+                });
+
                 console.log(`CJ Sourcing submitted for product ${args.productId}: ${sourcingId}`);
                 return { success: true, sourcingId: String(sourcingId) };
             } else {

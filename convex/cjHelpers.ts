@@ -622,3 +622,65 @@ export const seedCjTokens = mutation({
         return { success: true, message: "CJ tokens seeded successfully" };
     },
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCT HELPERS FOR ADMIN ACTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get a product by ID (internal use for resubmit action)
+ */
+export const getProductById = internalQuery({
+    args: {
+        productId: v.id("products"),
+    },
+    handler: async (ctx, args) => {
+        return await ctx.db.get(args.productId);
+    },
+});
+
+/**
+ * Clear sourcing status and error for resubmission
+ */
+export const clearSourcingStatus = internalMutation({
+    args: {
+        productId: v.id("products"),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.productId, {
+            cjSourcingStatus: "pending",
+            cjSourcingId: undefined,
+            cjSourcingError: undefined,
+            cjSubmittedAt: undefined,
+            cjLastCheckedAt: undefined,
+        });
+    },
+});
+
+/**
+ * Update product with submission timestamp
+ */
+export const updateProductSubmittedAt = internalMutation({
+    args: {
+        productId: v.id("products"),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.productId, {
+            cjSubmittedAt: new Date().toISOString(),
+        });
+    },
+});
+
+/**
+ * Update product with last checked timestamp
+ */
+export const updateProductLastChecked = internalMutation({
+    args: {
+        productId: v.id("products"),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.productId, {
+            cjLastCheckedAt: new Date().toISOString(),
+        });
+    },
+});

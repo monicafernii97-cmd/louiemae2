@@ -162,3 +162,119 @@ export const cancelAndDeleteProduct = action({
         return result;
     },
 });
+
+/**
+ * Resubmit a stuck or failed product to CJ sourcing
+ * Clears previous error and resubmits with fresh request
+ */
+export const resubmitProduct = action({
+    args: {
+        productId: v.id("products"),
+    },
+    handler: async (ctx, args): Promise<{ success: boolean; message: string; cjSourcingId?: string }> => {
+        try {
+            // Get product details
+            const product = await ctx.runQuery(internal.cjHelpers.getProductById, {
+                productId: args.productId
+            });
+
+            if (!product) {
+                return { success: false, message: "Product not found" };
+            }
+
+            if (!product.sourceUrl) {
+                return { success: false, message: "Product has no source URL - cannot submit to CJ" };
+            }
+
+            if (!product.images || product.images.length === 0) {
+                return { success: false, message: "Product has no images - CJ requires at least one image" };
+            }
+
+            // Clear previous sourcing status
+            await ctx.runMutation(internal.cjHelpers.clearSourcingStatus, {
+                productId: args.productId,
+            });
+
+            // Resubmit to CJ
+            const result = await ctx.runAction(internal.cjDropshipping.submitForSourcing, {
+                productId: args.productId,
+                productUrl: product.sourceUrl,
+                productName: product.name,
+                productImage: product.images[0],
+                productDescription: product.description?.slice(0, 200),
+                targetPrice: product.price,
+            });
+
+            if (result.success && result.sourcingId) {
+                return {
+                    success: true,
+                    message: `Resubmitted successfully! CJ Sourcing ID: ${result.sourcingId}`,
+                    cjSourcingId: result.sourcingId
+                };
+            } else {
+                return {
+                    success: false,
+                    message: result.error || "Failed to resubmit to CJ"
+                };
+            }
+        } catch (error: any) {
+            return { success: false, message: error.message || "Resubmit failed" };
+        }
+    },
+});
+
+/**
+ * Get current CJ token status for admin display
+ * Shows when tokens expire and if connection is healthy
+ */
+export const getTokenStatus = action({
+    args: {},
+    handler: async (ctx): Promise<{
+        connected: boolean;
+        accessTokenValid: boolean;
+        accessTokenExpiresAt?: string;
+        refreshTokenValid: boolean;
+        refreshTokenExpiresAt?: string;
+        message: string;
+    }> => {
+        try {
+            const tokens = await ctx.runQuery(internal.cjHelpers.getCjTokens, {});
+
+            if (!tokens) {
+                return {
+                    connected: false,
+                    accessTokenValid: false,
+                    refreshTokenValid: false,
+                    message: "No tokens stored - run Test Connection to authenticate"
+                };
+            }
+
+            const now = new Date();
+            const accessExpiry = new Date(tokens.accessTokenExpiryDate);
+            const refreshExpiry = new Date(tokens.refreshTokenExpiryDate);
+
+            const accessValid = accessExpiry > now;
+            const refreshValid = refreshExpiry > now;
+
+            return {
+                connected: accessValid || refreshValid,
+                accessTokenValid: accessValid,
+                accessTokenExpiresAt: tokens.accessTokenExpiryDate,
+                refreshTokenValid: refreshValid,
+                refreshTokenExpiresAt: tokens.refreshTokenExpiryDate,
+                message: accessValid
+                    ? `Connected - token expires ${accessExpiry.toLocaleDateString()}`
+                    : refreshValid
+                        ? "Access token expired - will auto-refresh on next API call"
+                        : "All tokens expired - run Test Connection to reauthenticate"
+            };
+        } catch (error: any) {
+            return {
+                connected: false,
+                accessTokenValid: false,
+                refreshTokenValid: false,
+                message: error.message || "Failed to check token status"
+            };
+        }
+    },
+});
