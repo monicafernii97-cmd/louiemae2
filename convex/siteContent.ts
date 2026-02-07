@@ -44,6 +44,26 @@ export const fixDecorImage = mutation({
     },
 });
 
+// One-time migration to fix furniture category image
+export const fixFurnitureImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (existing) {
+            const updatedHome = {
+                ...existing.home,
+                categoryImages: {
+                    ...(existing.home?.categoryImages || {}),
+                    furniture: "/images/brand/hero-living-organic.jpg",
+                },
+            };
+            await ctx.db.patch(existing._id, { home: updatedHome });
+            return { success: true, message: "Furniture image updated to hero-living-organic.jpg" };
+        }
+        return { success: false, message: "No siteContent found" };
+    },
+});
+
 // Protected mutation - require authentication
 export const update = mutation({
     args: {
