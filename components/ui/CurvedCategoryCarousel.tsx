@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
-import { GlassButton } from './GlassButton';
 
 interface CategoryItem {
     id: string;
@@ -175,34 +174,9 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                     <h3 className="font-serif text-2xl md:text-3xl text-white font-light tracking-wide mb-2">
                                         {cat.title}
                                     </h3>
-                                    <GlassButton
-                                        as="div"
-                                        size="sm"
-                                        variant="primary"
-                                        className="mt-2 pointer-events-none border-white/30 bg-white/5"
-                                    >
+                                    <p className="text-white/70 text-xs md:text-sm uppercase tracking-[0.2em]">
                                         {cat.caption || 'Shop Now'}
-                                    </GlassButton>
-
-                                    {/* Hover Arrow */}
-                                    <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <span className="inline-flex items-center text-white text-sm">
-                                            Explore
-                                            <svg
-                                                className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                                                />
-                                            </svg>
-                                        </span>
-                                    </div>
+                                    </p>
                                 </div>
                             </button>
                         );
