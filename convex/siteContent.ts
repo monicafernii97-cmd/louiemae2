@@ -803,3 +803,47 @@ export const fixKidsCollection = mutation({
         return { success: true, message: "Kids collection fixed with proper main category flags" };
     }
 });
+
+// One-time migration to update category card images with brand assets
+export const updateCategoryImages = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) {
+            return { success: false, message: "No siteContent found" };
+        }
+
+        // 1. Update homepage categoryImages.kids
+        const updatedHome = {
+            ...existing.home,
+            categoryImages: {
+                ...(existing.home?.categoryImages || {}),
+                kids: "/images/brand/kids-category.png",
+            },
+        };
+
+        // 2. Update kids collection subcategory images (Boys, Nursery, Toys)
+        const imageMap: Record<string, string> = {
+            'boys': '/images/brand/boys-category.png',
+            'nursery-furniture': '/images/brand/nursery-category.png',
+            'toys': '/images/brand/toys-category.png',
+        };
+
+        const collections = (existing.collections || []).map((collection: any) => {
+            if (collection.id !== 'kids') return collection;
+            return {
+                ...collection,
+                subcategories: (collection.subcategories || []).map((sub: any) => {
+                    if (imageMap[sub.id]) {
+                        return { ...sub, image: imageMap[sub.id] };
+                    }
+                    return sub;
+                }),
+            };
+        });
+
+        await ctx.db.patch(existing._id, { home: updatedHome, collections });
+
+        return { success: true, message: "Category images updated: Boys, Nursery Furn., Toys, and Kids homepage card" };
+    },
+});

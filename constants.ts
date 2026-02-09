@@ -58,9 +58,9 @@ export const FASHION_CATEGORIES: Category[] = [
 
 export const KIDS_CATEGORIES: Category[] = [
   { id: 'girls', title: 'Girls', caption: 'Little Ladies', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', collection: 'kids' },
-  { id: 'boys', title: 'Boys', caption: 'Little Gentlemen', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', collection: 'kids' },
-  { id: 'nursery', title: 'Nursery Furniture', caption: 'The Dreamiest Space', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', collection: 'kids' },
-  { id: 'toys', title: 'Toys', caption: 'Play & Learn', image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=800', collection: 'kids' },
+  { id: 'boys', title: 'Boys', caption: 'Little Gentlemen', image: '/images/brand/boys-category.png', collection: 'kids' },
+  { id: 'nursery', title: 'Nursery Furniture', caption: 'The Dreamiest Space', image: '/images/brand/nursery-category.png', collection: 'kids' },
+  { id: 'toys', title: 'Toys', caption: 'Play & Learn', image: '/images/brand/toys-category.png', collection: 'kids' },
   { id: 'playroom', title: 'Playroom Furniture', caption: 'Create & Explore', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', collection: 'kids' },
 ];
 
@@ -409,9 +409,9 @@ const INITIAL_COLLECTIONS: CollectionConfig[] = [
     subcategories: [
       // Main Categories (shown on collection landing)
       { id: 'girls', title: 'Girls', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Little Ladies', isMainCategory: true },
-      { id: 'boys', title: 'Boys', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800', caption: 'Little Gentlemen', isMainCategory: true },
-      { id: 'toys', title: 'Toys', image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=800', caption: 'Play & Learn', isMainCategory: true },
-      { id: 'nursery-furniture', title: 'Nursery Furniture', image: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=800', caption: 'The Dreamiest Space', isMainCategory: true },
+      { id: 'boys', title: 'Boys', image: '/images/brand/boys-category.png', caption: 'Little Gentlemen', isMainCategory: true },
+      { id: 'toys', title: 'Toys', image: '/images/brand/toys-category.png', caption: 'Play & Learn', isMainCategory: true },
+      { id: 'nursery-furniture', title: 'Nursery Furniture', image: '/images/brand/nursery-category.png', caption: 'The Dreamiest Space', isMainCategory: true },
       { id: 'playroom-furniture', title: 'Playroom Furniture', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Create & Explore', isMainCategory: true },
 
       // Girls Subcategories
@@ -475,7 +475,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
       furniture: "/images/brand/hero-living-organic.png",
       decor: "/images/brand/rustic-bench.png",
       fashion: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000&auto=format&fit=crop",
-      kids: "https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?q=80&w=1000&auto=format&fit=crop",
+      kids: "/images/brand/kids-category.png",
       journal: "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1000&auto=format&fit=crop"
     },
     brand: {
