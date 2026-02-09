@@ -479,7 +479,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
       journal: "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1000&auto=format&fit=crop"
     },
     brand: {
-      image: "/images/brand/hero-living-organic.png"
+      image: "/images/brand/hero-dining.png"
     },
     sections: [] // Initial empty dynamic sections for home
   },

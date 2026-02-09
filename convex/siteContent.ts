@@ -862,7 +862,7 @@ export const fixHeroImage = mutation({
                 },
                 brand: {
                     ...(existing.home?.brand || {}),
-                    image: "/images/brand/hero-living-organic.png",
+                    image: "/images/brand/hero-dining.png",
                 },
             };
             await ctx.db.patch(existing._id, { home: updatedHome });
