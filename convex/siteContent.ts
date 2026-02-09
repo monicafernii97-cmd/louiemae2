@@ -847,3 +847,23 @@ export const updateCategoryImages = mutation({
         return { success: true, message: "Category images updated: Boys, Nursery Furn., Toys, and Kids homepage card" };
     },
 });
+
+// One-time migration to update hero image
+export const fixHeroImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (existing) {
+            const updatedHome = {
+                ...existing.home,
+                hero: {
+                    ...(existing.home?.hero || {}),
+                    image: "/images/brand/hero-living-organic.png",
+                },
+            };
+            await ctx.db.patch(existing._id, { home: updatedHome });
+            return { success: true, message: "Hero image updated to hero-living-organic.png" };
+        }
+        return { success: false, message: "No siteContent found" };
+    },
+});

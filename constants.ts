@@ -462,7 +462,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
   collections: INITIAL_COLLECTIONS,
   home: {
     hero: {
-      image: "/lm3.jpg",
+      image: "/images/brand/hero-living-organic.png",
       pretitle: "Welcome to Louie Mae",
       titleLine1: "Live the life you love.",
       titleLine2: "Love the life you live.",
