@@ -462,7 +462,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
   collections: INITIAL_COLLECTIONS,
   home: {
     hero: {
-      image: "/images/brand/hero-living-organic.png",
+      image: "/lm3.jpg",
       pretitle: "Welcome to Louie Mae",
       titleLine1: "Live the life you love.",
       titleLine2: "Love the life you live.",
@@ -479,7 +479,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
       journal: "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1000&auto=format&fit=crop"
     },
     brand: {
-      image: "https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=2000&auto=format&fit=crop"
+      image: "/images/brand/hero-living-organic.png"
     },
     sections: [] // Initial empty dynamic sections for home
   },

@@ -848,7 +848,7 @@ export const updateCategoryImages = mutation({
     },
 });
 
-// One-time migration to update hero image
+// One-time migration to revert hero and update brand image
 export const fixHeroImage = mutation({
     args: {},
     handler: async (ctx) => {
@@ -858,11 +858,15 @@ export const fixHeroImage = mutation({
                 ...existing.home,
                 hero: {
                     ...(existing.home?.hero || {}),
+                    image: "/lm3.jpg",
+                },
+                brand: {
+                    ...(existing.home?.brand || {}),
                     image: "/images/brand/hero-living-organic.png",
                 },
             };
             await ctx.db.patch(existing._id, { home: updatedHome });
-            return { success: true, message: "Hero image updated to hero-living-organic.png" };
+            return { success: true, message: "Hero reverted to /lm3.jpg, brand image updated to hero-living-organic.png" };
         }
         return { success: false, message: "No siteContent found" };
     },
