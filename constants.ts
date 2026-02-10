@@ -61,7 +61,7 @@ export const KIDS_CATEGORIES: Category[] = [
   { id: 'boys', title: 'Boys', caption: 'Little Gentlemen', image: '/images/brand/boys-category.png', collection: 'kids' },
   { id: 'nursery', title: 'Nursery Furniture', caption: 'The Dreamiest Space', image: '/images/brand/nursery-category.png', collection: 'kids' },
   { id: 'toys', title: 'Toys', caption: 'Play & Learn', image: '/images/brand/toys-category.png', collection: 'kids' },
-  { id: 'playroom', title: 'Playroom Furniture', caption: 'Create & Explore', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', collection: 'kids' },
+  { id: 'playroom', title: 'Playroom Furniture', caption: 'Create & Explore', image: '/images/brand/playroom-scene-v2.png', collection: 'kids' },
 ];
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -412,7 +412,7 @@ const INITIAL_COLLECTIONS: CollectionConfig[] = [
       { id: 'boys', title: 'Boys', image: '/images/brand/boys-category.png', caption: 'Little Gentlemen', isMainCategory: true },
       { id: 'toys', title: 'Toys', image: '/images/brand/toys-category.png', caption: 'Play & Learn', isMainCategory: true },
       { id: 'nursery-furniture', title: 'Nursery Furniture', image: '/images/brand/nursery-category.png', caption: 'The Dreamiest Space', isMainCategory: true },
-      { id: 'playroom-furniture', title: 'Playroom Furniture', image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=800', caption: 'Create & Explore', isMainCategory: true },
+      { id: 'playroom-furniture', title: 'Playroom Furniture', image: '/images/brand/playroom-scene-v2.png', caption: 'Create & Explore', isMainCategory: true },
 
       // Girls Subcategories
       { id: 'girls-dresses', title: 'Girls Dresses', image: 'https://images.unsplash.com/photo-1519238263496-6362d74c1123?q=80&w=800', caption: 'Pretty Dresses', parentCategory: 'Girls' },

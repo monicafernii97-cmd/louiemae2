@@ -896,3 +896,29 @@ export const updateGirlsImage = mutation({
         return { success: true, message: "Girls category image updated to girls-dress.png" };
     },
 });
+
+// One-time migration to update Playroom category image
+export const updatePlayroomImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const collections = (existing.collections || []).map((collection: any) => {
+            if (collection.id !== 'kids') return collection;
+            return {
+                ...collection,
+                subcategories: (collection.subcategories || []).map((sub: any) => {
+                    if (sub.id === 'playroom-furniture') {
+                        return { ...sub, image: '/images/brand/playroom-scene-v2.png' };
+                    }
+                    return sub;
+                }),
+            };
+        });
+
+        await ctx.db.patch(existing._id, { collections });
+        return { success: true, message: "Playroom category image updated to playroom-scene-v2.png" };
+    },
+});
+
