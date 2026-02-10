@@ -871,3 +871,28 @@ export const fixHeroImage = mutation({
         return { success: false, message: "No siteContent found" };
     },
 });
+
+// One-time migration to update Girls category image
+export const updateGirlsImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const collections = (existing.collections || []).map((collection: any) => {
+            if (collection.id !== 'kids') return collection;
+            return {
+                ...collection,
+                subcategories: (collection.subcategories || []).map((sub: any) => {
+                    if (sub.id === 'girls') {
+                        return { ...sub, image: '/images/brand/girls-dress.png' };
+                    }
+                    return sub;
+                }),
+            };
+        });
+
+        await ctx.db.patch(existing._id, { collections });
+        return { success: true, message: "Girls category image updated to girls-dress.png" };
+    },
+});
