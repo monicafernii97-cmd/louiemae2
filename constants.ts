@@ -52,7 +52,7 @@ export const PRODUCTS: Product[] = [
 export const FASHION_CATEGORIES: Category[] = [
   { id: 'dresses', title: 'Dresses', image: '/images/brand/mae-dress.png', collection: 'fashion', caption: 'Effortless Elegance' },
   { id: 'outfits', title: 'Outfits & Sets', image: '/images/brand/mae-sets-v2.png', collection: 'fashion', caption: 'Coordinated Style' },
-  { id: 'tops', title: 'Tops', image: '/images/brand/mae-tops.png', collection: 'fashion', caption: 'Everyday Essentials' },
+  { id: 'tops', title: 'Tops', image: '/images/brand/mae-shirt.png', collection: 'fashion', caption: 'Everyday Essentials' },
   { id: 'bottoms', title: 'Bottoms', image: '/images/brand/mae-bottoms.png', collection: 'fashion', caption: 'Perfect Fit' },
 ];
 
@@ -379,7 +379,7 @@ const INITIAL_COLLECTIONS: CollectionConfig[] = [
     subcategories: [
       // Main Categories
       { id: 'dresses-main', title: 'Dresses', image: '/images/brand/mae-dress.png', caption: 'Effortless Elegance', isMainCategory: true },
-      { id: 'tops-main', title: 'Tops', image: '/images/brand/mae-tops.png', caption: 'Everyday Essentials', isMainCategory: true },
+      { id: 'tops-main', title: 'Tops', image: '/images/brand/mae-shirt.png', caption: 'Everyday Essentials', isMainCategory: true },
       { id: 'bottoms-main', title: 'Bottoms', image: '/images/brand/mae-bottoms.png', caption: 'Perfect Fit', isMainCategory: true },
       { id: 'blazers-layers-main', title: 'Blazers & Layers', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Polished Layers', isMainCategory: true },
       { id: 'active-lounge-main', title: 'Active & Lounge', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Comfy Chic', isMainCategory: true },

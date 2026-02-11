@@ -945,7 +945,7 @@ export const updateBlogTopsBottomsImages = mutation({
                 ...collection,
                 subcategories: (collection.subcategories || []).map((sub: any) => {
                     if (sub.id === 'tops-main') {
-                        return { ...sub, image: '/images/brand/mae-tops.png' };
+                        return { ...sub, image: '/images/brand/mae-shirt.png' };
                     }
                     if (sub.id === 'bottoms-main') {
                         return { ...sub, image: '/images/brand/mae-bottoms.png' };
