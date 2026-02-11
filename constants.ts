@@ -52,8 +52,8 @@ export const PRODUCTS: Product[] = [
 export const FASHION_CATEGORIES: Category[] = [
   { id: 'dresses', title: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', collection: 'fashion', caption: 'Effortless Elegance' },
   { id: 'outfits', title: 'Outfits & Sets', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', collection: 'fashion', caption: 'Coordinated Style' },
-  { id: 'tops', title: 'Tops', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', collection: 'fashion', caption: 'Everyday Essentials' },
-  { id: 'bottoms', title: 'Bottoms', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800', collection: 'fashion', caption: 'Perfect Fit' },
+  { id: 'tops', title: 'Tops', image: '/images/brand/mae-tops.png', collection: 'fashion', caption: 'Everyday Essentials' },
+  { id: 'bottoms', title: 'Bottoms', image: '/images/brand/mae-bottoms.png', collection: 'fashion', caption: 'Perfect Fit' },
 ];
 
 export const KIDS_CATEGORIES: Category[] = [
