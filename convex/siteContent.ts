@@ -960,3 +960,41 @@ export const updateBlogTopsBottomsImages = mutation({
     },
 });
 
+// One-time migration to update Dresses, Sets, and Mae Collective category images
+export const updateDressesSetsAndFashionImages = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        // 1. Update homepage categoryImages.fashion
+        const home = {
+            ...(existing.home || {}),
+            categoryImages: {
+                ...(existing.home?.categoryImages || {}),
+                fashion: '/images/brand/mae-collective-home.png',
+            },
+        };
+
+        // 2. Update fashion collection subcategories (dresses-main, outfits-sets-main)
+        const collections = (existing.collections || []).map((collection: any) => {
+            if (collection.id !== 'fashion') return collection;
+            return {
+                ...collection,
+                subcategories: (collection.subcategories || []).map((sub: any) => {
+                    if (sub.id === 'dresses-main') {
+                        return { ...sub, image: '/images/brand/mae-dresses.png' };
+                    }
+                    if (sub.id === 'outfits-sets-main') {
+                        return { ...sub, image: '/images/brand/mae-sets-v2.png' };
+                    }
+                    return sub;
+                }),
+            };
+        });
+
+        await ctx.db.patch(existing._id, { home, collections });
+        return { success: true, message: "Updated dresses, sets, and fashion category images" };
+    },
+});
+
