@@ -983,7 +983,7 @@ export const updateDressesSetsAndFashionImages = mutation({
                 ...collection,
                 subcategories: (collection.subcategories || []).map((sub: any) => {
                     if (sub.id === 'dresses-main') {
-                        return { ...sub, image: '/images/brand/mae-dresses.png' };
+                        return { ...sub, image: '/images/brand/mae-dress.png' };
                     }
                     if (sub.id === 'outfits-sets-main') {
                         return { ...sub, image: '/images/brand/mae-sets-v2.png' };
