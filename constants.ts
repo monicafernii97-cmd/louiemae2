@@ -13,7 +13,7 @@ export const PRODUCTS: Product[] = [
     collection: 'furniture',
     price: 850,
     description: 'A stunning statement piece featuring natural rattan doors contrasting against a sleek black frame. Perfect for dining rooms or entryways.',
-    images: ['https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800&auto=format&fit=crop'],
+    images: ['/images/brand/lm-buffet-sideboard.png'],
     isNew: true,
     inStock: true
   },
@@ -24,7 +24,7 @@ export const PRODUCTS: Product[] = [
     collection: 'furniture',
     price: 420,
     description: 'Upholstered in premium Belgian linen, this accent chair brings soft texture and comfort to any corner of your home.',
-    images: ['https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800&auto=format&fit=crop'],
+    images: ['/images/brand/lm-accent-chair.png'],
     inStock: true
   },
   {
@@ -33,8 +33,8 @@ export const PRODUCTS: Product[] = [
     category: 'Girls Rompers',
     collection: 'kids',
     price: 45,
-    description: 'Soft, breathable organic cotton romper for everyday play.',
-    images: ['https://images.unsplash.com/photo-1522771753035-1a5b6562f329?q=80&w=800&auto=format&fit=crop'],
+    description: 'Soft, breathable organic cotton romper in sage green for everyday play.',
+    images: ['/images/brand/lm-cotton-romper.png'],
     inStock: true
   },
   {
@@ -43,8 +43,29 @@ export const PRODUCTS: Product[] = [
     category: 'Vases',
     collection: 'decor',
     price: 85,
-    description: 'Hand-thrown ceramic vase with a matte, earthy texture.',
-    images: ['https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800&auto=format&fit=crop'],
+    description: 'Hand-thrown ceramic vase with a matte, earthy texture in warm terracotta and clay tones.',
+    images: ['/images/brand/rustic-vase.png'],
+    inStock: true
+  },
+  {
+    id: '5',
+    name: 'Rustic Coffee Table',
+    category: 'Dining Tables',
+    collection: 'furniture',
+    price: 620,
+    description: 'Reclaimed wood coffee table with a beautifully weathered finish and tapered legs. A timeless centerpiece for any living room.',
+    images: ['/images/brand/lm-rustic-table.png'],
+    isNew: true,
+    inStock: true
+  },
+  {
+    id: '6',
+    name: 'Linen Floor Lamp',
+    category: 'Floor Lamps',
+    collection: 'decor',
+    price: 195,
+    description: 'Elegant floor lamp with a natural linen drum shade and slim bronze metal base. Creates a warm, ambient glow.',
+    images: ['/images/brand/lm-floor-lamp.png'],
     inStock: true
   }
 ];
