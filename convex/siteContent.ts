@@ -922,3 +922,41 @@ export const updatePlayroomImage = mutation({
     },
 });
 
+// One-time migration to update Blog, Tops, and Bottoms category images
+export const updateBlogTopsBottomsImages = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        // 1. Update homepage categoryImages.journal
+        const home = {
+            ...(existing.home || {}),
+            categoryImages: {
+                ...(existing.home?.categoryImages || {}),
+                journal: '/images/brand/blog-main-v2.png',
+            },
+        };
+
+        // 2. Update fashion collection subcategories (tops-main, bottoms-main)
+        const collections = (existing.collections || []).map((collection: any) => {
+            if (collection.id !== 'fashion') return collection;
+            return {
+                ...collection,
+                subcategories: (collection.subcategories || []).map((sub: any) => {
+                    if (sub.id === 'tops-main') {
+                        return { ...sub, image: '/images/brand/mae-tops.png' };
+                    }
+                    if (sub.id === 'bottoms-main') {
+                        return { ...sub, image: '/images/brand/mae-bottoms.png' };
+                    }
+                    return sub;
+                }),
+            };
+        });
+
+        await ctx.db.patch(existing._id, { home, collections });
+        return { success: true, message: "Updated blog, tops, and bottoms category images" };
+    },
+});
+

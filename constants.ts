@@ -379,8 +379,8 @@ const INITIAL_COLLECTIONS: CollectionConfig[] = [
     subcategories: [
       // Main Categories
       { id: 'dresses-main', title: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', caption: 'Effortless Elegance', isMainCategory: true },
-      { id: 'tops-main', title: 'Tops', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Everyday Essentials', isMainCategory: true },
-      { id: 'bottoms-main', title: 'Bottoms', image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=800', caption: 'Perfect Fit', isMainCategory: true },
+      { id: 'tops-main', title: 'Tops', image: '/images/brand/mae-tops.png', caption: 'Everyday Essentials', isMainCategory: true },
+      { id: 'bottoms-main', title: 'Bottoms', image: '/images/brand/mae-bottoms.png', caption: 'Perfect Fit', isMainCategory: true },
       { id: 'blazers-layers-main', title: 'Blazers & Layers', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Polished Layers', isMainCategory: true },
       { id: 'active-lounge-main', title: 'Active & Lounge', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Comfy Chic', isMainCategory: true },
       { id: 'outfits-sets-main', title: 'Outfits & Sets', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Coordinated Style', isMainCategory: true },
@@ -476,7 +476,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
       decor: "/images/brand/rustic-bench.png",
       fashion: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000&auto=format&fit=crop",
       kids: "/images/brand/kids-category.png",
-      journal: "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1000&auto=format&fit=crop"
+      journal: "/images/brand/blog-main-v2.png"
     },
     brand: {
       image: "/images/brand/hero-dining-wide.png"
