@@ -1,105 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Louie Mae | Curated Home, Kids & Lifestyle</title>
 
-    <!-- SEO Meta -->
-    <meta name="description" content="Louie Mae — a curated lifestyle destination for elevated home décor, modern organic furniture, thoughtfully designed children's clothing, and timeless everyday pieces. Designed with warmth, intention, and lived-in luxury." />
-    <meta name="keywords" content="Louie Mae, curated home decor, modern organic furniture, children's clothing, lifestyle boutique, rustic luxury, lived-in design, elevated neutrals" />
-    <meta name="author" content="Louie Mae" />
-    <meta name="theme-color" content="#4A3B32" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Louie Mae | Curated Home, Kids & Lifestyle</title>
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://louiemae.com/" />
-    <meta property="og:title" content="Louie Mae | Curated Home, Kids & Lifestyle" />
-    <meta property="og:description" content="Elevated home décor, modern organic furniture, and thoughtfully designed children's clothing — curated with warmth, intention, and lived-in luxury." />
-    <meta property="og:image" content="https://louiemae.com/images/brand/louiemae-high-res.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:site_name" content="Louie Mae" />
+  <!-- SEO Meta -->
+  <meta name="description"
+    content="Louie Mae — a curated lifestyle destination for elevated home décor, modern organic furniture, thoughtfully designed children's clothing, and timeless everyday pieces. Designed with warmth, intention, and lived-in luxury." />
+  <meta name="keywords"
+    content="Louie Mae, curated home decor, modern organic furniture, children's clothing, lifestyle boutique, rustic luxury, lived-in design, elevated neutrals" />
+  <meta name="author" content="Louie Mae" />
+  <meta name="theme-color" content="#4A3B32" />
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Louie Mae | Curated Home, Kids & Lifestyle" />
-    <meta name="twitter:description" content="Elevated home décor, modern organic furniture, and thoughtfully designed children's clothing — curated with warmth, intention, and lived-in luxury." />
-    <meta name="twitter:image" content="https://louiemae.com/images/brand/louiemae-high-res.png" />
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://louiemae.com/" />
+  <meta property="og:title" content="Louie Mae | Curated Home, Kids & Lifestyle" />
+  <meta property="og:description"
+    content="Elevated home décor, modern organic furniture, and thoughtfully designed children's clothing — curated with warmth, intention, and lived-in luxury." />
+  <meta property="og:image" content="https://louiemae.com/lm3.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Louie Mae" />
 
-    <!-- Canonical -->
-    <link rel="canonical" href="https://louiemae.com/" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              cream: '#F9F7F2',
-              'cream-dark': '#F0EBE5',
-              earth: '#4A3B32',
-              bronze: '#8C6B51',
-              sand: '#D6CFC7',
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Louie Mae | Curated Home, Kids & Lifestyle" />
+  <meta name="twitter:description"
+    content="Elevated home décor, modern organic furniture, and thoughtfully designed children's clothing — curated with warmth, intention, and lived-in luxury." />
+  <meta name="twitter:image" content="https://louiemae.com/lm3.jpg" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://louiemae.com/" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#F9F7F2',
+            'cream-dark': '#F0EBE5',
+            earth: '#4A3B32',
+            bronze: '#8C6B51',
+            sand: '#D6CFC7',
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'serif'],
+            sans: ['"Montserrat"', 'sans-serif'],
+          },
+          animation: {
+            'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+            'slide-in-right': 'slideInRight 0.5s ease-out forwards',
+            'float': 'float 6s ease-in-out infinite',
+            'blob': 'blob 7s infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
             },
-            fontFamily: {
-              serif: ['"Cormorant Garamond"', 'serif'],
-              sans: ['"Montserrat"', 'sans-serif'],
+            slideInRight: {
+              '0%': { transform: 'translateX(100%)' },
+              '100%': { transform: 'translateX(0)' },
             },
-            animation: {
-              'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
-              'slide-in-right': 'slideInRight 0.5s ease-out forwards',
-              'float': 'float 6s ease-in-out infinite',
-              'blob': 'blob 7s infinite',
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
             },
-            keyframes: {
-              fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
-              slideInRight: {
-                '0%': { transform: 'translateX(100%)' },
-                '100%': { transform: 'translateX(0)' },
-              },
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-20px)' },
-              },
-              blob: {
-                '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                '100%': { transform: 'translate(0px, 0px) scale(1)' },
-              }
+            blob: {
+              '0%': { transform: 'translate(0px, 0px) scale(1)' },
+              '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+              '100%': { transform: 'translate(0px, 0px) scale(1)' },
             }
           }
         }
       }
-    </script>
-    <style>
-      body {
-        background-color: #F9F7F2;
-        color: #4A3B32;
-        -webkit-font-smoothing: antialiased;
-      }
-      /* Hide scrollbar for clean horizontal scrolling */
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      .glass-panel {
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-      }
-    </style>
+    }
+  </script>
+  <style>
+    body {
+      background-color: #F9F7F2;
+      color: #4A3B32;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Hide scrollbar for clean horizontal scrolling */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -112,8 +122,10 @@
 }
 </script>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>
