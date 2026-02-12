@@ -29,12 +29,12 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: '3',
-    name: 'Organic Cotton Romper',
-    category: 'Girls Rompers',
-    collection: 'kids',
-    price: 45,
-    description: 'Soft, breathable organic cotton romper in sage green for everyday play.',
-    images: ['/images/brand/lm-cotton-romper.png'],
+    name: 'Entryway Console Table',
+    category: 'Entryway Tables',
+    collection: 'furniture',
+    price: 540,
+    description: 'Natural oak top on a clean iron frame, styled to perfection in any entryway or living space.',
+    images: ['/images/brand/lm-console-table.png'],
     inStock: true
   },
   {
