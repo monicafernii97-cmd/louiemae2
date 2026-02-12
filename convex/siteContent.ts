@@ -998,3 +998,34 @@ export const updateDressesSetsAndFashionImages = mutation({
     },
 });
 
+// One-time migration: Flatten Home Decor subcategories for CurvedCategoryCarousel
+// Removes isMainCategory/parentCategory so decor uses the standard carousel layout like Furniture
+export const flattenDecorForCarousel = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const flatDecor = {
+            id: 'decor',
+            title: 'Home Decor',
+            subtitle: 'The details that tell your story',
+            heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2000&auto=format&fit=crop',
+            subcategories: [
+                { id: 'decor-items', title: 'Decor Items', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Objects' },
+                { id: 'table-lamps', title: 'Table Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Ambient Light' },
+                { id: 'vases', title: 'Vases', image: 'https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800', caption: 'Ceramic & Glass' },
+                { id: 'floor-lamps', title: 'Floor Lamps', image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?q=80&w=800', caption: 'Corner Brightening' },
+                { id: 'rugs', title: 'Rugs', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Grounding Textures' },
+                { id: 'accent-chairs', title: 'Accent Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Statement Seating' },
+            ]
+        };
+
+        const collections = (existing.collections || []).map((c: any) =>
+            c.id === 'decor' ? flatDecor : c
+        );
+
+        await ctx.db.patch(existing._id, { collections });
+        return { success: true, message: "Home Decor flattened for CurvedCategoryCarousel layout" };
+    },
+});
