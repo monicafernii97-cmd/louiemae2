@@ -50,9 +50,9 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   }, [config.subcategories]);
 
   // Auto-redirect to main category if there's only one (to show swimlane view immediately)
-  // Skip this for 'kids' and 'decor' collections which have premium grid layouts at root level
+  // Skip this for 'kids' collection which has premium grid layout at root level
   React.useEffect(() => {
-    if (collection === 'kids' || collection === 'decor') return; // Don't auto-redirect for premium layouts
+    if (collection === 'kids') return; // Don't auto-redirect for premium layout
 
     if (selectedCategory === 'All' && mainCategoriesForRedirect.length === 1) {
       const singleMain = mainCategoriesForRedirect[0];
@@ -347,13 +347,13 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     <div className="bg-cream min-h-screen pt-20">
 
       {/* Hero Section */}
-      <section className={`relative transition-all duration-700 w-full ${(collection === 'kids' || collection === 'decor') ? 'min-h-screen flex flex-col' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
+      <section className={`relative transition-all duration-700 w-full ${collection === 'kids' ? 'min-h-screen flex flex-col' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
 
         {/* Background/Backdrop - For Kids, this is the carousel container background */}
         <div className="absolute inset-0 bg-cream z-0"></div>
 
         {/* Standard Hero Image (Non-Kids) */}
-        {collection !== 'kids' && collection !== 'decor' && (
+        {collection !== 'kids' && (
           <>
             <div className="absolute inset-0 bg-black/20 z-10"></div>
             <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />
@@ -371,7 +371,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         )}
 
         {/* VOGUE LAYOUT: Kids/Decor Collection Category Display */}
-        {(collection === 'kids' || collection === 'decor') && viewLevel === 'ROOT' && (
+        {collection === 'kids' && viewLevel === 'ROOT' && (
           <>
             {/* Header Title - Static Block with dedicated space */}
             <div className="relative z-30 pt-32 pb-8 md:pb-12 text-center bg-transparent pointer-events-none">
@@ -512,7 +512,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       </section>
 
       {/* --- LEVEL 1: ROOT VIEW - Curved Category Carousel (Standard Collections) --- */}
-      {viewLevel === 'ROOT' && collection !== 'kids' && collection !== 'decor' && config.subcategories.length > 0 && (
+      {viewLevel === 'ROOT' && collection !== 'kids' && config.subcategories.length > 0 && (
         <section className="py-12 md:py-16">
           <CurvedCategoryCarousel
             categories={mainCategories.map(cat => ({
@@ -535,15 +535,15 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         </section>
       )}
 
-      {/* --- LEVEL 1: ROOT VIEW - New Arrivals Feed (Kids & Decor) --- */}
-      {viewLevel === 'ROOT' && (collection === 'kids' || collection === 'decor') && (
+      {/* --- LEVEL 1: ROOT VIEW - New Arrivals Feed (Kids) --- */}
+      {viewLevel === 'ROOT' && collection === 'kids' && (
         <section className="px-4 md:px-8 pb-12 md:pb-16 -mt-8 relative z-30">
           {/* Negative margin to pull it up into the concave scoop if needed, but let's keep it safe below */}
           <div className="container mx-auto">
             <FadeIn className="mb-8 text-center md:text-left">
               <h2 className="font-serif text-3xl md:text-4xl text-earth mb-3 ml-2">New Arrivals</h2>
               <p className="text-xs uppercase tracking-widest text-earth/50 ml-2">
-                {collection === 'decor' ? 'Latest curated pieces for your home' : 'Latest collections for the little ones'}
+                Latest collections for the little ones
               </p>
             </FadeIn>
 
