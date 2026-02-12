@@ -174,7 +174,7 @@ export const HomePage: React.FC = () => {
               <img
                 src={home.categoryImages.fashion}
                 alt="The Mae Collective"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
               <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8">
@@ -191,7 +191,7 @@ export const HomePage: React.FC = () => {
               <img
                 src={home.categoryImages.kids}
                 alt="Louie Kids & Co."
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
               <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8">
