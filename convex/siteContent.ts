@@ -1029,3 +1029,41 @@ export const flattenDecorForCarousel = mutation({
         return { success: true, message: "Home Decor flattened for CurvedCategoryCarousel layout" };
     },
 });
+
+// One-time migration: Update Furniture collection subcategory images to local brand assets
+export const updateFurnitureImages = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const imageMap: Record<string, string> = {
+            'accent-chairs': '/images/brand/furniture-chair.png',
+            'barstools': '/images/brand/barstools v2 copy.png',
+            'counterstools': '/images/brand/counterstools copy.png',
+            'side-storage-cabinets': '/images/brand/sideboard cabinets copy.png',
+            'dining-chairs': '/images/brand/dining chairs v2 copy.png',
+            'dining-tables': '/images/brand/dining table copy.png',
+            'entryway-tables': '/images/brand/entry table copy.png',
+            'nightstands': '/images/brand/nightstands copy.png',
+            'nursery-furniture': '/images/brand/nursery room copy.png',
+            'playroom-furniture': '/images/brand/playroom-scene-v2.png',
+        };
+
+        const collections = (existing.collections || []).map((c: any) => {
+            if (c.id === 'furniture') {
+                return {
+                    ...c,
+                    subcategories: (c.subcategories || []).map((sub: any) => {
+                        const newImage = imageMap[sub.id];
+                        return newImage ? { ...sub, image: newImage } : sub;
+                    }),
+                };
+            }
+            return c;
+        });
+
+        await ctx.db.patch(existing._id, { collections });
+        return { success: true, message: "Furniture subcategory images updated to local brand assets" };
+    },
+});
