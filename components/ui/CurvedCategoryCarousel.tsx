@@ -159,11 +159,15 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                     scrollSnapAlign: 'center',
                                 }}
                             >
-                                {/* Image */}
+                                {/* Image - fades in on load to prevent white flash */}
                                 <img
                                     src={cat.image}
                                     alt={cat.title}
-                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                                    style={{ opacity: 0 }}
+                                    onLoad={(e) => {
+                                        (e.target as HTMLImageElement).style.opacity = '1';
+                                    }}
                                 />
 
                                 {/* Gradient Overlay */}

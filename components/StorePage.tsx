@@ -411,7 +411,9 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                               <img
                                 src={cat.image}
                                 alt={cat.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                                style={{ opacity: 0 }}
+                                onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                               <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6">
@@ -462,7 +464,9 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                               <img
                                 src={cat.image}
                                 alt={cat.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                                style={{ opacity: 0 }}
+                                onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                               <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-8">
