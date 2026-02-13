@@ -399,10 +399,10 @@ const INITIAL_COLLECTIONS: CollectionConfig[] = [
       { id: 'dresses-main', title: 'Dresses', image: '/images/brand/mae-dress.png', caption: 'Effortless Elegance', isMainCategory: true },
       { id: 'tops-main', title: 'Tops', image: '/images/brand/mae-shirt.png', caption: 'Everyday Essentials', isMainCategory: true },
       { id: 'bottoms-main', title: 'Bottoms', image: '/images/brand/mae-bottoms.png', caption: 'Perfect Fit', isMainCategory: true },
-      { id: 'blazers-layers-main', title: 'Blazers & Layers', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=800', caption: 'Polished Layers', isMainCategory: true },
-      { id: 'active-lounge-main', title: 'Active & Lounge', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Comfy Chic', isMainCategory: true },
+      { id: 'blazers-layers-main', title: 'Blazers & Layers', image: '/images/brand/blazers.PNG', caption: 'Polished Layers', isMainCategory: true },
+      { id: 'active-lounge-main', title: 'Active & Lounge', image: '/images/brand/active.PNG', caption: 'Comfy Chic', isMainCategory: true },
       { id: 'outfits-sets-main', title: 'Outfits & Sets', image: '/images/brand/mae-sets-v2.png', caption: 'Coordinated Style', isMainCategory: true },
-      { id: 'vacation-edit', title: 'Vacation Edit', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800', caption: 'Travel in Style', isMainCategory: true },
+      { id: 'vacation-edit', title: 'Vacation Edit', image: '/images/brand/vacation.PNG', caption: 'Travel in Style', isMainCategory: true },
       // Subcategories
       { id: 'everyday-dresses', title: 'Everyday Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', caption: 'Daily Style', parentCategory: 'Dresses' },
       { id: 'formal-dresses', title: 'Formal Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=800', caption: 'Special Occasions', parentCategory: 'Dresses' },

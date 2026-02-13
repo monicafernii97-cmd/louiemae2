@@ -1101,3 +1101,34 @@ export const updateDecorImages = mutation({
         return { success: true, message: "Home Decor subcategory images updated to local brand assets" };
     },
 });
+
+// One-time migration: Update Mae Collective (fashion) collection subcategory images to local brand assets
+export const updateFashionImages = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const imageMap: Record<string, string> = {
+            'blazers-layers-main': '/images/brand/blazers.PNG',
+            'active-lounge-main': '/images/brand/active.PNG',
+            'vacation-edit': '/images/brand/vacation.PNG',
+        };
+
+        const collections = (existing.collections || []).map((c: any) => {
+            if (c.id === 'fashion') {
+                return {
+                    ...c,
+                    subcategories: (c.subcategories || []).map((sub: any) => {
+                        const newImage = imageMap[sub.id];
+                        return newImage ? { ...sub, image: newImage } : sub;
+                    }),
+                };
+            }
+            return c;
+        });
+
+        await ctx.db.patch(existing._id, { collections });
+        return { success: true, message: "Mae Collective subcategory images updated to local brand assets" };
+    },
+});
