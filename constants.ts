@@ -381,12 +381,12 @@ const INITIAL_COLLECTIONS: CollectionConfig[] = [
     subtitle: 'The details that tell your story',
     heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2000&auto=format&fit=crop',
     subcategories: [
-      { id: 'decor-items', title: 'Decor Items', image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800', caption: 'Curated Objects' },
-      { id: 'table-lamps', title: 'Table Lamps', image: 'https://images.unsplash.com/photo-1513506003011-3b03c8b063ca?q=80&w=800', caption: 'Ambient Light' },
-      { id: 'vases', title: 'Vases', image: 'https://images.unsplash.com/photo-1612196808214-b7e239e5f6b7?q=80&w=800', caption: 'Ceramic & Glass' },
-      { id: 'floor-lamps', title: 'Floor Lamps', image: 'https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?q=80&w=800', caption: 'Corner Brightening' },
-      { id: 'rugs', title: 'Rugs', image: 'https://images.unsplash.com/photo-1599694239849-012b68328761?q=80&w=800', caption: 'Grounding Textures' },
-      { id: 'accent-chairs', title: 'Accent Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=800', caption: 'Statement Seating' },
+      { id: 'decor-items', title: 'Decor Items', image: '/images/brand/decor-mirror.png', caption: 'Curated Objects' },
+      { id: 'table-lamps', title: 'Table Lamps', image: '/images/brand/table lamp v2 copy.png', caption: 'Ambient Light' },
+      { id: 'vases', title: 'Vases', image: '/images/brand/decor-vase.png', caption: 'Ceramic & Glass' },
+      { id: 'floor-lamps', title: 'Floor Lamps', image: '/images/brand/floorlamp copy.png', caption: 'Corner Brightening' },
+      { id: 'rugs', title: 'Rugs', image: '/images/brand/rug copy.png', caption: 'Grounding Textures' },
+      { id: 'accent-chairs', title: 'Accent Chairs', image: '/images/brand/accent chair1 copy.png', caption: 'Statement Seating' },
     ]
   },
   {

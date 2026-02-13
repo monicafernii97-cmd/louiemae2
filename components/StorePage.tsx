@@ -18,7 +18,7 @@ interface StorePageProps {
 type ViewLevel = 'ROOT' | 'CATEGORY' | 'PRODUCT';
 
 export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategory = 'All' }) => {
-  const { products, siteContent } = useSite();
+  const { products, siteContent, isLoading } = useSite();
   const [sortOption, setSortOption] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
 
   // Find the configuration for this collection from the dynamic state
@@ -346,7 +346,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   return (
     <div className="bg-cream min-h-screen pt-20">
 
-      {/* Hero Section */}
+      {/* Hero Section - Gate on loading to prevent image flash */}
       <section className={`relative transition-all duration-700 w-full ${collection === 'kids' ? 'min-h-screen flex flex-col' : 'h-[50vh] md:h-[60vh] overflow-hidden'}`}>
 
         {/* Background/Backdrop - For Kids, this is the carousel container background */}
@@ -356,7 +356,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         {collection !== 'kids' && (
           <>
             <div className="absolute inset-0 bg-black/20 z-10"></div>
-            <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />
+            {!isLoading && <img src={config.heroImage} alt={config.title} className="w-full h-full object-cover" />}
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
               <FadeIn>
                 <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white mb-4 drop-shadow-lg">
@@ -514,24 +514,39 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       {/* --- LEVEL 1: ROOT VIEW - Curved Category Carousel (Standard Collections) --- */}
       {viewLevel === 'ROOT' && collection !== 'kids' && config.subcategories.length > 0 && (
         <section className="py-12 md:py-16">
-          <CurvedCategoryCarousel
-            categories={mainCategories.map(cat => ({
-              id: cat.id,
-              title: cat.title,
-              image: cat.image,
-              caption: cat.caption,
-              redirect: cat.redirect,
-            }))}
-            onCategoryClick={(cat) => {
-              if (cat.redirect) {
-                window.location.hash = cat.redirect.replace('#', '');
-              } else {
-                handleCategoryChange(cat.title);
-              }
-            }}
-            title={`Explore ${config.title}`}
-            subtitle="Select a category to begin"
-          />
+          {isLoading ? (
+            /* Loading skeleton while Convex data loads - prevents flash of stale images */
+            <div className="px-8">
+              <div className="text-center mb-10">
+                <div className="h-8 w-64 bg-earth/10 rounded mx-auto mb-3 animate-pulse" />
+                <div className="h-4 w-48 bg-earth/5 rounded mx-auto animate-pulse" />
+              </div>
+              <div className="flex gap-6 justify-center">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="w-48 aspect-[2/3] bg-earth/10 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <CurvedCategoryCarousel
+              categories={mainCategories.map(cat => ({
+                id: cat.id,
+                title: cat.title,
+                image: cat.image,
+                caption: cat.caption,
+                redirect: cat.redirect,
+              }))}
+              onCategoryClick={(cat) => {
+                if (cat.redirect) {
+                  window.location.hash = cat.redirect.replace('#', '');
+                } else {
+                  handleCategoryChange(cat.title);
+                }
+              }}
+              title={`Explore ${config.title}`}
+              subtitle="Select a category to begin"
+            />
+          )}
         </section>
       )}
 

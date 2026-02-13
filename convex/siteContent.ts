@@ -1067,3 +1067,37 @@ export const updateFurnitureImages = mutation({
         return { success: true, message: "Furniture subcategory images updated to local brand assets" };
     },
 });
+
+// One-time migration: Update Home Decor collection subcategory images to local brand assets
+export const updateDecorImages = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const imageMap: Record<string, string> = {
+            'rugs': '/images/brand/rug copy.png',
+            'table-lamps': '/images/brand/table lamp v2 copy.png',
+            'floor-lamps': '/images/brand/floorlamp copy.png',
+            'accent-chairs': '/images/brand/accent chair1 copy.png',
+            'vases': '/images/brand/decor-vase.png',
+            'decor-items': '/images/brand/decor-mirror.png',
+        };
+
+        const collections = (existing.collections || []).map((c: any) => {
+            if (c.id === 'decor') {
+                return {
+                    ...c,
+                    subcategories: (c.subcategories || []).map((sub: any) => {
+                        const newImage = imageMap[sub.id];
+                        return newImage ? { ...sub, image: newImage } : sub;
+                    }),
+                };
+            }
+            return c;
+        });
+
+        await ctx.db.patch(existing._id, { collections });
+        return { success: true, message: "Home Decor subcategory images updated to local brand assets" };
+    },
+});
