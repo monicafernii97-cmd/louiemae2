@@ -101,6 +101,9 @@ export interface HomePageContent {
   brand: {
     image: string;
   };
+  shop: {
+    headerImage: string;
+  };
   sections: PageSection[]; // Dynamic sections added via admin
 }
 

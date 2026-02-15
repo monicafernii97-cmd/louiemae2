@@ -499,6 +499,9 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
     brand: {
       image: "/images/brand/hero-dining-wide.png"
     },
+    shop: {
+      headerImage: "/images/brand/DINNERTABLE.png"
+    },
     sections: [] // Initial empty dynamic sections for home
   },
   story: {

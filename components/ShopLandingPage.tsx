@@ -28,7 +28,7 @@ export const ShopLandingPage: React.FC = () => {
 
                <FadeIn delay={200} className="w-full max-w-2xl mx-auto overflow-hidden rounded-[2.5rem] shadow-sm">
                   <img
-                     src="/images/brand/hero-dining.png"
+                     src={home.shop?.headerImage || "/images/brand/DINNERTABLE.png"}
                      alt="Louie Mae Signature"
                      className="w-full h-auto block"
                   />

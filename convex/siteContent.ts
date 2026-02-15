@@ -1152,3 +1152,23 @@ export const updateMaeCollectiveHomeImage = mutation({
         return { success: true, message: "Mae Collective homepage card updated to MAECOL.png" };
     },
 });
+
+// One-time migration: Add shop.headerImage to home content
+export const updateShopHeaderImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const home = {
+            ...(existing.home || {}),
+            shop: {
+                ...(existing.home?.shop || {}),
+                headerImage: '/images/brand/DINNERTABLE.png',
+            },
+        };
+
+        await ctx.db.patch(existing._id, { home });
+        return { success: true, message: "Shop header image set to DINNERTABLE.png" };
+    },
+});
