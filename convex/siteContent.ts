@@ -1132,3 +1132,23 @@ export const updateFashionImages = mutation({
         return { success: true, message: "Mae Collective subcategory images updated to local brand assets" };
     },
 });
+
+// One-time migration: Update Mae Collective homepage category card image to MAECOL.png
+export const updateMaeCollectiveHomeImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const home = {
+            ...(existing.home || {}),
+            categoryImages: {
+                ...(existing.home?.categoryImages || {}),
+                fashion: '/images/brand/MAECOL.png',
+            },
+        };
+
+        await ctx.db.patch(existing._id, { home });
+        return { success: true, message: "Mae Collective homepage card updated to MAECOL.png" };
+    },
+});
