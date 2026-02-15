@@ -26,11 +26,11 @@ export const ShopLandingPage: React.FC = () => {
                   <h1 className="font-serif text-6xl md:text-8xl text-earth leading-none">Louie Mae</h1>
                </FadeIn>
 
-               <FadeIn delay={200} className="w-full max-w-2xl mx-auto overflow-hidden rounded-[2.5rem] shadow-sm">
+               <FadeIn delay={200} className="w-full overflow-hidden rounded-[2.5rem] shadow-sm">
                   <img
                      src={home.shop?.headerImage || "/images/brand/DINNERTABLE.png"}
                      alt="Louie Mae Signature"
-                     className="w-full h-auto block"
+                     className="w-full h-[300px] md:h-[450px] object-cover"
                   />
                </FadeIn>
             </div>
