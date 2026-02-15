@@ -11,7 +11,7 @@ export const ShopLandingPage: React.FC = () => {
    const categories = [
       { id: 'furniture', title: 'Furniture', image: home.categoryImages.furniture, link: '#collection/furniture', subtitle: 'Timeless Pieces' },
       { id: 'decor', title: 'Home Decor', image: home.categoryImages.decor, link: '#collection/decor', subtitle: 'Accents & Details' },
-      { id: 'fashion', title: 'The Mae Collective', image: home.categoryImages.fashion, link: '#collection/fashion', subtitle: 'Apparel', objectPosition: 'object-[center_20%]' },
+      { id: 'fashion', title: 'The Mae Collective', image: home.categoryImages.fashion, link: '#collection/fashion', subtitle: 'Apparel', objectPosition: 'object-[center_10%]' },
       { id: 'kids', title: 'Louie Kids & Co.', image: home.categoryImages.kids, link: '#collection/kids', subtitle: 'Little Ones' },
       { id: 'journal', title: 'Simply by Mae', image: home.categoryImages.journal, link: '#blog', subtitle: 'Blog' },
    ];
