@@ -441,9 +441,9 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                   <div className="container mx-auto">
                     <div
                       className={`grid gap-6 ${mainCategories.length <= 4 ? 'grid-cols-4' :
-                          mainCategories.length <= 5 ? 'grid-cols-5' :
-                            mainCategories.length <= 6 ? 'grid-cols-6' :
-                              'grid-cols-7'
+                        mainCategories.length <= 5 ? 'grid-cols-5' :
+                          mainCategories.length <= 6 ? 'grid-cols-6' :
+                            'grid-cols-7'
                         }`}
                       style={{ perspective: '1200px' }}
                     >
@@ -484,15 +484,15 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                               onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                            <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-8">
-                              <h3 className="font-serif text-3xl lg:text-4xl text-white font-light tracking-wide mb-2">
+                            <div className={`absolute inset-0 flex flex-col justify-end items-center text-center ${mainCategories.length > 5 ? 'p-4 lg:p-6' : 'p-8'}`}>
+                              <h3 className={`font-serif text-white font-light tracking-wide mb-2 ${mainCategories.length > 6 ? 'text-lg lg:text-xl' : mainCategories.length > 5 ? 'text-xl lg:text-2xl' : 'text-3xl lg:text-4xl'}`}>
                                 {cat.title}
                               </h3>
-                              <p className="text-white/70 text-sm uppercase tracking-[0.2em]">
+                              <p className={`text-white/70 uppercase tracking-[0.2em] ${mainCategories.length > 5 ? 'text-[10px]' : 'text-sm'}`}>
                                 {cat.caption || 'Shop Now'}
                               </p>
-                              <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <span className="inline-flex items-center text-white text-sm">
+                              <div className={`opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${mainCategories.length > 5 ? 'mt-2' : 'mt-4'}`}>
+                                <span className={`inline-flex items-center text-white ${mainCategories.length > 5 ? 'text-xs' : 'text-sm'}`}>
                                   Explore
                                   <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
