@@ -368,33 +368,38 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
 
             {/* Category Cards */}
             <div className="pb-16 md:pb-24">
-              {collection === 'kids' ? (
-                <>
-                  {/* Kids: Mobile Horizontal Scroll Carousel */}
-                  <div className="md:hidden">
-                    <div className="relative">
-                      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-cream to-transparent z-10 pointer-events-none" />
-                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-cream to-transparent z-10 pointer-events-none" />
+              <>
+                {/* Mobile: Horizontal Scroll Carousel for all collections */}
+                <div className="md:hidden">
+                  <div className="relative">
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-cream to-transparent z-10 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-cream to-transparent z-10 pointer-events-none" />
 
-                      <div
-                        className="flex gap-4 overflow-x-auto scrollbar-hide px-8 pb-4 scroll-smooth"
-                        style={{
-                          scrollSnapType: 'x mandatory',
-                          WebkitOverflowScrolling: 'touch',
-                          perspective: '1200px',
-                        }}
-                      >
-                        {mainCategories.map((cat, idx, arr) => {
-                          const centerIdx = (arr.length - 1) / 2;
-                          const offset = idx - centerIdx;
-                          const rotateY = Math.max(-12, Math.min(12, offset * 4));
-                          const translateZ = Math.min(0, Math.abs(offset) * -8);
+                    <div
+                      className="flex gap-4 overflow-x-auto scrollbar-hide px-8 pb-4 scroll-smooth"
+                      style={{
+                        scrollSnapType: 'x mandatory',
+                        WebkitOverflowScrolling: 'touch',
+                        perspective: '1200px',
+                      }}
+                    >
+                      {mainCategories.map((cat, idx, arr) => {
+                        const centerIdx = (arr.length - 1) / 2;
+                        const offset = idx - centerIdx;
+                        const rotateY = Math.max(-12, Math.min(12, offset * 4));
+                        const translateZ = Math.min(0, Math.abs(offset) * -8);
 
-                          return (
-                            <button
-                              key={cat.id}
-                              onClick={() => handleCategoryChange(cat.title)}
-                              className="
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => {
+                              if (cat.redirect) {
+                                window.location.hash = cat.redirect.replace('#', '');
+                              } else {
+                                handleCategoryChange(cat.title);
+                              }
+                            }}
+                            className="
                                 group relative flex-shrink-0 overflow-hidden rounded-2xl
                                 w-[200px] aspect-[3/4]
                                 bg-stone-100 
@@ -402,53 +407,63 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                                 transition-all duration-500 ease-out
                                 hover:scale-[1.02]
                               "
-                              style={{
-                                transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
-                                transformStyle: 'preserve-3d',
-                                scrollSnapAlign: 'center',
-                              }}
-                            >
-                              <img
-                                src={cat.image}
-                                alt={cat.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                                style={{ opacity: 0 }}
-                                onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                              <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6">
-                                <h3 className="font-serif text-xl text-white font-light tracking-wide mb-2">
-                                  {cat.title}
-                                </h3>
-                                <p className="text-white/70 text-xs uppercase tracking-[0.2em]">
-                                  {cat.caption || 'Shop Now'}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
+                            style={{
+                              transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
+                              transformStyle: 'preserve-3d',
+                              scrollSnapAlign: 'center',
+                            }}
+                          >
+                            <img
+                              src={cat.image}
+                              alt={cat.title}
+                              className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                              style={{ opacity: 0 }}
+                              onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                            <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6">
+                              <h3 className="font-serif text-xl text-white font-light tracking-wide mb-2">
+                                {cat.title}
+                              </h3>
+                              <p className="text-white/70 text-xs uppercase tracking-[0.2em]">
+                                {cat.caption || 'Shop Now'}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
+                </div>
 
-                  {/* Kids: Desktop 5-Column Grid with Curved Effect */}
-                  <div className="hidden md:block px-8">
-                    <div className="container mx-auto">
-                      <div
-                        className="grid grid-cols-5 gap-6"
-                        style={{ perspective: '1200px' }}
-                      >
-                        {mainCategories.map((cat, idx, arr) => {
-                          const centerIdx = (arr.length - 1) / 2;
-                          const offset = idx - centerIdx;
-                          const rotateY = offset * 8;
-                          const translateZ = Math.abs(offset) * -20;
+                {/* Desktop: Grid with Curved Effect - adapts columns to category count */}
+                <div className="hidden md:block px-8">
+                  <div className="container mx-auto">
+                    <div
+                      className={`grid gap-6 ${mainCategories.length <= 4 ? 'grid-cols-4' :
+                          mainCategories.length <= 5 ? 'grid-cols-5' :
+                            mainCategories.length <= 6 ? 'grid-cols-6' :
+                              'grid-cols-7'
+                        }`}
+                      style={{ perspective: '1200px' }}
+                    >
+                      {mainCategories.map((cat, idx, arr) => {
+                        const centerIdx = (arr.length - 1) / 2;
+                        const offset = idx - centerIdx;
+                        const rotateY = offset * 8;
+                        const translateZ = Math.abs(offset) * -20;
 
-                          return (
-                            <button
-                              key={cat.id}
-                              onClick={() => handleCategoryChange(cat.title)}
-                              className="
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => {
+                              if (cat.redirect) {
+                                window.location.hash = cat.redirect.replace('#', '');
+                              } else {
+                                handleCategoryChange(cat.title);
+                              }
+                            }}
+                            className="
                                 group relative overflow-hidden rounded-2xl
                                 aspect-[2/3]
                                 bg-stone-100 
@@ -456,71 +471,42 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                                 transition-all duration-500 ease-out
                                 hover:scale-[1.02]
                               "
-                              style={{
-                                transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
-                                transformStyle: 'preserve-3d',
-                              }}
-                            >
-                              <img
-                                src={cat.image}
-                                alt={cat.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                                style={{ opacity: 0 }}
-                                onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                              <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-8">
-                                <h3 className="font-serif text-3xl lg:text-4xl text-white font-light tracking-wide mb-2">
-                                  {cat.title}
-                                </h3>
-                                <p className="text-white/70 text-sm uppercase tracking-[0.2em]">
-                                  {cat.caption || 'Shop Now'}
-                                </p>
-                                <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                  <span className="inline-flex items-center text-white text-sm">
-                                    Explore
-                                    <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                    </svg>
-                                  </span>
-                                </div>
+                            style={{
+                              transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
+                              transformStyle: 'preserve-3d',
+                            }}
+                          >
+                            <img
+                              src={cat.image}
+                              alt={cat.title}
+                              className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                              style={{ opacity: 0 }}
+                              onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                            <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-8">
+                              <h3 className="font-serif text-3xl lg:text-4xl text-white font-light tracking-wide mb-2">
+                                {cat.title}
+                              </h3>
+                              <p className="text-white/70 text-sm uppercase tracking-[0.2em]">
+                                {cat.caption || 'Shop Now'}
+                              </p>
+                              <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <span className="inline-flex items-center text-white text-sm">
+                                  Explore
+                                  <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                  </svg>
+                                </span>
                               </div>
-                            </button>
-                          );
-                        })}
-                      </div>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                </>
-              ) : (
-                /* Non-Kids: CurvedCategoryCarousel (no title/subtitle - handled by unified header above) */
-                isLoading ? (
-                  <div className="px-8">
-                    <div className="flex gap-6 justify-center">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="w-48 aspect-[2/3] bg-earth/10 rounded-2xl animate-pulse" />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <CurvedCategoryCarousel
-                    categories={mainCategories.map(cat => ({
-                      id: cat.id,
-                      title: cat.title,
-                      image: cat.image,
-                      caption: cat.caption,
-                      redirect: cat.redirect,
-                    }))}
-                    onCategoryClick={(cat) => {
-                      if (cat.redirect) {
-                        window.location.hash = cat.redirect.replace('#', '');
-                      } else {
-                        handleCategoryChange(cat.title);
-                      }
-                    }}
-                  />
-                )
-              )}
+                </div>
+              </>
             </div>
           </>
         )}
