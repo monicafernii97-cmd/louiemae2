@@ -145,8 +145,8 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
                                 onClick={() => onCategoryClick(cat)}
                                 className="
                   group relative flex-shrink-0 overflow-hidden rounded-2xl
-                  w-[200px] md:w-[240px] lg:w-[280px]
-                  aspect-[3/4] md:aspect-[2/3]
+                  w-[200px] md:w-[280px] lg:w-[320px]
+                  aspect-[3/4]
                   bg-stone-100 
                   shadow-lg hover:shadow-2xl
                   transition-all duration-500 ease-out
