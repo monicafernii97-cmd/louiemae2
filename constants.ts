@@ -492,7 +492,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
     categoryImages: {
       furniture: "/images/brand/hero-living-organic.png",
       decor: "/images/brand/rustic-bench.png",
-      fashion: "/images/brand/MAECOL.png",
+      fashion: "/images/brand/maev2.png",
       kids: "/images/brand/kids-category.png",
       journal: "/images/brand/blog-main-v2.png"
     },

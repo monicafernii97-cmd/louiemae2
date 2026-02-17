@@ -1172,3 +1172,23 @@ export const updateShopHeaderImage = mutation({
         return { success: true, message: "Shop header image set to DINNERTABLE.png" };
     },
 });
+
+// One-time migration: Update Mae Collective homepage + shop card image to maev2.png
+export const updateMaeCollectiveToMaev2 = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const home = {
+            ...(existing.home || {}),
+            categoryImages: {
+                ...(existing.home?.categoryImages || {}),
+                fashion: '/images/brand/maev2.png',
+            },
+        };
+
+        await ctx.db.patch(existing._id, { home });
+        return { success: true, message: "Mae Collective homepage/shop card updated to maev2.png" };
+    },
+});
