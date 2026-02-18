@@ -21,12 +21,11 @@ export const StoryPage: React.FC = () => {
                   </h1>
                </FadeIn>
 
-               <FadeIn delay={200} className="relative w-full aspect-[3/4] md:aspect-[4/3] overflow-hidden rounded-sm mb-16 shadow-sm mx-auto max-w-3xl">
-                  <div className="absolute inset-0 bg-black/5 z-10"></div>
+               <FadeIn delay={200} className="relative w-full overflow-hidden rounded-2xl mb-16 shadow-sm mx-auto max-w-2xl">
                   <img
                      src={story.hero.image}
                      alt="Our Journey"
-                     className="w-full h-full object-cover object-center grayscale-[20%] scale-105 hover:scale-100 transition-transform duration-[3s] ease-out"
+                     className="w-full h-auto object-contain rounded-2xl grayscale-[20%] hover:scale-[1.02] transition-transform duration-[3s] ease-out"
                   />
                </FadeIn>
             </div>
