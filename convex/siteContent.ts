@@ -1192,3 +1192,23 @@ export const updateMaeCollectiveToMaev2 = mutation({
         return { success: true, message: "Mae Collective homepage/shop card updated to maev2.png" };
     },
 });
+
+// One-time migration: Update Our Story hero image to fam2.png
+export const updateStoryHeroImage = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        const story = {
+            ...(existing.story || {}),
+            hero: {
+                ...(existing.story?.hero || {}),
+                image: '/images/brand/fam2.png',
+            },
+        };
+
+        await ctx.db.patch(existing._id, { story });
+        return { success: true, message: "Our Story hero image updated to fam2.png" };
+    },
+});
