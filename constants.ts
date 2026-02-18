@@ -506,7 +506,7 @@ export const INITIAL_SITE_CONTENT: SiteContent = {
   },
   story: {
     hero: {
-      image: "https://images.unsplash.com/photo-1556020685-ae41abfc9365?q=80&w=2000&auto=format&fit=crop",
+      image: "/images/brand/fam2.png",
       title: "Discover",
       subtitle: "Our Journey"
     },
