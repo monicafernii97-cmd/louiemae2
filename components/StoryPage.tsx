@@ -21,7 +21,7 @@ export const StoryPage: React.FC = () => {
                   </h1>
                </FadeIn>
 
-               <FadeIn delay={200} className="relative w-full overflow-hidden rounded-2xl mb-16 shadow-sm mx-auto max-w-2xl">
+               <FadeIn delay={200} className="relative w-full overflow-hidden rounded-2xl mb-16 shadow-sm mx-auto max-w-sm">
                   <img
                      src={story.hero.image}
                      alt="Our Journey"
