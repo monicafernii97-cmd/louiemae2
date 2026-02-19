@@ -71,15 +71,12 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       return 'ROOT';
     }
 
-    // Check if selectedCategory is a main category with children
-    const isMainCategory = config.subcategories.some(
-      sub => sub.title === selectedCategory && sub.isMainCategory
-    );
+    // Any category with children should show the CATEGORY view (hero slider + swimlanes)
     const hasChildren = config.subcategories.some(
       sub => sub.parentCategory === selectedCategory
     );
 
-    if (isMainCategory && hasChildren) {
+    if (hasChildren) {
       return 'CATEGORY';
     }
 
@@ -168,7 +165,9 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   // Get back destination based on current view
   const getBackDestination = () => {
     if (viewLevel === 'CATEGORY') {
-      return 'All'; // Go back to collection root
+      // Navigate back to the parent category, or root if no parent
+      const parentCat = config.subcategories.find(sub => sub.title === selectedCategory)?.parentCategory;
+      return parentCat || 'All';
     }
     // For PRODUCT view, check if we came from a main category
     const parentCat = config.subcategories.find(sub => sub.title === selectedCategory)?.parentCategory;
@@ -442,8 +441,8 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                     <div className="container mx-auto">
                       <div
                         className={`grid gap-6 ${mainCategories.length <= 3 ? 'grid-cols-3' :
-                            mainCategories.length <= 4 ? 'grid-cols-4' :
-                              'grid-cols-5'
+                          mainCategories.length <= 4 ? 'grid-cols-4' :
+                            'grid-cols-5'
                           }`}
                         style={{ perspective: '1200px' }}
                       >

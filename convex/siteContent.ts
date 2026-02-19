@@ -1238,3 +1238,40 @@ export const updateStoryChapters = mutation({
         return { success: true, message: "Our Story chapters updated with full narrative content" };
     },
 });
+
+// One-time migration: Fix Girls/Boys Bottoms subcategory hierarchy
+// Moves Leggings/Shorts/Pants/Skirts under "Girls Bottoms" and Shorts/Pants/Joggers under "Boys Bottoms"
+export const fixBottomsSubcategories = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const existing = await ctx.db.query("siteContent").first();
+        if (!existing) return { success: false, message: "No siteContent found" };
+
+        // Map of subcategory IDs to their new parentCategory
+        const parentCategoryFixes: Record<string, string> = {
+            'girls-leggings': 'Girls Bottoms',
+            'girls-shorts': 'Girls Bottoms',
+            'girls-pants': 'Girls Bottoms',
+            'girls-skirts': 'Girls Bottoms',
+            'boys-shorts': 'Boys Bottoms',
+            'boys-pants': 'Boys Bottoms',
+            'boys-joggers': 'Boys Bottoms',
+        };
+
+        const collections = (existing.collections || []).map((collection: any) => {
+            if (collection.id !== 'kids') return collection;
+            return {
+                ...collection,
+                subcategories: (collection.subcategories || []).map((sub: any) => {
+                    if (parentCategoryFixes[sub.id]) {
+                        return { ...sub, parentCategory: parentCategoryFixes[sub.id] };
+                    }
+                    return sub;
+                }),
+            };
+        });
+
+        await ctx.db.patch(existing._id, { collections });
+        return { success: true, message: "Fixed Girls/Boys Bottoms subcategory hierarchy" };
+    },
+});
