@@ -621,7 +621,7 @@ export const AdminPage: React.FC = () => {
          </aside>
 
          {/* Main Content Area */}
-         <main className="ml-80 flex-1 p-8 h-screen overflow-y-auto no-scrollbar relative z-10">
+         <main className="ml-80 flex-1 p-8 h-screen overflow-y-auto no-scrollbar relative">
 
             {/* DASHBOARD VIEW */}
             {activeTab === 'dashboard' && (
@@ -1723,6 +1723,56 @@ export const AdminPage: React.FC = () => {
             )}
 
          </main>
+
+         {/* POST EDITOR MODAL — rendered outside <main> to avoid z-10 stacking context clipping */}
+         {isEditingPost && editingPost && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+               <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 rounded-sm shadow-2xl relative animate-fade-in-up">
+                  <button onClick={() => setIsEditingPost(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
+                  <h2 className="font-serif text-3xl text-earth mb-8">{editingPost.id ? 'Edit Story' : 'New Story'}</h2>
+
+                  <div className="space-y-6">
+                     <ImageUploader label="Cover Image" currentImage={editingPost.image} onImageChange={(val) => setEditingPost({ ...editingPost, image: val })} aspectRatio="aspect-[21/9]" />
+
+                     <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Title</label>
+                        <input type="text" value={editingPost.title} onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-2xl" />
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-6">
+                        <div>
+                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Category</label>
+                           <select value={editingPost.category} onChange={(e) => setEditingPost({ ...editingPost, category: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10">
+                              <option>Lifestyle</option>
+                              <option>Design</option>
+                              <option>Faith</option>
+                              <option>Motherhood</option>
+                           </select>
+                        </div>
+                        <div>
+                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Status</label>
+                           <select value={editingPost.status} onChange={(e) => setEditingPost({ ...editingPost, status: e.target.value as any })} className="w-full bg-cream/30 p-3 border border-earth/10">
+                              <option value="draft">Draft</option>
+                              <option value="published">Published</option>
+                           </select>
+                        </div>
+                     </div>
+
+                     <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Excerpt</label>
+                        <textarea value={editingPost.excerpt} onChange={(e) => setEditingPost({ ...editingPost, excerpt: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-24" />
+                     </div>
+
+                     <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Content</label>
+                        <textarea value={editingPost.content} onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-64 font-serif text-lg leading-relaxed" />
+                     </div>
+
+                     <button onClick={handleSavePost} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors">Save Story</button>
+                  </div>
+               </div>
+            </div>
+         )}
       </div>
    );
 };
