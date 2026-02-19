@@ -346,7 +346,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     <div className="bg-cream min-h-screen pt-20">
 
       {/* Unified Header Section - Clean cream background with centered title for all collections */}
-      <section className={`relative transition-all duration-700 w-full min-h-screen flex flex-col`}>
+      <section className={`relative transition-all duration-700 w-full ${viewLevel === 'ROOT' ? 'min-h-screen' : ''} flex flex-col`}>
 
         {/* Background */}
         <div className="absolute inset-0 bg-cream z-0"></div>
