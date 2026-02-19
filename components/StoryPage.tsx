@@ -47,7 +47,7 @@ export const StoryPage: React.FC = () => {
             {/* Chapters Container */}
             <div className="space-y-24 md:space-y-36">
 
-               {/* Chapter 1 */}
+               {/* Chapter 1 — The Heart Behind the Name */}
                <FadeIn delay={100} className="relative z-10">
                   <div className="text-center mb-10">
                      <span className="text-bronze font-serif italic text-xl mb-3 block">Chapter I</span>
@@ -55,11 +55,30 @@ export const StoryPage: React.FC = () => {
                   </div>
 
                   <div className="font-sans text-earth/80 text-base leading-[2.2] space-y-8 max-w-2xl mx-auto text-center">
-                     <p>{story.chapters.oneText}</p>
+                     {story.chapters.oneText.split('\n\n').map((paragraph, i) => {
+                        // Check if this paragraph contains the L.O.U.I.E. acronym lines
+                        const acronymLines = paragraph.split('\n');
+                        const isAcronymBlock = acronymLines.length >= 5 && acronymLines.every(
+                           line => /^[A-Z][a-z]/.test(line.trim())
+                        );
+                        if (isAcronymBlock) {
+                           return (
+                              <div key={i} className="space-y-3 my-4">
+                                 {acronymLines.map((line, j) => (
+                                    <p key={j} className="font-serif italic text-earth/70 text-sm md:text-base tracking-wide">
+                                       <span className="text-bronze font-semibold not-italic">{line.charAt(0)}</span>
+                                       {line.slice(1)}
+                                    </p>
+                                 ))}
+                              </div>
+                           );
+                        }
+                        return <p key={i}>{paragraph}</p>;
+                     })}
                   </div>
                </FadeIn>
 
-               {/* Chapter 2 */}
+               {/* Chapter 2 — From Garage Sparks to Boutique Dreams */}
                <FadeIn delay={200} className="relative z-10">
                   <div className="text-center mb-10">
                      <span className="text-bronze font-serif italic text-xl mb-3 block">Chapter II</span>
@@ -67,11 +86,13 @@ export const StoryPage: React.FC = () => {
                   </div>
 
                   <div className="font-sans text-earth/80 text-base leading-[2.2] space-y-8 max-w-2xl mx-auto text-center">
-                     <p>{story.chapters.twoText}</p>
+                     {story.chapters.twoText.split('\n\n').map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                     ))}
                   </div>
                </FadeIn>
 
-               {/* Chapter 3 */}
+               {/* Chapter 3 — A New Chapter: Love & Legacy */}
                <FadeIn delay={300} className="relative z-10">
                   <div className="text-center mb-10">
                      <span className="text-bronze font-serif italic text-xl mb-3 block">Chapter III</span>
@@ -79,11 +100,13 @@ export const StoryPage: React.FC = () => {
                   </div>
 
                   <div className="font-sans text-earth/80 text-base leading-[2.2] space-y-8 max-w-2xl mx-auto text-center">
-                     <p>{story.chapters.threeText}</p>
+                     {story.chapters.threeText.split('\n\n').map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                     ))}
                   </div>
                </FadeIn>
 
-               {/* Chapter 4 */}
+               {/* Chapter 4 — A Pause That Prepared Me */}
                <FadeIn delay={400} className="relative z-10">
                   <div className="text-center mb-10">
                      <span className="text-bronze font-serif italic text-xl mb-3 block">Chapter IV</span>
@@ -91,7 +114,9 @@ export const StoryPage: React.FC = () => {
                   </div>
 
                   <div className="font-sans text-earth/80 text-base leading-[2.2] space-y-8 max-w-2xl mx-auto text-center">
-                     <p>{story.chapters.fourText}</p>
+                     {story.chapters.fourText.split('\n\n').map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                     ))}
                   </div>
 
                   {/* Manifesto Box */}
