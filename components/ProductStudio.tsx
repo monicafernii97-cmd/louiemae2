@@ -55,9 +55,9 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-y-0 right-0 left-80 z-[500] pointer-events-none flex items-center justify-center p-6 sm:p-8 animate-fade-in bg-[#F5F2EB]">
-            {/* Floating Card Container */}
-            <div className="pointer-events-auto w-full h-full max-w-[1600px] bg-[#FAFAF9] rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden relative border border-white/60 box-border">
+        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 sm:p-8 animate-fade-in">
+            {/* Centered Modal Container */}
+            <div className="w-full max-w-6xl max-h-[90vh] bg-[#FAFAF9] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/60 animate-fade-in-up">
 
                 {/* Header Section - Two Floors */}
                 <div className="shrink-0 flex flex-col bg-white/60 backdrop-blur-md z-20 shadow-sm">

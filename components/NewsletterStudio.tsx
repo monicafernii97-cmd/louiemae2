@@ -43,9 +43,9 @@ export const NewsletterStudio: React.FC<NewsletterStudioProps> = ({ isOpen, onCl
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex flex-col pt-2 px-2 pb-0 animate-fade-in">
-            {/* Maximized Modal Container */}
-            <div className="bg-[#FAFAF9] w-full h-full rounded-t-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/10">
+        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+            {/* Centered Modal Container */}
+            <div className="bg-[#FAFAF9] w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/10 animate-fade-in-up">
 
                 {/* Top Bar: Navigation & Progress */}
                 <div className="shrink-0 h-16 border-b border-earth/10 flex items-center justify-between px-6 bg-white/50 backdrop-blur-sm z-20">

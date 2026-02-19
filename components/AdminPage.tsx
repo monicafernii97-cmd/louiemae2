@@ -980,7 +980,7 @@ export const AdminPage: React.FC = () => {
                   {/* COLLECTION EDITOR MODAL */}
                   {editingCollection && (
                      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-                        <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 rounded-sm shadow-2xl relative animate-fade-in-up">
+                        <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative animate-fade-in-up">
                            <button onClick={() => setEditingCollection(null)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button>
                            <h2 className="font-serif text-3xl text-earth mb-8">{editingCollection.id ? 'Edit Collection' : 'New Collection'}</h2>
 
@@ -1135,7 +1135,7 @@ export const AdminPage: React.FC = () => {
 
             {/* Existing AI Page Generator Modal */}
             {showPageGenerator && (
-               <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"><div className="bg-white w-full max-w-lg p-8 rounded-sm shadow-2xl relative"><button onClick={() => setShowPageGenerator(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button><div className="text-center mb-8"><h2 className="font-serif text-2xl text-earth">Design AI Concierge</h2></div><div className="space-y-6"><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Page Title</label><input type="text" value={generatorPrompt.title} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, title: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none" /></div><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Description</label><textarea value={generatorPrompt.description} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, description: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none h-32" /></div><button onClick={handleGeneratePage} disabled={isGenerating} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors flex items-center justify-center gap-2 disabled:opacity-70">{isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}{isGenerating ? 'Designing...' : 'Generate Page'}</button></div></div></div>
+               <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6"><div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-2xl relative animate-fade-in-up"><button onClick={() => setShowPageGenerator(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button><div className="text-center mb-8"><h2 className="font-serif text-2xl text-earth">Design AI Concierge</h2></div><div className="space-y-6"><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Page Title</label><input type="text" value={generatorPrompt.title} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, title: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none rounded-lg" /></div><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Description</label><textarea value={generatorPrompt.description} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, description: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none h-32 rounded-lg" /></div><button onClick={handleGeneratePage} disabled={isGenerating} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors flex items-center justify-center gap-2 disabled:opacity-70 rounded-lg">{isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}{isGenerating ? 'Designing...' : 'Generate Page'}</button></div></div></div>
             )}
 
             {/* --- UNIFIED PAGE EDITOR (Home or Custom) --- */}
@@ -1622,60 +1622,10 @@ export const AdminPage: React.FC = () => {
                siteContent={siteContent}
             />
 
-            {/* POST EDITOR MODAL */}
-            {isEditingPost && editingPost && (
-               <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-                  <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 rounded-sm shadow-2xl relative animate-fade-in-up">
-                     <button onClick={() => setIsEditingPost(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
-                     <h2 className="font-serif text-3xl text-earth mb-8">{editingPost.id ? 'Edit Story' : 'New Story'}</h2>
-
-                     <div className="space-y-6">
-                        <ImageUploader label="Cover Image" currentImage={editingPost.image} onImageChange={(val) => setEditingPost({ ...editingPost, image: val })} aspectRatio="aspect-[21/9]" />
-
-                        <div>
-                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Title</label>
-                           <input type="text" value={editingPost.title} onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-2xl" />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                           <div>
-                              <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Category</label>
-                              <select value={editingPost.category} onChange={(e) => setEditingPost({ ...editingPost, category: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10">
-                                 <option>Lifestyle</option>
-                                 <option>Design</option>
-                                 <option>Faith</option>
-                                 <option>Motherhood</option>
-                              </select>
-                           </div>
-                           <div>
-                              <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Status</label>
-                              <select value={editingPost.status} onChange={(e) => setEditingPost({ ...editingPost, status: e.target.value as any })} className="w-full bg-cream/30 p-3 border border-earth/10">
-                                 <option value="draft">Draft</option>
-                                 <option value="published">Published</option>
-                              </select>
-                           </div>
-                        </div>
-
-                        <div>
-                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Excerpt</label>
-                           <textarea value={editingPost.excerpt} onChange={(e) => setEditingPost({ ...editingPost, excerpt: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-24" />
-                        </div>
-
-                        <div>
-                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Content</label>
-                           <textarea value={editingPost.content} onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-64 font-serif text-lg leading-relaxed" />
-                        </div>
-
-                        <button onClick={handleSavePost} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors">Save Story</button>
-                     </div>
-                  </div>
-               </div>
-            )}
-
             {/* SECTION BUILDER MODAL */}
             {showSectionPicker && (
                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-                  <div className="bg-white w-full max-w-4xl p-8 rounded-sm shadow-2xl relative animate-fade-in-up">
+                  <div className="bg-white w-full max-w-4xl p-8 rounded-2xl shadow-2xl relative animate-fade-in-up">
                      <button onClick={() => setShowSectionPicker(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
                      <div className="mb-8 text-center">
                         <span className="text-bronze text-xs uppercase tracking-[0.3em] block mb-2">Section Builder</span>
@@ -1727,7 +1677,7 @@ export const AdminPage: React.FC = () => {
          {/* POST EDITOR MODAL — rendered outside <main> to avoid z-10 stacking context clipping */}
          {isEditingPost && editingPost && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-               <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 rounded-sm shadow-2xl relative animate-fade-in-up">
+               <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative animate-fade-in-up">
                   <button onClick={() => setIsEditingPost(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
                   <h2 className="font-serif text-3xl text-earth mb-8">{editingPost.id ? 'Edit Story' : 'New Story'}</h2>
 
