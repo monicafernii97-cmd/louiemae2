@@ -1,27 +1,21 @@
 {
-  "redirects": [
+  "rewrites": [
     {
-      "source": "/admin",
-      "destination": "/#admin",
-      "permanent": false
+      "source": "/story",
+      "destination": "/api/og?path=story"
     },
     {
       "source": "/blog",
-      "destination": "/#blog",
-      "permanent": false
+      "destination": "/api/og?path=blog"
     },
     {
       "source": "/shop",
-      "destination": "/#shop",
-      "permanent": false
+      "destination": "/api/og?path=shop"
     },
     {
-      "source": "/story",
-      "destination": "/#story",
-      "permanent": false
-    }
-  ],
-  "rewrites": [
+      "source": "/collection/:type",
+      "destination": "/api/og?path=collection/:type"
+    },
     {
       "source": "/((?!api).*)",
       "destination": "/index.html"

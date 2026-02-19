@@ -37,10 +37,10 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({ link, handleNavigation, d
         <button
           onClick={() => handleNavigation(child.href)}
           className={`w-full text-left font-serif text-earth transition-all duration-300 hover:text-bronze py-2 ${currentDepth === 1
-              ? 'text-lg pl-4 font-medium'
-              : currentDepth === 2
-                ? 'text-base pl-6 text-earth/80'
-                : 'text-sm pl-8 text-earth/70'
+            ? 'text-lg pl-4 font-medium'
+            : currentDepth === 2
+              ? 'text-base pl-6 text-earth/80'
+              : 'text-sm pl-8 text-earth/70'
             }`}
         >
           {child.label}
@@ -161,6 +161,59 @@ const AppContent = () => {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Dynamic meta tags per page
+  useEffect(() => {
+    const BASE_URL = 'https://louiemae.com';
+    const setMeta = (selector: string, content: string) => {
+      const el = document.querySelector(selector);
+      if (el) el.setAttribute('content', content);
+    };
+
+    let title = 'Louie Mae | Curated Home, Kids & Lifestyle';
+    let description = 'Elevated home décor, modern organic furniture, and thoughtfully designed children\'s clothing — curated with warmth, intention, and lived-in luxury.';
+    let image = `${BASE_URL}/lm3.jpg`;
+    let url = BASE_URL;
+
+    if (activePage === 'story') {
+      title = 'Our Story | Louie Mae';
+      description = 'Discover the heart behind Louie Mae — a journey of faith, craftsmanship, and calling. From artisan jewelry to curated lifestyle, every piece tells a story.';
+      image = `${BASE_URL}/images/brand/fam2.png`;
+      url = `${BASE_URL}/story`;
+    } else if (activePage === 'blog') {
+      title = 'Simply by Mae | Louie Mae';
+      description = 'Stories, inspiration, and behind-the-scenes moments from the Louie Mae journey.';
+      image = `${BASE_URL}/images/brand/blog-main-v2.png`;
+      url = `${BASE_URL}/blog`;
+    } else if (activePage === 'shop') {
+      title = 'Shop | Louie Mae';
+      description = 'Browse our curated collections of elevated home décor, modern furniture, children\'s clothing, and lifestyle essentials.';
+      image = `${BASE_URL}/images/brand/DINNERTABLE.png`;
+      url = `${BASE_URL}/shop`;
+    } else if (activePage.startsWith('#collection/')) {
+      const [path] = activePage.split('?');
+      const type = path.replace('#collection/', '');
+      const collection = siteContent.collections.find(c => c.id === type);
+      if (collection) {
+        title = `${collection.title} | Louie Mae`;
+        description = `Shop ${collection.title} — ${collection.subtitle}`;
+        url = `${BASE_URL}/collection/${type}`;
+      }
+    }
+
+    document.title = title;
+    setMeta('meta[property="og:title"]', title);
+    setMeta('meta[property="og:description"]', description);
+    setMeta('meta[property="og:image"]', image);
+    setMeta('meta[property="og:url"]', url);
+    setMeta('meta[name="twitter:title"]', title);
+    setMeta('meta[name="twitter:description"]', description);
+    setMeta('meta[name="twitter:image"]', image);
+    setMeta('meta[name="description"]', description);
+    setMeta('link[rel="canonical"]', url);
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', url);
+  }, [activePage, siteContent.collections]);
 
   // Merge dynamic custom pages into links if needed, or allow them to be manually added in admin
   const extendedNavLinks = siteContent.navLinks;
