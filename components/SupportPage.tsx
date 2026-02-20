@@ -67,16 +67,19 @@ export const SupportPage: React.FC<SupportPageProps> = ({ section }) => {
     const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
     const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
 
-    // Scroll to section on mount or when section changes
+    const hasScrolledRef = React.useRef(false);
+
+    // Scroll to section on initial mount only (instant, no bounce)
     useEffect(() => {
-        if (section) {
-            // Small delay to ensure DOM is rendered
-            setTimeout(() => {
+        if (section && !hasScrolledRef.current) {
+            hasScrolledRef.current = true;
+            // Use requestAnimationFrame to ensure DOM is painted
+            requestAnimationFrame(() => {
                 const el = document.getElementById(`support-${section}`);
                 if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    el.scrollIntoView({ behavior: 'instant', block: 'start' });
                 }
-            }, 200);
+            });
         }
     }, [section]);
 
