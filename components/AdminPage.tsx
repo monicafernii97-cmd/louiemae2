@@ -170,6 +170,8 @@ export const AdminPage: React.FC = () => {
    // Blog Editor State
    const [isEditingPost, setIsEditingPost] = useState(false);
    const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null);
+   const [excerptGenerating, setExcerptGenerating] = useState(false);
+   const [excerptOptions, setExcerptOptions] = useState<any[]>([]);
 
    // Product Editor State
    const [isEditingProduct, setIsEditingProduct] = useState(false);
@@ -1742,52 +1744,131 @@ export const AdminPage: React.FC = () => {
          {/* POST EDITOR MODAL — rendered outside <main> to avoid z-10 stacking context clipping */}
          {isEditingPost && editingPost && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-               <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative animate-fade-in-up">
-                  <button onClick={() => setIsEditingPost(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
-                  <h2 className="font-serif text-3xl text-earth mb-8">{editingPost.id ? 'Edit Story' : 'New Story'}</h2>
+               <div className="bg-white w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl shadow-2xl relative animate-fade-in-up">
+                  {/* Sticky Header */}
+                  <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-earth/5 flex-shrink-0">
+                     <h2 className="font-serif text-3xl text-earth">{editingPost.id ? 'Edit Story' : 'New Story'}</h2>
+                     <button onClick={() => setIsEditingPost(false)} className="text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
+                  </div>
 
-                  <div className="space-y-6">
-                     <ImageUploader label="Cover Image" currentImage={editingPost.image} onImageChange={(val) => setEditingPost({ ...editingPost, image: val })} aspectRatio="aspect-[21/9]" />
+                  {/* Scrollable Content */}
+                  <div className="overflow-y-auto flex-1 px-8 py-6">
+                     <div className="space-y-6">
+                        <ImageUploader label="Cover Image" currentImage={editingPost.image} onImageChange={(val) => setEditingPost({ ...editingPost, image: val })} aspectRatio="aspect-[21/9]" />
 
-                     <div>
-                        <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Title</label>
-                        <input type="text" value={editingPost.title} onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-2xl" />
-                     </div>
-
-                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Category</label>
-                           <select value={editingPost.category} onChange={(e) => setEditingPost({ ...editingPost, category: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10">
-                              <option>Lifestyle</option>
-                              <option>Design</option>
-                              <option>Faith</option>
-                              <option>Motherhood</option>
-                           </select>
+                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Title</label>
+                           <input type="text" value={editingPost.title} onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-2xl" />
                         </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                           <div>
+                              <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Category</label>
+                              <select value={editingPost.category} onChange={(e) => setEditingPost({ ...editingPost, category: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10">
+                                 <option>Lifestyle</option>
+                                 <option>Design</option>
+                                 <option>Faith</option>
+                                 <option>Motherhood</option>
+                              </select>
+                           </div>
+                           <div>
+                              <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Status</label>
+                              <select value={editingPost.status} onChange={(e) => setEditingPost({ ...editingPost, status: e.target.value as any })} className="w-full bg-cream/30 p-3 border border-earth/10">
+                                 <option value="draft">Draft</option>
+                                 <option value="published">Published</option>
+                              </select>
+                           </div>
+                        </div>
+
+                        {/* Excerpt Section with AI Generator */}
                         <div>
-                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Status</label>
-                           <select value={editingPost.status} onChange={(e) => setEditingPost({ ...editingPost, status: e.target.value as any })} className="w-full bg-cream/30 p-3 border border-earth/10">
-                              <option value="draft">Draft</option>
-                              <option value="published">Published</option>
-                           </select>
+                           <div className="flex items-center justify-between mb-2">
+                              <label className="block text-[10px] uppercase tracking-widest text-earth/40">Excerpt</label>
+                              {editingPost.content && editingPost.content.length > 50 && (
+                                 <button
+                                    type="button"
+                                    onClick={async () => {
+                                       setExcerptGenerating(true);
+                                       setExcerptOptions([]);
+                                       try {
+                                          const plainText = editingPost.content.replace(/<[^>]*>/g, '').trim();
+                                          const { GoogleGenAI } = await import('@google/genai');
+                                          const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+                                          const response = await genAI.models.generateContent({
+                                             model: 'gemini-2.0-flash',
+                                             contents: `You are an editorial assistant for a premium lifestyle and faith blog called "Simply Mae." Generate exactly 4 excerpt options for this blog post. Each excerpt should be 1-2 sentences that entice readers to click and read the full post.
+
+The 4 styles are:
+1. THE HOOK — provocative, challenges assumptions, draws you in
+2. THE HEART — personal, speaks directly to the reader, makes them feel seen
+3. THE THESIS — clear and bold, summarizes the core message
+4. THE REFRAME — offers a surprising perspective or reframes a common belief
+
+Return ONLY a JSON array of 4 objects with "style" and "text" fields. No markdown formatting, no code blocks, just the raw JSON array.
+
+Blog post content:
+${plainText.slice(0, 3000)}`,
+                                          });
+                                          const text = response?.text || '';
+                                          const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                                          const options = JSON.parse(cleaned);
+                                          setExcerptOptions(options);
+                                       } catch (err) {
+                                          console.error('Excerpt generation failed:', err);
+                                          alert('Failed to generate excerpts. Please try again.');
+                                       } finally {
+                                          setExcerptGenerating(false);
+                                       }
+                                    }}
+                                    disabled={excerptGenerating}
+                                    className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-bronze hover:text-earth transition-colors disabled:opacity-50"
+                                 >
+                                    {excerptGenerating ? (
+                                       <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
+                                    ) : (
+                                       <><Sparkles className="w-3 h-3" /> Generate Excerpts</>
+                                    )}
+                                 </button>
+                              )}
+                           </div>
+                           <textarea value={editingPost.excerpt} onChange={(e) => setEditingPost({ ...editingPost, excerpt: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-24" />
+
+                           {/* AI Excerpt Options */}
+                           {excerptOptions.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                 <p className="text-[9px] uppercase tracking-widest text-earth/30 mb-2">Choose an excerpt:</p>
+                                 {excerptOptions.map((opt: any, idx: number) => (
+                                    <button
+                                       key={idx}
+                                       type="button"
+                                       onClick={() => {
+                                          setEditingPost({ ...editingPost, excerpt: opt.text });
+                                          setExcerptOptions([]);
+                                       }}
+                                       className="w-full text-left p-3 border border-earth/10 rounded-lg hover:border-bronze/40 hover:bg-cream/30 transition-all group"
+                                    >
+                                       <span className="text-[9px] uppercase tracking-widest text-bronze/60 group-hover:text-bronze block mb-1">{opt.style}</span>
+                                       <span className="font-serif text-sm text-earth/80 leading-relaxed">{opt.text}</span>
+                                    </button>
+                                 ))}
+                              </div>
+                           )}
+                        </div>
+
+                        <div>
+                           <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Content</label>
+                           <RichTextEditor
+                              value={editingPost.content || ''}
+                              onChange={(html) => setEditingPost({ ...editingPost, content: html })}
+                              placeholder="Start writing your story..."
+                           />
                         </div>
                      </div>
+                  </div>
 
-                     <div>
-                        <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Excerpt</label>
-                        <textarea value={editingPost.excerpt} onChange={(e) => setEditingPost({ ...editingPost, excerpt: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-24" />
-                     </div>
-
-                     <div>
-                        <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Content</label>
-                        <RichTextEditor
-                           value={editingPost.content || ''}
-                           onChange={(html) => setEditingPost({ ...editingPost, content: html })}
-                           placeholder="Start writing your story..."
-                        />
-                     </div>
-
-                     <button onClick={handleSavePost} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors">Save Story</button>
+                  {/* Sticky Save Button */}
+                  <div className="px-8 py-4 border-t border-earth/10 bg-white flex-shrink-0 rounded-b-2xl">
+                     <button onClick={handleSavePost} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors rounded-lg">Save Story</button>
                   </div>
                </div>
             </div>
