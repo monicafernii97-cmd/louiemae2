@@ -53,7 +53,7 @@ export const BlogPage: React.FC = () => {
                <h1 className="font-serif text-6xl md:text-8xl text-earth mb-8 tracking-tight">Simply Mae</h1>
                <div className="flex items-center justify-center gap-4 mb-6">
                   <div className="h-px w-8 bg-earth/20"></div>
-                  <p className="font-serif text-earth/70 text-xl italic">Curated Musings</p>
+                  <p className="font-serif text-earth/70 text-xl italic">Curated Reflections</p>
                   <div className="h-px w-8 bg-earth/20"></div>
                </div>
                <p className="font-sans text-earth/60 max-w-lg mx-auto leading-relaxed text-sm tracking-wide">
