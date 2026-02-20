@@ -900,24 +900,6 @@ export const AdminPage: React.FC = () => {
                      </div>
                   )}
 
-                  {/* CAMPAIGN STUDIO */}
-                  <NewsletterStudio
-                     isOpen={!!editingCampaign}
-                     onClose={() => setEditingCampaign(null)}
-                     initialCampaign={editingCampaign}
-                     onSave={(campaign) => {
-                        if (campaign.id) {
-                           updateCampaign(campaign.id, campaign);
-                        } else {
-                           createCampaign(campaign as any);
-                        }
-                        // If status is sent, trigger send logic
-                        if (campaign.status === 'sent' && campaign.id) {
-                           sendCampaign(campaign.id);
-                        }
-                        setEditingCampaign(null);
-                     }}
-                  />
                </FadeIn>
             )}
 
@@ -1593,35 +1575,6 @@ export const AdminPage: React.FC = () => {
                );
             })()}
 
-            {/* --- Product Studio --- */}
-            <ProductStudio
-               isOpen={isEditingProduct}
-               onClose={() => { setIsEditingProduct(false); setEditingProduct(null); }}
-               initialProduct={editingProduct}
-               onSave={async (prod) => {
-                  if (prod.id) {
-                     // Updating existing product - just update
-                     await updateProduct(prod.id, prod);
-                  } else {
-                     // New product - set CJ sourcing status if it has a source URL
-                     const productWithSourcing = {
-                        ...prod,
-                        // Mark for CJ sourcing if product has a source URL (from AliExpress etc)
-                        cjSourcingStatus: prod.sourceUrl ? 'pending' as const : 'none' as const,
-                     };
-                     await addProduct(productWithSourcing as Omit<Product, 'id'>);
-
-                     // If marked as pending, the CJ cron job will handle submission
-                     if (prod.sourceUrl) {
-                        alert('Product saved! It has been submitted for CJ sourcing approval and will appear on your site once approved.');
-                     }
-                  }
-                  setIsEditingProduct(false);
-                  setEditingProduct(null);
-               }}
-               siteContent={siteContent}
-            />
-
             {/* SECTION BUILDER MODAL */}
             {showSectionPicker && (
                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
@@ -1673,6 +1626,54 @@ export const AdminPage: React.FC = () => {
             )}
 
          </main>
+
+         {/* CAMPAIGN STUDIO — rendered outside <main> for full viewport centering */}
+         <NewsletterStudio
+            isOpen={!!editingCampaign}
+            onClose={() => setEditingCampaign(null)}
+            initialCampaign={editingCampaign}
+            onSave={(campaign) => {
+               if (campaign.id) {
+                  updateCampaign(campaign.id, campaign);
+               } else {
+                  createCampaign(campaign as any);
+               }
+               // If status is sent, trigger send logic
+               if (campaign.status === 'sent' && campaign.id) {
+                  sendCampaign(campaign.id);
+               }
+               setEditingCampaign(null);
+            }}
+         />
+
+         {/* PRODUCT STUDIO — rendered outside <main> for full viewport centering */}
+         <ProductStudio
+            isOpen={isEditingProduct}
+            onClose={() => { setIsEditingProduct(false); setEditingProduct(null); }}
+            initialProduct={editingProduct}
+            onSave={async (prod) => {
+               if (prod.id) {
+                  // Updating existing product - just update
+                  await updateProduct(prod.id, prod);
+               } else {
+                  // New product - set CJ sourcing status if it has a source URL
+                  const productWithSourcing = {
+                     ...prod,
+                     // Mark for CJ sourcing if product has a source URL (from AliExpress etc)
+                     cjSourcingStatus: prod.sourceUrl ? 'pending' as const : 'none' as const,
+                  };
+                  await addProduct(productWithSourcing as Omit<Product, 'id'>);
+
+                  // If marked as pending, the CJ cron job will handle submission
+                  if (prod.sourceUrl) {
+                     alert('Product saved! It has been submitted for CJ sourcing approval and will appear on your site once approved.');
+                  }
+               }
+               setIsEditingProduct(false);
+               setEditingProduct(null);
+            }}
+            siteContent={siteContent}
+         />
 
          {/* POST EDITOR MODAL — rendered outside <main> to avoid z-10 stacking context clipping */}
          {isEditingPost && editingPost && (
