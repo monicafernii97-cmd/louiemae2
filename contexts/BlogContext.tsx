@@ -179,7 +179,7 @@ export const SiteProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updatePost = (id: string, updatedData: Partial<BlogPost>) => {
-    const { id: _, date, ...updates } = updatedData as any;
+    const { id: _, date, _id, _creationTime, ...updates } = updatedData as any;
     updatePostMutation({ id: id as Id<"blogPosts">, ...updates });
   };
 

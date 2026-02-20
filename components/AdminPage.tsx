@@ -1,5 +1,7 @@
 
 import React, { useState, useRef } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 import { useSite } from '../contexts/BlogContext';
 import { useNewsletter } from '../contexts/NewsletterContext';
 import { FadeIn } from './FadeIn';
@@ -21,17 +23,69 @@ const ImageUploader: React.FC<{
    aspectRatio?: string;
 }> = ({ currentImage = '', onImageChange, label = 'Image', className = '', aspectRatio = 'aspect-[3/4]' }) => {
    const fileInputRef = useRef<HTMLInputElement>(null);
+   const [isUploading, setIsUploading] = useState(false);
+   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+   const saveFile = useMutation(api.files.saveFile);
 
-   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) {
-         const reader = new FileReader();
-         reader.onloadend = () => {
-            onImageChange(reader.result as string);
-         };
-         reader.readAsDataURL(file);
+      if (!file) return;
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+         alert('Image must be less than 5MB');
+         return;
+      }
+
+      setIsUploading(true);
+
+      // Show immediate preview from local file
+      const reader = new FileReader();
+      reader.onloadend = () => {
+         setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      try {
+         // Upload to Convex file storage
+         const uploadUrl = await generateUploadUrl();
+         const response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': file.type },
+            body: file,
+         });
+
+         if (!response.ok) throw new Error('Upload failed');
+
+         const { storageId } = await response.json();
+
+         // Get the public URL via server-side mutation
+         const result = await saveFile({
+            storageId,
+            fileName: file.name,
+            fileType: file.type,
+            purpose: 'blog',
+         });
+
+         if (result.url) {
+            onImageChange(result.url);
+         } else {
+            throw new Error('No URL returned from storage');
+         }
+      } catch (error) {
+         console.error('Upload error:', error);
+         // Fallback to base64 if upload fails
+         if (previewUrl) {
+            onImageChange(previewUrl);
+         }
+         alert('Image upload to cloud failed. Image saved locally as fallback.');
+      } finally {
+         setIsUploading(false);
       }
    };
+
+   const displayImage = previewUrl || currentImage;
 
    return (
       <div className={className}>
@@ -39,24 +93,33 @@ const ImageUploader: React.FC<{
          <div className="flex gap-6 items-start">
             <div
                className={`w-32 ${aspectRatio} bg-cream/50 border border-earth/10 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity rounded-sm shadow-sm flex-shrink-0 relative group`}
-               onClick={() => fileInputRef.current?.click()}
+               onClick={() => !isUploading && fileInputRef.current?.click()}
             >
-               {currentImage ? (
-                  <img src={currentImage} alt="Preview" className="w-full h-full object-cover" />
+               {isUploading ? (
+                  <Loader2 className="w-6 h-6 text-bronze animate-spin" />
+               ) : displayImage ? (
+                  <img src={displayImage} alt="Preview" className="w-full h-full object-cover" />
                ) : (
                   <ImageIcon className="w-8 h-8 text-earth/20" />
                )}
-               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <Upload className="w-6 h-6 text-white drop-shadow-md" />
-               </div>
+               {!isUploading && (
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                     <Upload className="w-6 h-6 text-white drop-shadow-md" />
+                  </div>
+               )}
             </div>
             <div className="flex-1 space-y-3 pt-2">
                <div className="flex flex-col gap-2">
                   <button
-                     onClick={() => fileInputRef.current?.click()}
-                     className="w-full sm:w-auto text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 bg-white border border-earth/10 px-4 py-3 hover:bg-earth hover:text-white transition-colors shadow-sm"
+                     onClick={() => !isUploading && fileInputRef.current?.click()}
+                     disabled={isUploading}
+                     className="w-full sm:w-auto text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 bg-white border border-earth/10 px-4 py-3 hover:bg-earth hover:text-white transition-colors shadow-sm disabled:opacity-50"
                   >
-                     <Upload className="w-3 h-3" /> Upload Photo from Computer
+                     {isUploading ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</>
+                     ) : (
+                        <><Upload className="w-3 h-3" /> Upload Photo from Computer</>
+                     )}
                   </button>
                   <input
                      type="file"
