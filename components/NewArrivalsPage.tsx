@@ -158,11 +158,6 @@ export const NewArrivalsPage: React.FC = () => {
             {/* Hero */}
             <div className="text-center px-6 mb-20">
                 <FadeIn>
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <Sparkles className="w-4 h-4 text-bronze/60" />
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-bronze">Fresh Finds</p>
-                        <Sparkles className="w-4 h-4 text-bronze/60" />
-                    </div>
                     <h1 className="font-serif text-5xl md:text-7xl text-earth mb-6">New Arrivals</h1>
                     <p className="font-sans text-earth/60 text-sm max-w-lg mx-auto leading-relaxed">
                         The latest additions to our curated collection — handpicked with love for your home, your wardrobe, and your little ones.
