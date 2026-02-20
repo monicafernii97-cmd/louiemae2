@@ -6,6 +6,7 @@ import { NavLink } from './types';
 import { HomePage } from './components/HomePage';
 import { StoryPage } from './components/StoryPage';
 import { BlogPage } from './components/BlogPage';
+import { BlogPostView } from './components/BlogPostView';
 import { AdminPage } from './components/AdminPage';
 import { DynamicPage } from './components/DynamicPage';
 import { StorePage } from './components/StorePage';
@@ -125,6 +126,7 @@ const AppContent = () => {
 
       if (baseHash === '#admin') setActivePage('admin');
       else if (baseHash === '#blog') setActivePage('blog');
+      else if (baseHash.startsWith('#blog/')) setActivePage(baseHash);
       else if (baseHash === '#story') setActivePage('story');
       else if (baseHash === '#shop') setActivePage('shop');
       else if (baseHash === '#aliexpress-test') setActivePage('aliexpress-test');
@@ -153,6 +155,7 @@ const AppContent = () => {
     const [baseHash] = href.split('?');
     if (baseHash === '#story') setActivePage('story');
     else if (baseHash === '#blog') setActivePage('blog');
+    else if (baseHash.startsWith('#blog/')) setActivePage(baseHash);
     else if (baseHash === '#admin') setActivePage('admin');
     else if (baseHash === '#shop') setActivePage('shop');
     else if (baseHash.startsWith('#pages/')) setActivePage(baseHash);
@@ -224,6 +227,10 @@ const AppContent = () => {
 
   if (activePage === 'admin') CurrentComponent = AdminPage;
   else if (activePage === 'blog') CurrentComponent = BlogPage;
+  else if (activePage.startsWith('#blog/')) {
+    const postId = activePage.replace('#blog/', '');
+    CurrentComponent = () => <BlogPostView postId={postId} />;
+  }
   else if (activePage === 'story') CurrentComponent = StoryPage;
   else if (activePage === 'shop') CurrentComponent = ShopLandingPage;
   else if (activePage === 'aliexpress-test') CurrentComponent = AliExpressTest;
