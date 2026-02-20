@@ -94,8 +94,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
     return (
         <div className="border border-earth/10 rounded-xl overflow-hidden bg-white shadow-sm">
-            {/* Toolbar */}
-            <div className="bg-cream/60 border-b border-earth/10 px-3 py-2 flex flex-wrap items-center gap-0.5">
+            {/* Toolbar — sticky so it floats when scrolling long posts */}
+            <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-sm border-b border-earth/10 px-3 py-2 flex flex-wrap items-center gap-0.5 shadow-sm">
 
                 {/* Text Style Group */}
                 <ToolbarButton

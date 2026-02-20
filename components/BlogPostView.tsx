@@ -102,9 +102,16 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                 {/* Post Content — rendered as rich HTML */}
                 <FadeIn delay={200}>
                     <div
-                        className="prose-blog font-serif text-lg text-earth leading-relaxed mb-16"
+                        className="prose-blog font-serif text-lg text-earth leading-relaxed mb-12"
                         dangerouslySetInnerHTML={{ __html: post.content }}
                     />
+
+                    {/* Automatic Signature */}
+                    <div className="mt-16 mb-16 flex flex-col items-start">
+                        <div className="h-px w-12 bg-bronze/20 mb-6" />
+                        <p className="font-serif text-earth/50 text-lg italic leading-relaxed">simply,</p>
+                        <p className="font-serif text-earth/70 text-2xl italic mt-1">mae</p>
+                    </div>
                 </FadeIn>
 
                 {/* Footer */}
