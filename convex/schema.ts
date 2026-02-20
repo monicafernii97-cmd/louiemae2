@@ -16,6 +16,7 @@ export default defineSchema({
         collection: v.string(),
         isNew: v.optional(v.boolean()),
         inStock: v.optional(v.boolean()),
+        publishedAt: v.optional(v.string()),
         // Customer-facing variants (sizes, colors, etc.)
         variants: v.optional(v.array(v.object({
             id: v.string(),

@@ -17,6 +17,7 @@ export interface Product {
   cjSourcingStatus?: 'pending' | 'approved' | 'rejected' | 'none';
   cjVariantId?: string;
   cjSku?: string;
+  publishedAt?: string; // ISO date string — used for 30-day auto-expire on New Arrivals
 }
 
 export interface Category {

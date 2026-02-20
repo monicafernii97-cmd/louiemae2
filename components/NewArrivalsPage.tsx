@@ -127,23 +127,31 @@ const CollectionRow: React.FC<{
 export const NewArrivalsPage: React.FC = () => {
     const { products } = useSite();
 
-    // Get newest products per collection — prioritize isNew flag, then most recent
+    // Get newest products per collection — auto-expire after 30 days
     const collectionProducts = useMemo(() => {
         const result: Record<string, Product[]> = {};
+        const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
         COLLECTIONS.forEach(col => {
             const colProducts = products.filter(p => p.collection === col.id);
 
-            // First grab all marked as new
-            const newProducts = colProducts.filter(p => p.isNew);
+            // Filter to products published within last 30 days, or marked isNew (legacy fallback)
+            const newArrivals = colProducts.filter(p => {
+                if (p.publishedAt) {
+                    return new Date(p.publishedAt).getTime() > thirtyDaysAgo;
+                }
+                // Legacy products without publishedAt — fall back to isNew flag
+                return p.isNew === true;
+            });
 
-            // Then fill with recent products (sorted by ID descending as proxy for recency)
-            const others = colProducts
-                .filter(p => !p.isNew)
-                .sort((a, b) => b.id.localeCompare(a.id));
+            // Sort by publish date (newest first), then by name for consistency
+            newArrivals.sort((a, b) => {
+                const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+                const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+                return dateB - dateA;
+            });
 
-            // Combine: new first, then recent, up to 12 per collection
-            result[col.id] = [...newProducts, ...others].slice(0, 12);
+            result[col.id] = newArrivals.slice(0, 12);
         });
 
         return result;

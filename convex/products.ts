@@ -52,7 +52,10 @@ export const create = mutation({
         if (!userId) {
             throw new Error("You must be logged in to create products");
         }
-        return await ctx.db.insert("products", args);
+        return await ctx.db.insert("products", {
+            ...args,
+            publishedAt: new Date().toISOString(),
+        });
     },
 });
 
