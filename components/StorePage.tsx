@@ -359,7 +359,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                 <h1 className="font-serif text-5xl md:text-7xl text-earth drop-shadow-sm mb-4 mix-blend-multiply opacity-90">
                   {config.title}
                 </h1>
-                <p className="font-sans text-earth/80 text-xs md:text-sm uppercase tracking-[0.3em]">
+                <p className="font-sans text-earth/80 text-[10px] md:text-sm uppercase tracking-[0.3em] px-8 max-w-xs md:max-w-none mx-auto">
                   {config.subtitle}
                 </p>
               </FadeIn>
