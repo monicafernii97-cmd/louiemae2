@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { useSite } from '../contexts/BlogContext';
+import { RichTextEditor } from './RichTextEditor';
 import { useNewsletter } from '../contexts/NewsletterContext';
 import { FadeIn } from './FadeIn';
 import { Plus, Edit3, Trash2, LogOut, Save, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, Box, Shirt, Baby, Sofa, Gamepad2, Bed, Wand2, ChevronDown, List, Layers, Link as LinkIcon, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, TrendingUp, BarChart2, Package, Lock, ChevronLeft } from 'lucide-react';
@@ -1779,7 +1780,11 @@ export const AdminPage: React.FC = () => {
 
                      <div>
                         <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Content</label>
-                        <textarea value={editingPost.content} onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-64 font-serif text-lg leading-relaxed" />
+                        <RichTextEditor
+                           value={editingPost.content || ''}
+                           onChange={(html) => setEditingPost({ ...editingPost, content: html })}
+                           placeholder="Start writing your story..."
+                        />
                      </div>
 
                      <button onClick={handleSavePost} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors">Save Story</button>
