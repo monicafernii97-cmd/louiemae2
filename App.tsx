@@ -10,6 +10,7 @@ import { BlogPostView } from './components/BlogPostView';
 import { AdminPage } from './components/AdminPage';
 import { DynamicPage } from './components/DynamicPage';
 import { StorePage } from './components/StorePage';
+import { SupportPage } from './components/SupportPage';
 import { ShopLandingPage } from './components/ShopLandingPage';
 import { NewsletterPopup } from './components/NewsletterPopup';
 import { SiteProvider, useSite } from './contexts/BlogContext';
@@ -129,6 +130,7 @@ const AppContent = () => {
       else if (baseHash.startsWith('#blog/')) setActivePage(baseHash);
       else if (baseHash === '#story') setActivePage('story');
       else if (baseHash === '#shop') setActivePage('shop');
+      else if (baseHash.startsWith('#support')) setActivePage(fullHash);
       else if (baseHash === '#aliexpress-test') setActivePage('aliexpress-test');
       else if (baseHash === '#checkout/success') setActivePage('checkout-success');
       else if (baseHash === '#checkout/cancel') setActivePage('checkout-cancel');
@@ -158,6 +160,7 @@ const AppContent = () => {
     else if (baseHash.startsWith('#blog/')) setActivePage(baseHash);
     else if (baseHash === '#admin') setActivePage('admin');
     else if (baseHash === '#shop') setActivePage('shop');
+    else if (baseHash.startsWith('#support')) setActivePage(href);
     else if (baseHash.startsWith('#pages/')) setActivePage(baseHash);
     else if (baseHash.startsWith('#collection/')) setActivePage(href);
     else setActivePage('home');
@@ -236,6 +239,11 @@ const AppContent = () => {
   else if (activePage === 'aliexpress-test') CurrentComponent = AliExpressTest;
   else if (activePage === 'checkout-success') CurrentComponent = CheckoutSuccess;
   else if (activePage === 'checkout-cancel') CurrentComponent = CheckoutCancel;
+  else if (activePage.startsWith('#support')) {
+    const sectionMatch = activePage.match(/#support\/(.+)/);
+    const section = sectionMatch ? sectionMatch[1] : undefined;
+    CurrentComponent = () => <SupportPage section={section} />;
+  }
   else if (activePage.startsWith('#pages/')) {
     const slug = activePage.replace('#pages/', '');
     dynamicPageData = siteContent.customPages.find(p => p.slug === slug);
@@ -545,10 +553,10 @@ const AppContent = () => {
             <div>
               <h4 className="font-serif text-xl mb-6">Support</h4>
               <ul className="space-y-3 text-sm text-sand/70">
-                <li><a href="#" className="hover:text-white transition-colors">Shipping & Returns</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><button onClick={() => handleNavigation('#support/shipping')} className="hover:text-white transition-colors text-left">Shipping & Returns</button></li>
+                <li><button onClick={() => handleNavigation('#support/faq')} className="hover:text-white transition-colors text-left">FAQ</button></li>
+                <li><button onClick={() => handleNavigation('#support/contact')} className="hover:text-white transition-colors text-left">Contact Us</button></li>
+                <li><button onClick={() => handleNavigation('#support/privacy')} className="hover:text-white transition-colors text-left">Privacy Policy</button></li>
               </ul>
             </div>
             <div>
