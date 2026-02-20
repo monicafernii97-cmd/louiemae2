@@ -332,11 +332,27 @@ export const HomePage: React.FC = () => {
                   onClick={() => navigateTo(`#collection/kids?cat=${encodeURIComponent(cat.title)}`)}
                   className="w-full h-full relative"
                 >
-                  <img
-                    src={cat.image}
-                    alt={cat.title}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  />
+                  {/* Mobile-only override for Girls category */}
+                  {cat.id === 'girls' ? (
+                    <>
+                      <img
+                        src="/images/brand/girls-dress1.png"
+                        alt={cat.title}
+                        className="md:hidden w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      />
+                      <img
+                        src={cat.image}
+                        alt={cat.title}
+                        className="hidden md:block w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      />
+                    </>
+                  ) : (
+                    <img
+                      src={cat.image}
+                      alt={cat.title}
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    />
+                  )}
 
                   {/* Overlay Gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
