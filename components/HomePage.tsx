@@ -384,7 +384,7 @@ export const HomePage: React.FC = () => {
             <h2 className="font-serif text-6xl md:text-8xl text-earth leading-none">Louie Mae</h2>
           </FadeIn>
 
-          <FadeIn delay={200} className="w-full max-w-4xl overflow-hidden rounded-sm shadow-lg">
+          <FadeIn delay={200} className="w-full max-w-4xl overflow-hidden rounded-2xl shadow-lg">
             <img
               src={home.brand.image}
               alt="Louie Mae Signature Interior"
