@@ -11,6 +11,7 @@ import { AdminPage } from './components/AdminPage';
 import { DynamicPage } from './components/DynamicPage';
 import { StorePage } from './components/StorePage';
 import { SupportPage } from './components/SupportPage';
+import { NewArrivalsPage } from './components/NewArrivalsPage';
 import { ShopLandingPage } from './components/ShopLandingPage';
 import { NewsletterPopup } from './components/NewsletterPopup';
 import { SiteProvider, useSite } from './contexts/BlogContext';
@@ -130,6 +131,7 @@ const AppContent = () => {
       else if (baseHash.startsWith('#blog/')) setActivePage(baseHash);
       else if (baseHash === '#story') setActivePage('story');
       else if (baseHash === '#shop') setActivePage('shop');
+      else if (baseHash === '#new-arrivals') setActivePage('new-arrivals');
       else if (baseHash.startsWith('#support')) setActivePage(fullHash);
       else if (baseHash === '#aliexpress-test') setActivePage('aliexpress-test');
       else if (baseHash === '#checkout/success') setActivePage('checkout-success');
@@ -160,6 +162,7 @@ const AppContent = () => {
     else if (baseHash.startsWith('#blog/')) setActivePage(baseHash);
     else if (baseHash === '#admin') setActivePage('admin');
     else if (baseHash === '#shop') setActivePage('shop');
+    else if (baseHash === '#new-arrivals') setActivePage('new-arrivals');
     else if (baseHash.startsWith('#support')) setActivePage(href);
     else if (baseHash.startsWith('#pages/')) setActivePage(baseHash);
     else if (baseHash.startsWith('#collection/')) setActivePage(href);
@@ -236,6 +239,7 @@ const AppContent = () => {
   }
   else if (activePage === 'story') CurrentComponent = StoryPage;
   else if (activePage === 'shop') CurrentComponent = ShopLandingPage;
+  else if (activePage === 'new-arrivals') CurrentComponent = NewArrivalsPage;
   else if (activePage === 'aliexpress-test') CurrentComponent = AliExpressTest;
   else if (activePage === 'checkout-success') CurrentComponent = CheckoutSuccess;
   else if (activePage === 'checkout-cancel') CurrentComponent = CheckoutCancel;
@@ -544,7 +548,8 @@ const AppContent = () => {
             <div>
               <h4 className="font-serif text-xl mb-6">Shop</h4>
               <ul className="space-y-3 text-sm text-sand/70">
-                <li><button onClick={() => handleNavigation('#shop')} className="hover:text-white transition-colors text-left">New Arrivals</button></li>
+                <li><button onClick={() => handleNavigation('#new-arrivals')} className="hover:text-white transition-colors text-left">New Arrivals</button></li>
+                <li><button onClick={() => handleNavigation('#collection/fashion')} className="hover:text-white transition-colors text-left">Women's</button></li>
                 <li><button onClick={() => handleNavigation('#collection/furniture')} className="hover:text-white transition-colors text-left">Furniture</button></li>
                 <li><button onClick={() => handleNavigation('#collection/decor')} className="hover:text-white transition-colors text-left">Decor</button></li>
                 <li><button onClick={() => handleNavigation('#collection/kids')} className="hover:text-white transition-colors text-left">Kids</button></li>
