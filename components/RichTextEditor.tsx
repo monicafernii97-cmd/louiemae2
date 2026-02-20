@@ -93,9 +93,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     const iconSize = 15;
 
     return (
-        <div className="border border-earth/10 rounded-xl overflow-hidden bg-white shadow-sm">
+        <div className="border border-earth/10 rounded-xl bg-white shadow-sm">
             {/* Toolbar — sticky so it floats when scrolling long posts */}
-            <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-sm border-b border-earth/10 px-3 py-2 flex flex-wrap items-center gap-0.5 shadow-sm">
+            <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-sm border-b border-earth/10 px-3 py-2 flex flex-wrap items-center gap-0.5 shadow-sm rounded-t-xl">
 
                 {/* Text Style Group */}
                 <ToolbarButton
