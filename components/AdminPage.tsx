@@ -712,17 +712,17 @@ export const AdminPage: React.FC = () => {
          </aside>
 
          {/* Main Content Area */}
-         <main className="ml-0 md:ml-80 flex-1 p-4 md:p-8 pt-18 md:pt-8 h-screen overflow-y-auto no-scrollbar relative">
+         <main className="ml-0 md:ml-80 flex-1 p-4 md:p-8 pt-24 md:pt-8 h-screen overflow-y-auto no-scrollbar relative">
 
             {/* DASHBOARD VIEW */}
             {activeTab === 'dashboard' && (
                <FadeIn>
                   {/* Premium Header */}
-                  <div className="mb-10 md:mb-16 relative">
-                     <div className="absolute -left-10 -top-10 w-40 h-40 bg-bronze/10 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob" />
-                     <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-4 block font-medium relative z-10 pl-1">Executive Overview</span>
-                     <h1 className="font-serif text-3xl md:text-5xl text-earth relative z-10 tracking-tight">
-                        Welcome Back, <span className="italic text-bronze/80">Monica.</span>
+                  <div className="mb-10 md:mb-16 relative mt-2 md:mt-0">
+                     <div className="absolute -left-4 md:-left-10 -top-4 md:-top-10 w-32 md:w-40 h-32 md:h-40 bg-bronze/10 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob" />
+                     <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-3 md:mb-4 block font-medium relative z-10 pl-1">Executive Overview</span>
+                     <h1 className="font-serif text-4xl md:text-5xl text-earth relative z-10 tracking-tight leading-tight md:leading-tight">
+                        Welcome Back,<br className="md:hidden" /> <span className="italic text-bronze/80">Monica.</span>
                      </h1>
                   </div>
 
@@ -732,7 +732,7 @@ export const AdminPage: React.FC = () => {
                      {/* Products Card */}
                      <div
                         onClick={() => { setActiveTab('products'); setFilterCollection('all'); setFilterCategory(null); }}
-                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
                            <ShoppingBag className="w-24 h-24 rotate-12" />
@@ -750,7 +750,7 @@ export const AdminPage: React.FC = () => {
                      {/* Collections Card */}
                      <div
                         onClick={() => setActiveTab('structure')}
-                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
                            <Layers className="w-24 h-24 rotate-12" />
@@ -768,7 +768,7 @@ export const AdminPage: React.FC = () => {
                      {/* Pages Card */}
                      <div
                         onClick={() => setActiveTab('pages')}
-                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
                            <Layout className="w-24 h-24 rotate-12" />
@@ -786,7 +786,7 @@ export const AdminPage: React.FC = () => {
 
                   {/* Quick Actions Row */}
                   <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                     <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-earth text-cream rounded-2xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+                     <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-earth text-cream rounded-2xl p-4 md:p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative z-10 flex flex-col items-center text-center gap-3">
                            <div className="p-3 bg-white/10 rounded-full group-hover:scale-110 transition-transform duration-500"><Plus className="w-6 h-6" /></div>
@@ -794,21 +794,21 @@ export const AdminPage: React.FC = () => {
                         </div>
                      </button>
 
-                     <button onClick={handleCreateNewPost} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
+                     <button onClick={handleCreateNewPost} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-4 md:p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
                         <div className="relative z-10 flex flex-col items-center text-center gap-3">
                            <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><PenTool className="w-6 h-6 text-earth" /></div>
                            <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Write Journal</span>
                         </div>
                      </button>
 
-                     <button onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('campaigns'); handleCreateCampaign(); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
+                     <button onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('campaigns'); handleCreateCampaign(); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-4 md:p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
                         <div className="relative z-10 flex flex-col items-center text-center gap-3">
                            <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><Send className="w-6 h-6 text-earth" /></div>
                            <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Send Email</span>
                         </div>
                      </button>
 
-                     <button onClick={() => { setActiveTab('cj-settings'); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
+                     <button onClick={() => { setActiveTab('cj-settings'); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-4 md:p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
                         <div className="relative z-10 flex flex-col items-center text-center gap-3">
                            <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><Settings className="w-6 h-6 text-earth" /></div>
                            <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Integration</span>
