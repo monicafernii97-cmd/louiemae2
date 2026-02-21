@@ -82,17 +82,15 @@ export const HomePage: React.FC = () => {
       {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0 bg-black/20 z-10"></div>
-        {(isLoading || !heroImageReady) ? (
-          // Show skeleton/loading state while Convex data loads or image is being preloaded
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-earth/20 to-bronze/10 animate-pulse" />
-        ) : (
-          <img
-            key={home.hero.image}
-            src={home.hero.image}
-            alt="Interior"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-[20s] hover:scale-105"
-          />
-        )}
+        <img
+          key={home.hero.image || 'hero'}
+          src={home.hero.image}
+          alt="Interior"
+          loading="eager"
+          fetchPriority="high"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-[20s] hover:scale-105"
+          style={{ backgroundColor: '#d4c9b8' }}
+        />
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
           <FadeIn>
             <p className="text-white/90 text-sm md:text-base uppercase tracking-[0.3em] mb-6">{home.hero.pretitle}</p>
