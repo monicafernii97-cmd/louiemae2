@@ -244,9 +244,7 @@ const AppContent = () => {
   else if (activePage === 'checkout-success') CurrentComponent = CheckoutSuccess;
   else if (activePage === 'checkout-cancel') CurrentComponent = CheckoutCancel;
   else if (activePage.startsWith('#support')) {
-    const sectionMatch = activePage.match(/#support\/(.+)/);
-    const section = sectionMatch ? sectionMatch[1] : undefined;
-    CurrentComponent = () => <SupportPage section={section} />;
+    // Don't set CurrentComponent — SupportPage is rendered directly below
   }
   else if (activePage.startsWith('#pages/')) {
     const slug = activePage.replace('#pages/', '');
@@ -533,7 +531,11 @@ const AppContent = () => {
       />
 
       {/* Main Content Area */}
-      <CurrentComponent />
+      {activePage.startsWith('#support') ? (
+        <SupportPage section={activePage.match(/#support\/(.+)/)?.[1]} />
+      ) : (
+        <CurrentComponent />
+      )}
 
       {/* Footer (Hidden on Admin) */}
       {activePage !== 'admin' && (
