@@ -157,7 +157,15 @@ export const AdminPage: React.FC = () => {
    const [authFlow, setAuthFlow] = useState<'signIn' | 'signUp'>('signIn');
 
    // Navigation State
-   const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders' | 'import' | 'cj-settings'>('dashboard');
+   const [activeTab, setActiveTabState] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders' | 'import' | 'cj-settings'>(() => {
+      const saved = localStorage.getItem('admin-active-tab');
+      const validTabs = ['dashboard', 'journal', 'pages', 'products', 'structure', 'newsletter', 'orders', 'import', 'cj-settings'];
+      return (saved && validTabs.includes(saved) ? saved : 'dashboard') as any;
+   });
+   const setActiveTab = (tab: typeof activeTab) => {
+      setActiveTabState(tab);
+      localStorage.setItem('admin-active-tab', tab);
+   };
    const [newsletterSubTab, setNewsletterSubTab] = useState<'overview' | 'campaigns' | 'subscribers'>('overview');
    const [sidebarOpen, setSidebarOpen] = useState(false);
 
