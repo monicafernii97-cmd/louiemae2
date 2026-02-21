@@ -550,20 +550,20 @@ const AppContent = () => {
             <div>
               <h4 className="font-serif text-xl mb-6">Shop</h4>
               <ul className="space-y-3 text-sm text-sand/70">
-                <li><button onClick={() => handleNavigation('#new-arrivals')} className="hover:text-white transition-colors text-left">New Arrivals</button></li>
-                <li><button onClick={() => handleNavigation('#collection/fashion')} className="hover:text-white transition-colors text-left">Women's</button></li>
-                <li><button onClick={() => handleNavigation('#collection/furniture')} className="hover:text-white transition-colors text-left">Furniture</button></li>
-                <li><button onClick={() => handleNavigation('#collection/decor')} className="hover:text-white transition-colors text-left">Decor</button></li>
-                <li><button onClick={() => handleNavigation('#collection/kids')} className="hover:text-white transition-colors text-left">Kids</button></li>
+                <li><button onClick={() => handleNavigation('#new-arrivals')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">New Arrivals</button></li>
+                <li><button onClick={() => handleNavigation('#collection/fashion')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Women's</button></li>
+                <li><button onClick={() => handleNavigation('#collection/furniture')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Furniture</button></li>
+                <li><button onClick={() => handleNavigation('#collection/decor')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Decor</button></li>
+                <li><button onClick={() => handleNavigation('#collection/kids')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Kids</button></li>
               </ul>
             </div>
             <div>
               <h4 className="font-serif text-xl mb-6">Support</h4>
               <ul className="space-y-3 text-sm text-sand/70">
-                <li><button onClick={() => handleNavigation('#support/shipping')} className="hover:text-white transition-colors text-left">Shipping & Returns</button></li>
-                <li><button onClick={() => handleNavigation('#support/faq')} className="hover:text-white transition-colors text-left">FAQ</button></li>
-                <li><button onClick={() => handleNavigation('#support/contact')} className="hover:text-white transition-colors text-left">Contact Us</button></li>
-                <li><button onClick={() => handleNavigation('#support/privacy')} className="hover:text-white transition-colors text-left">Privacy Policy</button></li>
+                <li><button onClick={() => handleNavigation('#support/shipping')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Shipping & Returns</button></li>
+                <li><button onClick={() => handleNavigation('#support/faq')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">FAQ</button></li>
+                <li><button onClick={() => handleNavigation('#support/contact')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Contact Us</button></li>
+                <li><button onClick={() => handleNavigation('#support/privacy')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Privacy Policy</button></li>
               </ul>
             </div>
             <div>
