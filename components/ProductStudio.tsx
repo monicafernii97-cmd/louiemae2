@@ -55,40 +55,49 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 sm:p-8 animate-fade-in">
+        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-0 md:p-6 animate-fade-in">
             {/* Centered Modal Container */}
-            <div className="w-full max-w-6xl max-h-[90vh] bg-[#FAFAF9] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/60 animate-fade-in-up">
+            <div className="w-full h-full md:h-auto md:max-w-6xl md:max-h-[90vh] bg-[#FAFAF9] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/60 animate-fade-in-up">
 
                 {/* Header Section - Two Floors */}
                 <div className="shrink-0 flex flex-col bg-white/60 backdrop-blur-md z-20 shadow-sm">
 
                     {/* Floor 1: Identity (Clean Header) */}
-                    <div className="h-28 flex items-end justify-between px-10 pb-6 border-b border-earth/5 bg-white/40">
-                        <div className="flex flex-col gap-2">
+                    <div className="h-auto py-4 md:h-28 flex items-end justify-between px-4 md:px-10 pb-4 md:pb-6 border-b border-earth/5 bg-white/40">
+                        <div className="flex flex-col gap-1 md:gap-2 min-w-0">
                             <span className="text-[10px] uppercase tracking-[0.3em] text-bronze font-medium flex items-center gap-2">
                                 <span className="w-6 h-px bg-bronze/30"></span>
                                 The Atelier
                             </span>
-                            <h1 className="font-serif text-4xl text-earth tracking-tight max-w-2xl truncate leading-tight">
+                            <h1 className="font-serif text-2xl md:text-4xl text-earth tracking-tight max-w-2xl truncate leading-tight">
                                 {product.name || <span className="text-earth/20 italic">Untitled Creation</span>}
                             </h1>
                         </div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-earth/30 mb-1">
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-earth/30 mb-1 hidden md:block">
                             {step === 'review' ? 'Final Polish' : 'Drafting Mode'}
                         </div>
                     </div>
 
                     {/* Floor 2: Control Deck */}
-                    <div className="h-20 px-8 grid grid-cols-[1fr_auto_1fr] items-center gap-8 bg-[#FAFAF9]/80 border-b border-earth/5">
+                    <div className="h-auto py-3 md:h-20 px-4 md:px-8 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-8 bg-[#FAFAF9]/80 border-b border-earth/5">
 
                         {/* Left: Exit */}
-                        <div className="flex justify-start">
+                        <div className="flex justify-between md:justify-start items-center md:flex-1">
                             <button
                                 onClick={onClose}
-                                className="group flex items-center gap-3 text-earth/40 hover:text-red-900 transition-colors px-4 py-2 hover:bg-earth/5 rounded-full"
+                                className="group flex items-center gap-2 md:gap-3 text-earth/40 hover:text-red-900 transition-colors px-3 md:px-4 py-2 hover:bg-earth/5 rounded-full"
                             >
                                 <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
-                                <span className="text-[10px] uppercase tracking-widest font-medium group-hover:opacity-100 opacity-60">Close Studio</span>
+                                <span className="text-[10px] uppercase tracking-widest font-medium group-hover:opacity-100 opacity-60">Close</span>
+                            </button>
+                            {/* Save on mobile - inline with close */}
+                            <button
+                                onClick={() => onSave(product)}
+                                className="md:hidden group relative overflow-hidden bg-earth text-white px-5 py-2 rounded-full text-[10px] uppercase tracking-[0.15em] font-medium"
+                            >
+                                <span className="flex items-center gap-1.5">
+                                    <Send className="w-3 h-3" /> Save
+                                </span>
                             </button>
                         </div>
 
@@ -97,8 +106,8 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                             <StudioStepIndicator currentStep={step} />
                         </div>
 
-                        {/* Right: Save */}
-                        <div className="flex justify-end">
+                        {/* Right: Save (desktop) */}
+                        <div className="hidden md:flex justify-end flex-1">
                             <button
                                 onClick={() => onSave(product)}
                                 className="group relative overflow-hidden bg-earth text-white px-8 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
@@ -613,9 +622,9 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
     };
 
     return (
-        <div className="h-full flex animate-fade-in-up">
+        <div className="h-full flex flex-col md:flex-row animate-fade-in-up">
             {/* Editor Side */}
-            <div className="w-1/2 p-12 border-r border-earth/10 flex flex-col h-full bg-white">
+            <div className="w-full md:w-1/2 p-4 md:p-12 border-b md:border-b-0 md:border-r border-earth/10 flex flex-col md:h-full bg-white">
                 <div className="flex items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <button onClick={onBack} className="text-earth/40 hover:text-earth p-2 rounded-full hover:bg-earth/5 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
@@ -652,7 +661,7 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
             </div>
 
             {/* Preview Side */}
-            <div className="w-1/2 bg-[#FAFAF9] p-12 flex items-center justify-center">
+            <div className="w-full md:w-1/2 bg-[#FAFAF9] p-6 md:p-12 flex items-center justify-center">
                 <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg border border-earth/5">
                     <h3 className="text-xs uppercase tracking-widest text-earth/40 mb-4 text-center">Live Preview</h3>
                     <div className="text-center space-y-4">
@@ -671,7 +680,7 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
 // --- Step 4: Review ---
 const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => void; onBack: () => void; onSave: () => void; siteContent: SiteContent }> = ({ product, onChange, onBack, onSave, siteContent }) => {
     return (
-        <div className="h-full flex flex-col items-center justify-center p-8 animate-fade-in-up">
+        <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in-up">
             <div className="w-full max-w-5xl space-y-10">
                 <div className="flex items-center gap-4 mb-4 justify-center">
                     <button onClick={onBack} className="text-earth/40 hover:text-earth p-2 rounded-full hover:bg-earth/5 transition-colors absolute left-8"><ArrowLeft className="w-6 h-6" /></button>

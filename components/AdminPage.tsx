@@ -159,6 +159,7 @@ export const AdminPage: React.FC = () => {
    // Navigation State
    const [activeTab, setActiveTab] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders' | 'import' | 'cj-settings'>('dashboard');
    const [newsletterSubTab, setNewsletterSubTab] = useState<'overview' | 'campaigns' | 'subscribers'>('overview');
+   const [sidebarOpen, setSidebarOpen] = useState(false);
 
    const [activePageEditor, setActivePageEditor] = useState<'home' | 'story' | string | null>(null);
    const [filterCollection, setFilterCollection] = useState<CollectionType | 'all'>('all');
@@ -526,6 +527,13 @@ export const AdminPage: React.FC = () => {
       );
    }
 
+   // Helper to switch tabs and close mobile sidebar
+   const switchTab = (tab: typeof activeTab, extra?: () => void) => {
+      setActiveTab(tab);
+      setSidebarOpen(false);
+      extra?.();
+   };
+
    // --- MAIN ADMIN INTERFACE ---
    return (
       <div className="min-h-screen bg-[#F5F2EB] relative overflow-hidden flex font-sans text-earth selection:bg-bronze/20">
@@ -536,8 +544,25 @@ export const AdminPage: React.FC = () => {
             <div className="absolute -bottom-8 left-20 w-[600px] h-[600px] bg-cream-dark/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-4000" />
          </div>
 
+         {/* Mobile Top Bar */}
+         <div className="fixed top-0 left-0 right-0 h-14 z-[60] md:hidden bg-earth/95 backdrop-blur-xl flex items-center justify-between px-4 border-b border-white/10">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 text-cream/80 hover:text-cream transition-colors">
+               <Menu className="w-6 h-6" />
+            </button>
+            <h2 className="font-serif text-xl text-cream italic">The Atelier</h2>
+            <div className="w-10" /> {/* spacer for centering */}
+         </div>
+
+         {/* Mobile Sidebar Backdrop */}
+         {sidebarOpen && (
+            <div
+               className="fixed inset-0 z-[190] bg-black/50 backdrop-blur-sm md:hidden"
+               onClick={() => setSidebarOpen(false)}
+            />
+         )}
+
          {/* Glassmorphic Sidebar */}
-         <aside className="w-72 fixed h-[96vh] top-[2vh] left-4 z-50 flex flex-col rounded-3xl overflow-hidden border border-white/40 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl bg-earth/95 text-cream transition-all duration-500">
+         <aside className={`w-72 fixed h-[96vh] top-[2vh] left-4 z-[200] flex flex-col rounded-3xl overflow-hidden border border-white/40 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl bg-earth/95 text-cream transition-all duration-500 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} md:translate-x-0`}>
             {/* Header */}
             <div className="p-8 border-b border-white/5 bg-white/5 relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
@@ -552,7 +577,7 @@ export const AdminPage: React.FC = () => {
             <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
                {/* Dashboard */}
                <button
-                  onClick={() => { setActiveTab('dashboard'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('dashboard', () => setActivePageEditor(null))}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'dashboard' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <Home className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'dashboard' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -562,7 +587,7 @@ export const AdminPage: React.FC = () => {
 
                {/* Newsletter */}
                <button
-                  onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('overview'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('newsletter', () => { setNewsletterSubTab('overview'); setActivePageEditor(null); })}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'newsletter' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <Mail className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'newsletter' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -571,7 +596,7 @@ export const AdminPage: React.FC = () => {
 
                {/* Orders */}
                <button
-                  onClick={() => { setActiveTab('orders'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('orders', () => setActivePageEditor(null))}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'orders' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <Package className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'orders' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -586,7 +611,7 @@ export const AdminPage: React.FC = () => {
 
                {/* Structure */}
                <button
-                  onClick={() => { setActiveTab('structure'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('structure', () => setActivePageEditor(null))}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'structure' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <Layers className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'structure' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -595,7 +620,7 @@ export const AdminPage: React.FC = () => {
 
                {/* Import */}
                <button
-                  onClick={() => { setActiveTab('import'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('import', () => setActivePageEditor(null))}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'import' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <Upload className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'import' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -604,7 +629,7 @@ export const AdminPage: React.FC = () => {
 
                {/* CJ Settings */}
                <button
-                  onClick={() => { setActiveTab('cj-settings'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('cj-settings', () => setActivePageEditor(null))}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'cj-settings' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <Settings className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'cj-settings' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -634,7 +659,7 @@ export const AdminPage: React.FC = () => {
                      <div className={`overflow-hidden transition-all duration-500 ease-in-out ${expandedCollections[collection.id] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                         <div className="pl-4 space-y-0.5 mt-1 ml-4 border-l border-white/5">
                            <button
-                              onClick={() => { setActiveTab('products'); setFilterCollection(collection.id); setFilterCategory(null); setIsEditingProduct(false); setActivePageEditor(null); }}
+                              onClick={() => switchTab('products', () => { setFilterCollection(collection.id); setFilterCategory(null); setIsEditingProduct(false); setActivePageEditor(null); })}
                               className={`w-full text-left px-3 py-2 text-[9px] uppercase tracking-[0.15em] rounded-r-lg transition-all hover:pl-5 duration-300 ${activeTab === 'products' && filterCollection === collection.id && !filterCategory ? 'text-bronze font-bold bg-white/5' : 'text-white/40 hover:text-white'}`}
                            >
                               View All
@@ -642,7 +667,7 @@ export const AdminPage: React.FC = () => {
                            {collection.subcategories.map(cat => (
                               <button
                                  key={cat.id}
-                                 onClick={() => { setActiveTab('products'); setFilterCollection(collection.id); setFilterCategory(cat.title); setIsEditingProduct(false); setActivePageEditor(null); }}
+                                 onClick={() => switchTab('products', () => { setFilterCollection(collection.id); setFilterCategory(cat.title); setIsEditingProduct(false); setActivePageEditor(null); })}
                                  className={`w-full text-left px-3 py-2 text-[9px] uppercase tracking-[0.15em] rounded-r-lg transition-all hover:pl-5 duration-300 ${activeTab === 'products' && filterCollection === collection.id && filterCategory === cat.title ? 'text-white font-bold bg-white/5' : 'text-white/40 hover:text-white'}`}
                               >
                                  {cat.title.replace(collection.title + ' ', '')}
@@ -660,7 +685,7 @@ export const AdminPage: React.FC = () => {
                </div>
 
                <button
-                  onClick={() => { setActiveTab('journal'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('journal', () => setActivePageEditor(null))}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'journal' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <BookOpen className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'journal' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -668,7 +693,7 @@ export const AdminPage: React.FC = () => {
                </button>
 
                <button
-                  onClick={() => { setActiveTab('pages'); setActivePageEditor(null); }}
+                  onClick={() => switchTab('pages', () => setActivePageEditor(null))}
                   className={`relative group w-full text-left px-5 py-3.5 text-xs uppercase tracking-[0.15em] flex items-center gap-4 rounded-xl transition-all mb-2 overflow-hidden ${activeTab === 'pages' ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                >
                   <Layout className={`w-4 h-4 transition-transform duration-500 ${activeTab === 'pages' ? 'scale-110 text-bronze' : 'group-hover:scale-110'}`} />
@@ -687,22 +712,22 @@ export const AdminPage: React.FC = () => {
          </aside>
 
          {/* Main Content Area */}
-         <main className="ml-80 flex-1 p-8 h-screen overflow-y-auto no-scrollbar relative">
+         <main className="ml-0 md:ml-80 flex-1 p-4 md:p-8 pt-18 md:pt-8 h-screen overflow-y-auto no-scrollbar relative">
 
             {/* DASHBOARD VIEW */}
             {activeTab === 'dashboard' && (
                <FadeIn>
                   {/* Premium Header */}
-                  <div className="mb-16 relative">
+                  <div className="mb-10 md:mb-16 relative">
                      <div className="absolute -left-10 -top-10 w-40 h-40 bg-bronze/10 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob" />
                      <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-4 block font-medium relative z-10 pl-1">Executive Overview</span>
-                     <h1 className="font-serif text-5xl text-earth relative z-10 tracking-tight">
+                     <h1 className="font-serif text-3xl md:text-5xl text-earth relative z-10 tracking-tight">
                         Welcome Back, <span className="italic text-bronze/80">Monica.</span>
                      </h1>
                   </div>
 
                   {/* Glass Metric Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-10 md:mb-16">
 
                      {/* Products Card */}
                      <div
@@ -760,7 +785,7 @@ export const AdminPage: React.FC = () => {
                   </div>
 
                   {/* Quick Actions Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                      <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-earth text-cream rounded-2xl p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative z-10 flex flex-col items-center text-center gap-3">
@@ -840,12 +865,12 @@ export const AdminPage: React.FC = () => {
             {/* NEWSLETTER TAB */}
             {activeTab === 'newsletter' && (
                <FadeIn>
-                  <div className="mb-12 border-b border-earth/10 pb-6 flex justify-between items-end">
+                  <div className="mb-12 border-b border-earth/10 pb-6 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-end">
                      <div>
                         <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Communications</span>
                         <h1 className="font-serif text-4xl text-earth">The Mae Letter</h1>
                      </div>
-                     <div className="flex gap-4">
+                     <div className="flex flex-wrap gap-2 md:gap-4">
                         <button
                            onClick={() => setNewsletterSubTab('overview')}
                            className={`px-4 py-2 text-xs uppercase tracking-widest ${newsletterSubTab === 'overview' ? 'text-earth border-b border-earth' : 'text-earth/40 hover:text-earth'}`}
@@ -890,8 +915,8 @@ export const AdminPage: React.FC = () => {
 
                   {/* NEWSLETTER: SUBSCRIBERS */}
                   {newsletterSubTab === 'subscribers' && (
-                     <div className="bg-white border border-earth/5">
-                        <table className="w-full text-left text-sm text-earth/70">
+                     <div className="overflow-x-auto bg-white border border-earth/5">
+                        <table className="w-full text-left text-sm text-earth/70 min-w-[500px]">
                            <thead className="bg-cream/50 text-xs uppercase tracking-widest text-earth/40">
                               <tr>
                                  <th className="px-6 py-4 font-normal">Email</th>
@@ -1033,7 +1058,7 @@ export const AdminPage: React.FC = () => {
                            <h2 className="font-serif text-3xl text-earth mb-8">{editingCollection.id ? 'Edit Collection' : 'New Collection'}</h2>
 
                            <div className="space-y-6">
-                              <div className="grid grid-cols-2 gap-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                  <div>
                                     <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">ID (URL Slug)</label>
                                     <input type="text" value={editingCollection.id} onChange={(e) => setEditingCollection({ ...editingCollection, id: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-mono text-sm" placeholder="e.g. furniture" />
@@ -1114,7 +1139,7 @@ export const AdminPage: React.FC = () => {
                         </div>
                      ) : (
                         filteredProducts.map(product => (
-                           <div key={product.id} className="bg-white p-4 border border-earth/5 flex gap-6 items-center group hover:shadow-md transition-all">
+                           <div key={product.id} className="bg-white p-4 border border-earth/5 flex gap-4 md:gap-6 items-center group hover:shadow-md transition-all">
                               <div className="w-16 h-16 bg-cream flex-shrink-0">
                                  <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                               </div>
@@ -1126,7 +1151,7 @@ export const AdminPage: React.FC = () => {
                                     <span className={product.inStock ? 'text-green-700' : 'text-red-700'}>{product.inStock ? 'In Stock' : 'Out of Stock'}</span>
                                  </div>
                               </div>
-                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
                                  <button onClick={() => handleEditProduct(product)} className="p-2 hover:bg-earth/10 rounded-full"><Edit3 className="w-4 h-4 text-earth" /></button>
                                  <button onClick={() => handleDeleteProduct(product.id)} className="p-2 hover:bg-red-50 text-red-800 rounded-full"><Trash2 className="w-4 h-4" /></button>
                               </div>
@@ -1146,8 +1171,8 @@ export const AdminPage: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 gap-6">
                      {posts.map(post => (
-                        <div key={post.id} className="bg-white p-6 border border-earth/5 flex gap-8 items-start group hover:shadow-md transition-all">
-                           <div className="w-32 aspect-[3/4] bg-cream flex-shrink-0"><img src={post.image} className="w-full h-full object-cover" /></div>
+                        <div key={post.id} className="bg-white p-4 md:p-6 border border-earth/5 flex gap-4 md:gap-8 items-start group hover:shadow-md transition-all">
+                           <div className="w-20 md:w-32 aspect-[3/4] bg-cream flex-shrink-0"><img src={post.image} className="w-full h-full object-cover" /></div>
                            <div className="flex-1">
                               <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-bronze mb-2"><span>{post.category}</span><span className="w-1 h-1 rounded-full bg-bronze/40"></span><span>{post.date}</span></div>
                               <h3 className="font-serif text-2xl text-earth mb-3">{post.title}</h3>
@@ -1171,7 +1196,7 @@ export const AdminPage: React.FC = () => {
                      <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Site Design</span><h1 className="font-serif text-4xl text-earth">Select Page to Edit</h1></div>
                      <button onClick={() => setShowPageGenerator(true)} className="bg-earth text-cream px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2"><Sparkles className="w-3 h-3" /> AI New Page</button>
                   </div>
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                      <div onClick={() => setActivePageEditor('home')} className="bg-white p-10 border border-earth/5 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col items-center text-center group"><div className="w-16 h-16 bg-cream rounded-full flex items-center justify-center mb-6 group-hover:bg-earth group-hover:text-cream transition-colors"><Home className="w-8 h-8 text-earth group-hover:text-cream" /></div><h3 className="font-serif text-2xl text-earth mb-2">Home Page</h3></div>
                      <div onClick={() => setActivePageEditor('story')} className="bg-white p-10 border border-earth/5 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col items-center text-center group"><div className="w-16 h-16 bg-cream rounded-full flex items-center justify-center mb-6 group-hover:bg-earth group-hover:text-cream transition-colors"><BookOpen className="w-8 h-8 text-earth group-hover:text-cream" /></div><h3 className="font-serif text-2xl text-earth mb-2">Our Story</h3></div>
                      {siteContent.customPages.map(page => (
@@ -1644,13 +1669,13 @@ export const AdminPage: React.FC = () => {
             {/* SECTION BUILDER MODAL */}
             {showSectionPicker && (
                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-                  <div className="bg-white w-full max-w-4xl p-8 rounded-2xl shadow-2xl relative animate-fade-in-up">
+                  <div className="bg-white w-full max-w-lg md:max-w-4xl p-6 md:p-8 rounded-2xl shadow-2xl relative animate-fade-in-up">
                      <button onClick={() => setShowSectionPicker(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
                      <div className="mb-8 text-center">
                         <span className="text-bronze text-xs uppercase tracking-[0.3em] block mb-2">Section Builder</span>
                         <h2 className="font-serif text-3xl text-earth">Choose Content Block</h2>
                      </div>
-                     <div className="grid grid-cols-3 gap-6">
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                         <button onClick={() => handleAddSection('text')} className="p-8 border border-earth/10 hover:border-earth/30 hover:bg-cream/30 transition-all text-center group">
                            <Type className="w-8 h-8 mx-auto mb-4 text-earth/60 group-hover:text-bronze" />
                            <h3 className="font-serif text-xl text-earth mb-1">Text Block</h3>
@@ -1744,15 +1769,15 @@ export const AdminPage: React.FC = () => {
          {/* POST EDITOR MODAL — rendered outside <main> to avoid z-10 stacking context clipping */}
          {isEditingPost && editingPost && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-               <div className="bg-white w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl shadow-2xl relative animate-fade-in-up">
+               <div className="bg-white w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] flex flex-col rounded-2xl shadow-2xl relative animate-fade-in-up">
                   {/* Sticky Header */}
-                  <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-earth/5 flex-shrink-0">
-                     <h2 className="font-serif text-3xl text-earth">{editingPost.id ? 'Edit Story' : 'New Story'}</h2>
+                  <div className="flex items-center justify-between px-4 md:px-8 pt-6 md:pt-8 pb-4 border-b border-earth/5 flex-shrink-0">
+                     <h2 className="font-serif text-2xl md:text-3xl text-earth">{editingPost.id ? 'Edit Story' : 'New Story'}</h2>
                      <button onClick={() => setIsEditingPost(false)} className="text-earth/30 hover:text-earth"><X className="w-6 h-6" /></button>
                   </div>
 
                   {/* Scrollable Content */}
-                  <div className="overflow-y-auto flex-1 px-8 py-6">
+                  <div className="overflow-y-auto flex-1 px-4 md:px-8 py-6">
                      <div className="space-y-6">
                         <ImageUploader label="Cover Image" currentImage={editingPost.image} onImageChange={(val) => setEditingPost({ ...editingPost, image: val })} aspectRatio="aspect-[21/9]" />
 
@@ -1761,7 +1786,7 @@ export const AdminPage: React.FC = () => {
                            <input type="text" value={editingPost.title} onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-2xl" />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                            <div>
                               <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Category</label>
                               <select value={editingPost.category} onChange={(e) => setEditingPost({ ...editingPost, category: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10">
@@ -1867,7 +1892,7 @@ ${plainText.slice(0, 3000)}`,
                   </div>
 
                   {/* Sticky Save Button */}
-                  <div className="px-8 py-4 border-t border-earth/10 bg-white flex-shrink-0 rounded-b-2xl">
+                  <div className="px-4 md:px-8 py-4 border-t border-earth/10 bg-white flex-shrink-0 rounded-b-2xl">
                      <button onClick={handleSavePost} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors rounded-lg">Save Story</button>
                   </div>
                </div>

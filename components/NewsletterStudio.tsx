@@ -43,12 +43,12 @@ export const NewsletterStudio: React.FC<NewsletterStudioProps> = ({ isOpen, onCl
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-[500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-0 md:p-6 animate-fade-in">
             {/* Centered Modal Container */}
-            <div className="bg-[#FAFAF9] w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/10 animate-fade-in-up">
+            <div className="bg-[#FAFAF9] w-full h-full md:h-auto md:max-w-5xl md:max-h-[90vh] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border border-white/10 animate-fade-in-up">
 
                 {/* Top Bar: Navigation & Progress */}
-                <div className="shrink-0 h-16 border-b border-earth/10 flex items-center justify-between px-6 bg-white/50 backdrop-blur-sm z-20">
+                <div className="shrink-0 h-auto py-3 md:h-16 border-b border-earth/10 flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 gap-2 md:gap-0 bg-white/50 backdrop-blur-sm z-20">
                     <div className="flex items-center gap-4">
                         <button onClick={onClose} className="p-2 hover:bg-earth/5 rounded-full transition-colors">
                             <X className="w-5 h-5 text-earth/60" />
@@ -62,7 +62,7 @@ export const NewsletterStudio: React.FC<NewsletterStudioProps> = ({ isOpen, onCl
                     </div>
 
                     {/* Step Indicator */}
-                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                    <div className="md:absolute md:left-1/2 md:-translate-x-1/2 w-full md:w-auto flex justify-center">
                         <StudioStepIndicator currentStep={step} />
                     </div>
 
@@ -134,7 +134,7 @@ const StudioStepIndicator: React.FC<{ currentStep: StudioStep }> = ({ currentSte
     const currentIndex = stepOrder.indexOf(currentStep);
 
     return (
-        <div className="flex items-center bg-earth/5 rounded-full p-1 hidden md:flex">
+        <div className="flex items-center bg-earth/5 rounded-full p-1">
             {steps.map((s, index) => {
                 const isActive = s.id === currentStep;
                 const isCompleted = index < currentIndex;
@@ -146,7 +146,7 @@ const StudioStepIndicator: React.FC<{ currentStep: StudioStep }> = ({ currentSte
                             }`}
                     >
                         <s.icon className={`w-4 h-4 ${isActive ? 'text-bronze' : ''}`} />
-                        <span className={`text-xs font-medium tracking-wide ${isActive ? 'block' : 'hidden lg:block'}`}>
+                        <span className={`text-xs font-medium tracking-wide ${isActive ? 'block' : 'hidden md:block'}`}>
                             {s.label}
                         </span>
                     </div>
@@ -180,7 +180,7 @@ const StrategyStep: React.FC<{ campaign: Partial<EmailCampaign>, onChange: (c: a
                     <div className="bg-white p-8 rounded-xl shadow-sm border border-earth/5 space-y-8">
                         <div>
                             <label className="block text-xs uppercase tracking-widest text-earth/40 mb-3">Campaign Objective</label>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {['Newsletter', 'Promotion', 'Update'].map(type => (
                                     <button
                                         key={type}
@@ -347,10 +347,10 @@ const DesignStep: React.FC<{ campaign: Partial<EmailCampaign>, onChange: (c: any
     };
 
     return (
-        <div className={`h-full flex animate-fade-in transition-all duration-500 ${zenMode ? 'bg-[#FAFAF9]' : ''}`}>
+        <div className={`h-full flex flex-col md:flex-row animate-fade-in transition-all duration-500 ${zenMode ? 'bg-[#FAFAF9]' : ''}`}>
             {/* Editor */}
-            <div className={`${zenMode ? 'w-full max-w-3xl mx-auto' : 'w-1/2 border-r border-earth/10'} h-full overflow-y-auto transition-all duration-500 custom-scrollbar`}>
-                <div className={`p-12 space-y-8 ${zenMode ? 'py-12' : ''}`}>
+            <div className={`${zenMode ? 'w-full max-w-3xl mx-auto' : 'w-full md:w-1/2 border-b md:border-b-0 md:border-r border-earth/10'} md:h-full overflow-y-auto transition-all duration-500 custom-scrollbar`}>
+                <div className={`p-4 md:p-12 space-y-8 ${zenMode ? 'py-12' : ''}`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <button onClick={onBack} className="text-earth/40 hover:text-earth"><ArrowLeft className="w-5 h-5" /></button>
@@ -393,7 +393,7 @@ const DesignStep: React.FC<{ campaign: Partial<EmailCampaign>, onChange: (c: any
             </div>
 
             {/* Preview - Hidden in Zen Mode */}
-            <div className={`${zenMode ? 'w-0 opacity-0 overflow-hidden p-0' : 'w-1/2 p-12 opacity-100'} bg-earth/5 flex flex-col items-center justify-center relative transition-all duration-500 overflow-hidden h-full`}>
+            <div className={`${zenMode ? 'w-0 opacity-0 overflow-hidden p-0' : 'hidden md:flex w-full md:w-1/2 p-6 md:p-12 opacity-100'} bg-earth/5 flex-col items-center justify-center relative transition-all duration-500 overflow-hidden md:h-full`}>
                 <div className="absolute top-6 right-6 flex gap-2 bg-white/50 backdrop-blur-sm p-1 rounded-lg z-10">
                     <button
                         onClick={() => setPreviewDevice('mobile')}
@@ -451,7 +451,7 @@ const LaunchStep: React.FC<{ campaign: Partial<EmailCampaign>, onChange: (c: any
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-8 py-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 py-4">
                             <div>
                                 <span className="block text-xs uppercase tracking-widest text-earth/40 mb-1">Subject</span>
                                 <p className="font-serif text-xl">{campaign.subject}</p>

@@ -326,7 +326,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         if (!currentProduct) return <div>Error: Product not found</div>;
 
         return (
-            <div className="min-h-[80vh] flex flex-col items-center justify-center p-8 relative z-20">
+            <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 md:p-8 relative z-20">
                 <style>{`
                     .glass-panel {
                         background: rgba(255, 255, 255, 0.95);
@@ -339,7 +339,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 <FadeIn className="w-full max-w-6xl">
                     <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
                         {/* Header / Progress */}
-                        <div className="bg-cream/50 p-8 border-b border-earth/5 flex justify-between items-center relative overflow-hidden">
+                        <div className="bg-cream/50 p-4 md:p-8 border-b border-earth/5 flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-center relative overflow-hidden">
                             <div className="absolute top-0 left-0 bottom-0 bg-bronze/10 transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
                             <div className="relative z-10 flex items-center gap-4">
                                 <button
@@ -351,7 +351,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <div className="h-4 w-px bg-earth/10"></div>
                                 <span className="text-xl font-serif text-earth">Reviewing {reviewIndex + 1} of {selectedProducts.length}</span>
                             </div>
-                            <div className="relative z-10 flex gap-4">
+                            <div className="relative z-10 flex flex-wrap gap-2 md:gap-4">
                                 <button
                                     onClick={() => setReviewIndex(prev => Math.max(0, prev - 1))}
                                     disabled={reviewIndex === 0}
@@ -503,7 +503,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </div>
 
                                         {/* Pricing */}
-                                        <div className="grid grid-cols-2 gap-6 bg-cream/30 p-6 rounded-2xl border border-earth/5">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-cream/30 p-4 md:p-6 rounded-2xl border border-earth/5">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Your Price ($)</label>
                                                 <input
@@ -548,7 +548,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                                     {/* Variants Sidebar (if any) - CLICKABLE SELECTION */}
                                     {currentProduct.variants && currentProduct.variants.length > 0 && (
-                                        <div className="w-72 bg-white p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
+                                        <div className="w-full lg:w-72 bg-white p-4 md:p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">
                                                     Select Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
@@ -845,13 +845,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             <div className="relative z-10 space-y-12">
 
                 {/* Header Section */}
-                <div className="flex items-end justify-between border-b border-earth/10 pb-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-earth/10 pb-6 md:pb-8 gap-3">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <span className="w-8 h-[1px] bg-bronze inline-block"></span>
                             <span className="text-bronze text-[10px] uppercase tracking-[0.4em] font-bold">Global Sourcing</span>
                         </div>
-                        <h1 className="font-serif text-5xl text-earth tracking-tight">
+                        <h1 className="font-serif text-3xl md:text-5xl text-earth tracking-tight">
                             Import & <span className="text-bronze italic">Curate</span>
                         </h1>
                     </div>
@@ -859,7 +859,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                 {/* Hero Search Module */}
                 <FadeIn>
-                    <div className="glass-card rounded-[2rem] p-10 relative group transition-all duration-700 shadow-xl border border-white/50">
+                    <div className="glass-card rounded-[2rem] p-4 md:p-10 relative group transition-all duration-700 shadow-xl border border-white/50">
                         {/* Direct Link Import - Enhanced */}
                         <FadeIn delay={0.2} className="relative z-20">
                             <div className="glass-card max-w-2xl mx-auto rounded-2xl p-6 border border-white/50 relative overflow-hidden">
@@ -888,7 +888,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </label>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col md:flex-row gap-2">
                                         <input
                                             type="text"
                                             value={importUrl}
