@@ -292,3 +292,29 @@ export const getProductsWithCjVariants = query({
         return products.filter(p => p.cjVariants && p.cjVariants.length > 0);
     },
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MIGRATION: Fix broken product images
+// ═══════════════════════════════════════════════════════════════════════════
+export const fixBrokenImages = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const allProducts = await ctx.db.query("products").collect();
+        let fixed = 0;
+
+        for (const product of allProducts) {
+            // Fix: Any product with the dead Unsplash URL (photo-1612196808214)
+            const hasBrokenUrl = product.images?.some((img: string) =>
+                img.includes("photo-1612196808214")
+            );
+            if (hasBrokenUrl) {
+                await ctx.db.patch(product._id, {
+                    images: ["/images/brand/rustic-vase.png"],
+                });
+                fixed++;
+            }
+        }
+
+        return { fixed };
+    },
+});
