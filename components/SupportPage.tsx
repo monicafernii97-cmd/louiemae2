@@ -100,12 +100,12 @@ export const SupportPage: React.FC<SupportPageProps> = ({ section }) => {
     };
 
     return (
-        <div className="bg-cream min-h-screen pt-24 pb-20">
+        <div className="bg-cream min-h-screen pt-32 md:pt-40 pb-20">
 
             {/* Hero */}
             <div className="text-center px-6 mb-16">
                 <FadeIn>
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-bronze mb-4">We're Here For You</p>
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-bronze mb-5 mx-auto">We're Here For You</p>
                     <h1 className="font-serif text-5xl md:text-7xl text-earth mb-6">Support</h1>
                     <p className="font-sans text-earth/60 text-sm max-w-lg mx-auto leading-relaxed">
                         Everything you need to know about shopping with Louie Mae — from shipping and returns to getting in touch.
