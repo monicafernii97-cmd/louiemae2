@@ -30,6 +30,9 @@ export const FadeIn: React.FC<FadeInProps> = ({
     }
   }, [mobileFast]);
 
+  // On mobile with mobileFast, use near-zero threshold so even a tiny scroll triggers the fade
+  const effectiveThreshold = (mobileFast && isMobile) ? 0.005 : threshold;
+
   useEffect(() => {
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -38,7 +41,7 @@ export const FadeIn: React.FC<FadeInProps> = ({
           if (domRef.current) observer.unobserve(domRef.current);
         }
       });
-    }, { threshold });
+    }, { threshold: effectiveThreshold });
 
     const currentRef = domRef.current;
     if (currentRef) observer.observe(currentRef);
@@ -46,7 +49,7 @@ export const FadeIn: React.FC<FadeInProps> = ({
     return () => {
       if (currentRef) observer.unobserve(currentRef);
     };
-  }, [threshold]);
+  }, [effectiveThreshold]);
 
   // Mobile fast: quick 300ms opacity fade, no vertical shift
   const useFastFade = mobileFast && isMobile;
@@ -55,8 +58,8 @@ export const FadeIn: React.FC<FadeInProps> = ({
     <div
       ref={domRef}
       className={`ease-out transform ${useFastFade
-          ? `transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`
-          : `transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`
+        ? `transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`
+        : `transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`
         } ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
