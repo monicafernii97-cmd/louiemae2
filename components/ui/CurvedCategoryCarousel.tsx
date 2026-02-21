@@ -175,7 +175,7 @@ export const CurvedCategoryCarousel: React.FC<CurvedCategoryCarouselProps> = ({
 
                                 {/* Text Content - Centered */}
                                 <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6 md:p-8">
-                                    <h3 className="font-serif text-2xl md:text-3xl text-white font-light tracking-wide mb-2">
+                                    <h3 className="font-serif text-2xl md:text-3xl text-white font-light tracking-wide mb-2 whitespace-nowrap">
                                         {cat.title}
                                     </h3>
                                     <p className="text-white/70 text-xs md:text-sm uppercase tracking-[0.2em]">
