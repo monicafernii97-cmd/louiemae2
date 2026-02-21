@@ -61,7 +61,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
 
             {/* Post Header */}
             <article className="max-w-3xl mx-auto px-6 md:px-8">
-                <FadeIn>
+                <>
                     <div className="text-center mb-8 md:mb-12">
                         {/* Category & Meta */}
                         <div className="flex items-center justify-center gap-4 mb-6 text-bronze/80 text-[10px] uppercase tracking-widest font-sans">
@@ -97,10 +97,10 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                             <div className="h-px w-16 bg-earth/10" />
                         </div>
                     </div>
-                </FadeIn>
+                </>
 
                 {/* Post Content — rendered as rich HTML */}
-                <FadeIn>
+                <>
                     <div
                         className="prose-blog font-serif text-lg text-earth leading-relaxed mb-12"
                         dangerouslySetInnerHTML={{ __html: post.content }}
@@ -112,10 +112,10 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                         <p className="font-serif text-earth/50 text-lg italic leading-relaxed">simply,</p>
                         <p className="font-serif text-earth/70 text-2xl italic mt-1">mae</p>
                     </div>
-                </FadeIn>
+                </>
 
                 {/* Footer */}
-                <FadeIn>
+                <>
                     <div className="border-t border-earth/10 pt-10 mt-10">
                         <div className="flex flex-col items-center gap-4">
                             <span className="text-[9px] uppercase tracking-[0.3em] text-earth/30">Share this story</span>
@@ -130,7 +130,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                             </div>
                         </div>
                     </div>
-                </FadeIn>
+                </>
             </article>
         </div>
     );
