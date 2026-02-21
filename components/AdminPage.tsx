@@ -868,7 +868,7 @@ export const AdminPage: React.FC = () => {
                   <div className="mb-12 border-b border-earth/10 pb-6 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-end">
                      <div>
                         <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Communications</span>
-                        <h1 className="font-serif text-4xl text-earth">The Mae Letter</h1>
+                        <h1 className="font-serif text-2xl md:text-4xl text-earth">The Mae Letter</h1>
                      </div>
                      <div className="flex flex-wrap gap-2 md:gap-4">
                         <button
@@ -999,7 +999,7 @@ export const AdminPage: React.FC = () => {
                <FadeIn>
                   <div className="mb-12">
                      <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Site Configuration</span>
-                     <h1 className="font-serif text-4xl text-earth">Structure & Navigation</h1>
+                     <h1 className="font-serif text-2xl md:text-4xl text-earth">Structure & Navigation</h1>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -1121,12 +1121,12 @@ export const AdminPage: React.FC = () => {
             {/* PRODUCTS TAB */}
             {activeTab === 'products' && (
                <FadeIn>
-                  <div className="flex justify-between items-end mb-12 border-b border-earth/10 pb-6">
+                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-earth/10 pb-4 md:pb-6">
                      <div>
                         <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">{getCollectionTitle(filterCollection)}</span>
-                        <h1 className="font-serif text-4xl text-earth">{filterCategory || 'All Items'}</h1>
+                        <h1 className="font-serif text-2xl md:text-4xl text-earth">{filterCategory || 'All Items'}</h1>
                      </div>
-                     <button onClick={handleCreateProduct} className="bg-earth text-cream px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2">
+                     <button onClick={handleCreateProduct} className="bg-earth text-cream px-5 md:px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2 rounded-lg w-fit">
                         <Plus className="w-3 h-3" /> Add Product
                      </button>
                   </div>
@@ -1165,8 +1165,8 @@ export const AdminPage: React.FC = () => {
             {/* JOURNAL TAB */}
             {activeTab === 'journal' && (
                <FadeIn>
-                  <div className="flex justify-between items-end mb-12 border-b border-earth/10 pb-6">
-                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Content Marketing</span><h1 className="font-serif text-4xl text-earth">Simply Mae Journal</h1></div>
+                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-earth/10 pb-4 md:pb-6">
+                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Content Marketing</span><h1 className="font-serif text-2xl md:text-4xl text-earth">Simply Mae Journal</h1></div>
                      <button onClick={handleCreateNewPost} className="bg-earth text-cream px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2"><Plus className="w-3 h-3" /> New Story</button>
                   </div>
                   <div className="grid grid-cols-1 gap-6">
@@ -1192,8 +1192,8 @@ export const AdminPage: React.FC = () => {
             {/* PAGES TAB */}
             {activeTab === 'pages' && !activePageEditor && (
                <FadeIn>
-                  <div className="flex justify-between items-end mb-12 border-b border-earth/10 pb-6">
-                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Site Design</span><h1 className="font-serif text-4xl text-earth">Select Page to Edit</h1></div>
+                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-earth/10 pb-4 md:pb-6">
+                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Site Design</span><h1 className="font-serif text-2xl md:text-4xl text-earth">Select Page to Edit</h1></div>
                      <button onClick={() => setShowPageGenerator(true)} className="bg-earth text-cream px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2"><Sparkles className="w-3 h-3" /> AI New Page</button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">

@@ -87,16 +87,16 @@ export const AdminOrders: React.FC = () => {
     const cjFailedCount = orders.filter(o => o.cjStatus === 'failed').length;
 
     return (
-        <div className="p-8">
+        <div className="p-2 md:p-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-3">
                 <div>
-                    <h2 className="font-serif text-3xl text-earth mb-2">Orders</h2>
+                    <h2 className="font-serif text-2xl md:text-3xl text-earth mb-1 md:mb-2">Orders</h2>
                     <p className="text-earth/50 text-sm">{orders.length} total orders</p>
                 </div>
 
                 {/* Filter */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
                     {cjFailedCount > 0 && (
                         <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full flex items-center gap-1.5">
                             <AlertTriangle className="w-3 h-3" />
@@ -159,23 +159,23 @@ export const AdminOrders: React.FC = () => {
                             <div key={order._id} className={`bg-white border rounded-lg overflow-hidden shadow-sm ${order.cjStatus === 'failed' ? 'border-red-300' : 'border-earth/10'}`}>
                                 {/* Order Header */}
                                 <div
-                                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-cream/20 transition-colors"
+                                    className="p-3 md:p-4 flex flex-col md:flex-row md:items-center justify-between cursor-pointer hover:bg-cream/20 transition-colors gap-2 md:gap-0"
                                     onClick={() => setExpandedOrder(isExpanded ? null : order._id)}
                                 >
-                                    <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-3 md:gap-6 min-w-0">
                                         <div>
                                             <p className="font-mono text-sm text-earth font-medium">
                                                 #{order.stripeSessionId.slice(-8).toUpperCase()}
                                             </p>
                                             <p className="text-xs text-earth/50">{formatDate(order.createdAt)}</p>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-earth/70">
-                                            <Mail className="w-4 h-4" />
-                                            {order.customerEmail}
+                                        <div className="flex items-center gap-2 text-sm text-earth/70 min-w-0">
+                                            <Mail className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">{order.customerEmail}</span>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
                                         <span className="font-serif text-lg text-earth">${order.total.toFixed(2)}</span>
 
                                         {/* CJ Status Badge */}
@@ -197,7 +197,7 @@ export const AdminOrders: React.FC = () => {
 
                                 {/* Expanded Details */}
                                 {isExpanded && (
-                                    <div className="border-t border-earth/10 p-6 bg-cream/10">
+                                    <div className="border-t border-earth/10 p-3 md:p-6 bg-cream/10">
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                             {/* Items */}
                                             <div>

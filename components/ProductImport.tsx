@@ -900,7 +900,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         <button
                                             onClick={handleImportByUrl}
                                             disabled={isImportingUrl || !importUrl.trim()}
-                                            className="bg-earth text-cream px-6 rounded-xl text-xs uppercase tracking-widest font-bold hover:bg-bronze transition-colors disabled:opacity-50 whitespace-nowrap shadow-lg shadow-earth/10"
+                                            className="bg-earth text-cream px-6 py-3 rounded-xl text-xs uppercase tracking-widest font-bold hover:bg-bronze transition-colors disabled:opacity-50 whitespace-nowrap shadow-lg shadow-earth/10"
                                         >
                                             {isImportingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Fetch & Review'}
                                         </button>
@@ -919,21 +919,21 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                         {/* Search Input - High Contrast */}
                         <div className="relative mb-8 mt-8 border-t border-earth/10 pt-8">
-                            <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-earth group-hover:text-bronze transition-colors duration-500 mt-4" />
+                            <Search className="absolute left-4 md:left-8 top-[calc(2rem+50%)] -translate-y-1/2 w-5 md:w-6 h-5 md:h-6 text-earth group-hover:text-bronze transition-colors duration-500" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 placeholder="Discover premium products..."
-                                className="w-full pl-20 pr-8 py-6 bg-white border border-earth/10 rounded-2xl text-2xl font-serif text-earth placeholder:text-earth/40 focus:outline-none focus:ring-2 focus:ring-bronze/20 focus:border-bronze/50 transition-all shadow-sm"
+                                className="w-full pl-12 md:pl-20 pr-4 md:pr-36 py-4 md:py-6 bg-white border border-earth/10 rounded-2xl text-base md:text-2xl font-serif text-earth placeholder:text-earth/40 focus:outline-none focus:ring-2 focus:ring-bronze/20 focus:border-bronze/50 transition-all shadow-sm"
                             />
                             <button
                                 onClick={() => handleSearch()}
                                 disabled={isSearching || !searchQuery.trim()}
-                                className="absolute right-3 top-3 bottom-3 bg-earth text-cream px-10 rounded-xl text-xs uppercase tracking-[0.25em] font-bold hover:bg-bronze hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-earth/20 mt-4"
+                                className="md:absolute md:right-3 md:top-[calc(2rem+0.75rem)] md:bottom-3 mt-2 md:mt-0 w-full md:w-auto bg-earth text-cream px-8 py-3 md:py-0 rounded-xl text-xs uppercase tracking-[0.25em] font-bold hover:bg-bronze hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-earth/20"
                             >
-                                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+                                {isSearching ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Search'}
                             </button>
                         </div>
                         {/* Floating Filters - High Contrast Pills */}
