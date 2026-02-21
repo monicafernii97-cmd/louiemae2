@@ -168,10 +168,13 @@ const AppContent = () => {
     else if (baseHash.startsWith('#collection/')) setActivePage(href);
     else setActivePage('home');
 
-    // Instant scroll to top — smooth scroll gets canceled by re-renders on mobile
-    window.scrollTo(0, 0);
-    // Fallback after React re-render completes
-    requestAnimationFrame(() => window.scrollTo(0, 0));
+    // For support sections, don't scroll to top — let SupportPage handle scrolling to the section
+    if (!baseHash.startsWith('#support')) {
+      // Instant scroll to top — smooth scroll gets canceled by re-renders on mobile
+      window.scrollTo(0, 0);
+      // Fallback after React re-render completes
+      requestAnimationFrame(() => window.scrollTo(0, 0));
+    }
   };
 
   // Dynamic meta tags per page

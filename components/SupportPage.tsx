@@ -67,12 +67,12 @@ export const SupportPage: React.FC<SupportPageProps> = ({ section }) => {
     const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
     const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
 
-    const hasScrolledRef = React.useRef(false);
+    const prevSectionRef = React.useRef<string | undefined>(undefined);
 
-    // Scroll to section on initial mount only (instant, no bounce)
+    // Scroll to the correct section whenever the section prop changes
     useEffect(() => {
-        if (section && !hasScrolledRef.current) {
-            hasScrolledRef.current = true;
+        if (section && section !== prevSectionRef.current) {
+            prevSectionRef.current = section;
             // Use requestAnimationFrame to ensure DOM is painted
             requestAnimationFrame(() => {
                 const el = document.getElementById(`support-${section}`);
