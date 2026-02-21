@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import { generateConciergeResponse } from '../services/geminiService';
 import { ChatMessage } from '../types';
 
@@ -40,7 +40,7 @@ export const AiConcierge: React.FC = () => {
           {/* Header */}
           <div className="bg-earth text-cream p-4 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-bronze" />
+              <MessageSquare className="w-4 h-4 text-bronze" />
               <h3 className="font-serif text-lg tracking-wide">Concierge</h3>
             </div>
             <button onClick={() => setIsOpen(false)} className="hover:text-bronze transition-colors">
@@ -56,11 +56,10 @@ export const AiConcierge: React.FC = () => {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-3 text-sm rounded-lg leading-relaxed ${
-                    msg.role === 'user'
+                  className={`max-w-[80%] p-3 text-sm rounded-lg leading-relaxed ${msg.role === 'user'
                       ? 'bg-bronze text-white rounded-br-none'
                       : 'bg-white border border-sand text-earth rounded-bl-none shadow-sm'
-                  }`}
+                    }`}
                 >
                   {msg.text}
                 </div>

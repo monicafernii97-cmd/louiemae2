@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { FadeIn } from './FadeIn';
 import { useSite } from '../contexts/BlogContext';
 import { Product } from '../types';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { GlassButton } from './ui/GlassButton';
 
 // Collection config for display
@@ -29,8 +29,8 @@ const ProductCard: React.FC<{ product: Product; index: number }> = ({ product, i
             onClick={() => navigateTo(`#collection/${product.collection}?cat=${encodeURIComponent(product.category)}`)}
         >
             {product.isNew && (
-                <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[8px] uppercase tracking-widest text-earth z-10 rounded-full flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5 text-bronze" /> New
+                <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 text-[8px] uppercase tracking-widest text-earth z-10 rounded-full">
+                    New
                 </span>
             )}
             <img
