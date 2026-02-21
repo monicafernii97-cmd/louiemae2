@@ -325,9 +325,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
           <div className="min-w-[200px] md:min-w-[240px] snap-center flex items-center justify-center">
             <button
               onClick={() => {
-                // This logic acts as a "View All" for the top category
-                // We can simulate selecting a "All [Category]" sub-filter if we had one, 
-                // but sticking to the hierarchy is safer.
+                handleCategoryChange(categoryTitle);
               }}
               className="group flex flex-col items-center gap-4 text-earth/50 hover:text-earth transition-colors"
             >
@@ -607,7 +605,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
               ))}
 
               <div className="min-w-[200px] md:min-w-[240px] snap-center flex items-center justify-center">
-                <button className="group flex flex-col items-center gap-4 text-earth/50 hover:text-earth transition-colors">
+                <button
+                  onClick={() => handleCategoryChange('All')}
+                  className="group flex flex-col items-center gap-4 text-earth/50 hover:text-earth transition-colors"
+                >
                   <div className="w-16 h-16 rounded-full border border-earth/20 flex items-center justify-center group-hover:border-earth transition-colors">
                     <ArrowUpRight className="w-6 h-6" />
                   </div>
