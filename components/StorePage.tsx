@@ -12,12 +12,13 @@ import { GlassButton } from './ui/GlassButton';
 interface StorePageProps {
   collection: CollectionType;
   initialCategory?: string;
+  forceProductView?: boolean;
 }
 
 // View levels for hierarchical navigation
 type ViewLevel = 'ROOT' | 'CATEGORY' | 'PRODUCT';
 
-export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategory = 'All' }) => {
+export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategory = 'All', forceProductView = false }) => {
   const { products, siteContent, isLoading } = useSite();
   const [sortOption, setSortOption] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
 
@@ -71,6 +72,11 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       return 'ROOT';
     }
 
+    // Force product grid view when explicitly requested (e.g. "View All Girls")
+    if (forceProductView) {
+      return 'PRODUCT';
+    }
+
     // Any category with children should show the CATEGORY view (hero slider + swimlanes)
     const hasChildren = config.subcategories.some(
       sub => sub.parentCategory === selectedCategory
@@ -81,7 +87,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     }
 
     return 'PRODUCT';
-  }, [selectedCategory, config.subcategories]);
+  }, [selectedCategory, config.subcategories, forceProductView]);
 
   // Get main categories (for ROOT view)
   // Fallback: if no categories have isMainCategory flag, show all subcategories
@@ -325,7 +331,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
           <div className="min-w-[200px] md:min-w-[240px] snap-center flex items-center justify-center">
             <button
               onClick={() => {
-                handleCategoryChange(categoryTitle);
+                window.location.hash = `#collection/${collection}?cat=${encodeURIComponent(categoryTitle)}&view=products`;
               }}
               className="group flex flex-col items-center gap-4 text-earth/50 hover:text-earth transition-colors"
             >

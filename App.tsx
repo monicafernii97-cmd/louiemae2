@@ -257,12 +257,13 @@ const AppContent = () => {
     const type = path.replace('#collection/', '');
     const params = new URLSearchParams(query);
     const category = params.get('cat');
+    const viewProducts = params.get('view') === 'products';
 
     // Check if the type exists in our dynamic collections
     const collectionExists = siteContent.collections.some(c => c.id === type);
 
     if (collectionExists) {
-      CurrentComponent = () => <StorePage collection={type as any} initialCategory={category || 'All'} />;
+      CurrentComponent = () => <StorePage collection={type as any} initialCategory={category || 'All'} forceProductView={viewProducts} />;
     } else {
       CurrentComponent = HomePage;
     }
