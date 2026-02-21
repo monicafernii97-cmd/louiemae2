@@ -352,12 +352,12 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         {/* Header Title - Unified layout matching Kids for all collections */}
         {viewLevel === 'ROOT' && (
           <>
-            <div className="relative z-30 pt-32 pb-8 md:pb-12 text-center bg-transparent pointer-events-none">
+            <div className="relative z-30 pt-32 md:pt-44 pb-8 md:pb-14 text-center bg-transparent pointer-events-none">
               <FadeIn>
-                <h1 className="font-serif text-5xl md:text-7xl text-earth drop-shadow-sm mb-4 mix-blend-multiply opacity-90">
+                <h1 className="font-serif text-5xl md:text-8xl text-earth drop-shadow-sm mb-4 md:mb-6 mix-blend-multiply opacity-90">
                   {config.title}
                 </h1>
-                <p className="font-sans text-earth/80 text-[10px] md:text-sm uppercase tracking-[0.3em] px-8 max-w-xs md:max-w-none mx-auto">
+                <p className="font-sans text-earth/80 text-[10px] md:text-xs uppercase tracking-[0.3em] px-8 max-w-xs md:max-w-none mx-auto">
                   {config.subtitle}
                 </p>
               </FadeIn>
@@ -481,11 +481,11 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                                 onLoad={(e) => { (e.target as HTMLImageElement).style.opacity = '1'; }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                              <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-8">
-                                <h3 className="font-serif text-3xl lg:text-4xl text-white font-light tracking-wide mb-2 whitespace-nowrap">
+                              <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6">
+                                <h3 className="font-serif text-2xl lg:text-3xl text-white font-light tracking-wide mb-1 whitespace-nowrap">
                                   {cat.title}
                                 </h3>
-                                <p className="text-white/70 text-sm uppercase tracking-[0.2em]">
+                                <p className="text-white/70 text-xs uppercase tracking-[0.2em]">
                                   {cat.caption || 'Shop Now'}
                                 </p>
                                 <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
