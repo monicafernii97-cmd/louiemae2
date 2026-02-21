@@ -482,7 +482,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                               <div className="absolute inset-0 flex flex-col justify-end items-center text-center p-6">
-                                <h3 className="font-serif text-2xl lg:text-3xl text-white font-light tracking-wide mb-1 whitespace-nowrap">
+                                <h3 className="font-serif text-xl lg:text-2xl text-white font-light tracking-wide mb-1 leading-tight">
                                   {cat.title}
                                 </h3>
                                 <p className="text-white/70 text-xs uppercase tracking-[0.2em]">
