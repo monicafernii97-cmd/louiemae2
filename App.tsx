@@ -168,7 +168,10 @@ const AppContent = () => {
     else if (baseHash.startsWith('#collection/')) setActivePage(href);
     else setActivePage('home');
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Instant scroll to top — smooth scroll gets canceled by re-renders on mobile
+    window.scrollTo(0, 0);
+    // Fallback after React re-render completes
+    requestAnimationFrame(() => window.scrollTo(0, 0));
   };
 
   // Dynamic meta tags per page
