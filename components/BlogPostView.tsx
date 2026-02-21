@@ -34,6 +34,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
 
     return (
         <div className="bg-cream min-h-screen pb-20 w-full overflow-hidden">
+            <style>{`@keyframes blogFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
             {/* Hero Image */}
             {post.image && (
                 <div className="w-full aspect-[16/9] md:aspect-[3/1] overflow-hidden relative">
@@ -62,7 +63,10 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
             {/* Post Header */}
             <article className="max-w-3xl mx-auto px-6 md:px-8">
                 <>
-                    <div className="text-center mb-8 md:mb-12">
+                    <div
+                        className="text-center mb-8 md:mb-12"
+                        style={{ animation: 'blogFadeIn 0.4s ease-out both' }}
+                    >
                         {/* Category & Meta */}
                         <div className="flex items-center justify-center gap-4 mb-6 text-bronze/80 text-[10px] uppercase tracking-widest font-sans">
                             <span>{post.category}</span>
