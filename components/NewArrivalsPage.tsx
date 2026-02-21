@@ -16,7 +16,9 @@ const COLLECTIONS = [
 
 const navigateTo = (hash: string) => {
     window.location.hash = hash;
-    window.scrollTo(0, 0);
+    // Explicitly dispatch hashchange for mobile reliability
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
 };
 
 // Reusable product card
