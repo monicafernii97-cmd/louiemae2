@@ -363,7 +363,7 @@ export const HomePage: React.FC = () => {
                       <span className="text-[10px] uppercase tracking-[0.3em] text-white/80 mb-2">{cat.caption}</span>
                     )}
                     <div className="flex items-center justify-between w-full">
-                      <h3 className="font-serif text-3xl md:text-5xl text-white leading-none">{cat.title}</h3>
+                      <h3 className="font-serif text-2xl md:text-5xl text-white leading-none whitespace-nowrap">{cat.title}</h3>
                       <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
                         <ArrowUpRight className="w-5 h-5 text-white" />
                       </div>
