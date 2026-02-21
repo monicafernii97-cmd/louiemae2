@@ -36,7 +36,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
         <div className="bg-cream min-h-screen pb-20 w-full overflow-hidden">
             {/* Hero Image */}
             {post.image && (
-                <div className="w-full aspect-[21/9] md:aspect-[3/1] overflow-hidden relative">
+                <div className="w-full aspect-[16/9] md:aspect-[3/1] overflow-hidden relative">
                     <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-cream z-10" />
                     <img
                         src={post.image}
@@ -61,8 +61,8 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
 
             {/* Post Header */}
             <article className="max-w-3xl mx-auto px-6 md:px-8">
-                <FadeIn delay={100}>
-                    <div className="text-center mb-12">
+                <FadeIn>
+                    <div className="text-center mb-8 md:mb-12">
                         {/* Category & Meta */}
                         <div className="flex items-center justify-center gap-4 mb-6 text-bronze/80 text-[10px] uppercase tracking-widest font-sans">
                             <span>{post.category}</span>
@@ -85,13 +85,13 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
 
                         {/* Excerpt */}
                         {post.excerpt && (
-                            <p className="font-serif text-earth/60 text-xl italic leading-relaxed max-w-2xl mx-auto">
+                            <p className="font-serif text-earth/60 text-base md:text-xl italic leading-relaxed max-w-2xl mx-auto">
                                 {post.excerpt}
                             </p>
                         )}
 
                         {/* Decorative divider */}
-                        <div className="flex items-center justify-center gap-3 mt-10">
+                        <div className="flex items-center justify-center gap-3 mt-6 md:mt-10">
                             <div className="h-px w-16 bg-earth/10" />
                             <div className="w-1.5 h-1.5 rounded-full bg-bronze/30" />
                             <div className="h-px w-16 bg-earth/10" />
@@ -100,7 +100,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                 </FadeIn>
 
                 {/* Post Content — rendered as rich HTML */}
-                <FadeIn delay={200}>
+                <FadeIn>
                     <div
                         className="prose-blog font-serif text-lg text-earth leading-relaxed mb-12"
                         dangerouslySetInnerHTML={{ __html: post.content }}
@@ -115,7 +115,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                 </FadeIn>
 
                 {/* Footer */}
-                <FadeIn delay={300}>
+                <FadeIn>
                     <div className="border-t border-earth/10 pt-10 mt-10">
                         <div className="flex flex-col items-center gap-4">
                             <span className="text-[9px] uppercase tracking-[0.3em] text-earth/30">Share this story</span>

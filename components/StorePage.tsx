@@ -352,12 +352,12 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         {/* Header Title - Unified layout matching Kids for all collections */}
         {viewLevel === 'ROOT' && (
           <>
-            <div className="relative z-30 pt-32 md:pt-44 pb-8 md:pb-14 text-center bg-transparent pointer-events-none">
+            <div className="relative z-30 pt-32 pb-8 md:pb-12 text-center bg-transparent pointer-events-none">
               <FadeIn>
-                <h1 className="font-serif text-5xl md:text-8xl text-earth drop-shadow-sm mb-4 md:mb-6 mix-blend-multiply opacity-90">
+                <h1 className="font-serif text-5xl md:text-7xl text-earth drop-shadow-sm mb-4 mix-blend-multiply opacity-90">
                   {config.title}
                 </h1>
-                <p className="font-sans text-earth/80 text-[10px] md:text-xs uppercase tracking-[0.3em] px-8 max-w-xs md:max-w-none mx-auto">
+                <p className="font-sans text-earth/80 text-[10px] md:text-sm uppercase tracking-[0.3em] px-8 max-w-xs md:max-w-none mx-auto">
                   {config.subtitle}
                 </p>
               </FadeIn>
