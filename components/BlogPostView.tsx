@@ -104,7 +104,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                 </>
 
                 {/* Post Content — rendered as rich HTML */}
-                <>
+                <FadeIn mobileFast>
                     <div
                         className="prose-blog font-serif text-lg text-earth leading-relaxed mb-12"
                         dangerouslySetInnerHTML={{ __html: post.content }}
@@ -116,10 +116,10 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                         <p className="font-serif text-earth/50 text-lg italic leading-relaxed">simply,</p>
                         <p className="font-serif text-earth/70 text-2xl italic mt-1">mae</p>
                     </div>
-                </>
+                </FadeIn>
 
                 {/* Footer */}
-                <>
+                <FadeIn mobileFast>
                     <div className="border-t border-earth/10 pt-10 mt-10">
                         <div className="flex flex-col items-center gap-4">
                             <span className="text-[9px] uppercase tracking-[0.3em] text-earth/30">Share this story</span>
@@ -134,7 +134,7 @@ export const BlogPostView: React.FC<BlogPostViewProps> = ({ postId }) => {
                             </div>
                         </div>
                     </div>
-                </>
+                </FadeIn>
             </article>
         </div>
     );
