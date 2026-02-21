@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { FadeIn } from './FadeIn';
 import { GlassButton } from './ui/GlassButton';
 import { PRODUCTS, FASHION_CATEGORIES, KIDS_CATEGORIES } from '../constants';
@@ -15,42 +15,7 @@ export const HomePage: React.FC = () => {
   const { addSubscriber } = useNewsletter();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Track hero image loading state to prevent showing stale cached images
-  const [heroImageReady, setHeroImageReady] = useState(false);
-  const previousHeroImageRef = useRef<string>('');
 
-  // When hero image URL changes, preload it before showing
-  useEffect(() => {
-    const currentImage = home.hero.image;
-
-    // Skip if still in initial loading state
-    if (isLoading) {
-      setHeroImageReady(false);
-      return;
-    }
-
-    // If the image URL changed (or first load), preload the new image
-    if (currentImage && currentImage !== previousHeroImageRef.current) {
-      setHeroImageReady(false);
-
-      const img = new Image();
-      img.onload = () => {
-        // Only mark as ready if this is still the current image
-        if (home.hero.image === currentImage) {
-          previousHeroImageRef.current = currentImage;
-          setHeroImageReady(true);
-        }
-      };
-      img.onerror = () => {
-        previousHeroImageRef.current = currentImage;
-        setHeroImageReady(true);
-      };
-      img.src = currentImage;
-    } else if (currentImage === previousHeroImageRef.current) {
-      // Same image, already loaded
-      setHeroImageReady(true);
-    }
-  }, [isLoading, home.hero.image]);
 
   // Newsletter Form State
   const [email, setEmail] = useState('');
