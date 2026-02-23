@@ -161,7 +161,7 @@ export const CJSettings: React.FC = () => {
     const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: any) => (
         <div
             onClick={loading ? undefined : onClick}
-            className="group relative backdrop-blur-xl bg-white/60 border border-white/40 p-6 shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer overflow-hidden rounded-xl hover:-translate-y-1"
+            className="group relative backdrop-blur-xl bg-white/60 border border-white/40 p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer overflow-hidden rounded-xl active:scale-[0.98] md:hover:-translate-y-1"
         >
             <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -188,7 +188,7 @@ export const CJSettings: React.FC = () => {
     );
 
     return (
-        <div className="relative min-h-screen overflow-hidden p-8">
+        <div className="relative min-h-screen overflow-hidden p-4 md:p-8">
             {/* Animated Background Blobs */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
                 <div className="absolute top-0 -left-4 w-72 h-72 bg-bronze/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
@@ -200,19 +200,19 @@ export const CJSettings: React.FC = () => {
             <div className="mb-12 relative z-10">
                 <FadeIn>
                     <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-3 block font-medium">Integration Center</span>
-                    <h1 className="font-serif text-5xl text-earth drop-shadow-sm">CJ Dropshipping Link</h1>
+                    <h1 className="font-serif text-2xl md:text-5xl text-earth drop-shadow-sm">CJ Dropshipping Link</h1>
                 </FadeIn>
             </div>
 
             {/* Notification Banner */}
             {result && (
                 <FadeIn className="mb-8 relative z-20">
-                    <div className={`p-4 border border-white/50 backdrop-blur-md rounded-xl flex items-center gap-4 shadow-lg ${result.success
+                    <div className={`p-3 md:p-4 border border-white/50 backdrop-blur-md rounded-xl flex items-start md:items-center gap-3 md:gap-4 shadow-lg ${result.success
                         ? 'bg-green-50/40 text-green-800'
                         : 'bg-red-50/40 text-red-800'
                         }`}>
                         {result.success ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                        <span className="font-medium tracking-wide text-sm">{result.message}</span>
+                        <span className="font-medium tracking-wide text-xs md:text-sm flex-1 break-words">{result.message}</span>
                         <button onClick={() => setResult(null)} className="ml-auto hover:bg-black/5 p-1 rounded-full transition-colors">
                             <XCircle className="w-4 h-4 opacity-50" />
                         </button>
@@ -229,7 +229,7 @@ export const CJSettings: React.FC = () => {
                             <Settings className="w-5 h-5 text-bronze/60" />
                             System Controls
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-3 md:gap-6">
                             <ActionCard
                                 icon={Wifi}
                                 title="Connection"
@@ -402,13 +402,13 @@ export const CJSettings: React.FC = () => {
                                                     </div>
 
                                                     {/* Action Buttons */}
-                                                    <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-earth/5">
+                                                    <div className="flex flex-wrap items-center justify-end gap-2 mt-3 pt-3 border-t border-earth/5">
                                                         {/* Resubmit for products without CJ ID */}
                                                         {hasNoSourcingId && (
                                                             <button
                                                                 onClick={() => handleResubmit(product._id, product.name)}
                                                                 disabled={resubmittingId === product._id}
-                                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
+                                                                className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
                                                                 title="Resubmit to CJ"
                                                             >
                                                                 {resubmittingId === product._id ? (
@@ -437,7 +437,7 @@ export const CJSettings: React.FC = () => {
                                                         <button
                                                             onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                                             disabled={deletingId === product._id}
-                                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50/50 rounded-lg transition-all disabled:opacity-50"
+                                                            className="p-2 md:p-1.5 text-red-400 hover:text-red-600 active:text-red-600 hover:bg-red-50/50 active:bg-red-50/50 rounded-lg transition-all disabled:opacity-50"
                                                             title="Remove from import"
                                                         >
                                                             {deletingId === product._id ? (
@@ -549,12 +549,12 @@ export const CJSettings: React.FC = () => {
                                                     </div>
 
                                                     {/* Actions */}
-                                                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-red-100/50">
+                                                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-red-100/50">
                                                         {/* Resubmit */}
                                                         <button
                                                             onClick={() => handleResubmit(product._id, product.name)}
                                                             disabled={resubmittingId === product._id}
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
+                                                            className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
                                                             title="Retry submission to CJ"
                                                         >
                                                             {resubmittingId === product._id ? (
@@ -582,7 +582,7 @@ export const CJSettings: React.FC = () => {
                                                         <button
                                                             onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                                             disabled={deletingId === product._id}
-                                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-100/50 rounded-lg transition-all disabled:opacity-50"
+                                                            className="p-2 md:p-1.5 text-red-400 hover:text-red-600 active:text-red-600 hover:bg-red-100/50 active:bg-red-100/50 rounded-lg transition-all disabled:opacity-50"
                                                             title="Remove from catalog"
                                                         >
                                                             {deletingId === product._id ? (
