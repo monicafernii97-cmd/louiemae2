@@ -282,9 +282,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const subcategoryTitle = subcategories.find(s => s.id === productSubcategory)?.title || productSubcategory || p.category || 'General';
 
             // Filter images based on user selection (defaults to all if no selection made)
-            const finalImages = p.selectedImages && p.selectedImages.length > 0
+            const rawImages = p.selectedImages && p.selectedImages.length > 0
                 ? p.selectedImages.map(idx => p.images[idx]).filter(Boolean)
                 : p.images;
+            // Normalize protocol-relative URLs (// -> https://)
+            const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
 
             return {
                 name: p.customName || p.name,

@@ -318,3 +318,47 @@ export const fixBrokenImages = mutation({
         return { fixed };
     },
 });
+
+/**
+ * MIGRATION: Fix Berry Sweet Cardigan Set
+ * - Fix protocol-relative image URLs (// -> https://)
+ * - Clear misleading error message
+ * - Reset CJ status to pending for resubmission
+ */
+export const fixBerrySweetCardigan = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const products = await ctx.db.query("products").collect();
+        let imagesFixed = 0;
+
+        // Fix ALL products with protocol-relative URLs
+        for (const product of products) {
+            const hasProtocolRelative = (product.images || []).some(
+                (img: string) => img.startsWith("//")
+            );
+            if (hasProtocolRelative) {
+                const fixedImages = product.images.map((img: string) =>
+                    img.startsWith("//") ? "https:" + img : img
+                );
+                await ctx.db.patch(product._id, { images: fixedImages });
+                imagesFixed++;
+            }
+        }
+
+        // Fix Berry Sweet Cardigan Set specifically
+        const berry = products.find(p => p.name === "Berry Sweet Cardigan Set");
+        if (berry) {
+            await ctx.db.patch(berry._id, {
+                cjSourcingError: "CJ rejected initial request — ready for resubmission",
+                cjSourcingStatus: "pending",
+            });
+        }
+
+        return {
+            success: true,
+            imagesFixed,
+            berryFound: !!berry,
+            message: "Fixed protocol-relative images and reset Berry Sweet Cardigan for resubmission"
+        };
+    },
+});
