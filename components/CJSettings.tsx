@@ -403,22 +403,20 @@ export const CJSettings: React.FC = () => {
 
                                                     {/* Action Buttons */}
                                                     <div className="flex flex-wrap items-center justify-end gap-2 mt-3 pt-3 border-t border-earth/5">
-                                                        {/* Resubmit for products without CJ ID */}
-                                                        {hasNoSourcingId && (
-                                                            <button
-                                                                onClick={() => handleResubmit(product._id, product.name)}
-                                                                disabled={resubmittingId === product._id}
-                                                                className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
-                                                                title="Resubmit to CJ"
-                                                            >
-                                                                {resubmittingId === product._id ? (
-                                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                                ) : (
-                                                                    <RotateCcw className="w-3 h-3" />
-                                                                )}
-                                                                Resubmit
-                                                            </button>
-                                                        )}
+                                                        {/* Resubmit - always available for pending products */}
+                                                        <button
+                                                            onClick={() => handleResubmit(product._id, product.name)}
+                                                            disabled={resubmittingId === product._id}
+                                                            className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
+                                                            title="Resubmit to CJ"
+                                                        >
+                                                            {resubmittingId === product._id ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <RotateCcw className="w-3 h-3" />
+                                                            )}
+                                                            Resubmit
+                                                        </button>
 
                                                         {/* Source URL link */}
                                                         {product.sourceUrl && (
