@@ -222,6 +222,42 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     </FadeIn>
   );
 
+  // Reusable Coming Soon newsletter signup for empty product views
+  const ComingSoonSignup: React.FC = () => {
+    const { addSubscriberWithTags } = useNewsletter();
+    const [csEmail, setCsEmail] = useState('');
+    const [csStatus, setCsStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+
+    const handleCsSubscribe = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!csEmail) return;
+      setCsStatus('loading');
+      await addSubscriberWithTags(csEmail, 'Guest', ['vip', 'early-access']);
+      setCsStatus('success');
+      setCsEmail('');
+    };
+
+    return (
+      <form onSubmit={handleCsSubscribe} className="w-full max-w-sm mx-auto flex flex-col sm:flex-row gap-3">
+        <input
+          type="email"
+          value={csEmail}
+          onChange={(e) => setCsEmail(e.target.value)}
+          placeholder="Enter your email"
+          required
+          className="flex-1 bg-white border border-earth/15 px-4 py-3 text-sm text-earth placeholder:text-earth/30 focus:outline-none focus:border-bronze rounded-sm"
+        />
+        <button
+          type="submit"
+          disabled={csStatus === 'loading' || csStatus === 'success'}
+          className="bg-earth text-white px-6 py-3 text-[10px] uppercase tracking-widest hover:bg-bronze transition-colors disabled:opacity-70 flex items-center justify-center gap-2 rounded-sm"
+        >
+          {csStatus === 'loading' ? 'Joining...' : csStatus === 'success' ? <><Check className="w-4 h-4" /> Joined</> : 'Notify Me'}
+        </button>
+      </form>
+    );
+  };
+
   // Subcategory box with product previews
   const SubcategoryWithPreviews: React.FC<{ category: Category; index: number }> = ({ category, index }) => {
     const previewProducts = getProductsForCategory(category.title, 4);
@@ -273,24 +309,24 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             ))}
           </div>
         ) : (
-          <div className="w-full bg-stone-50 border border-stone-200 rounded-sm p-8 md:p-12 flex flex-col items-center justify-center text-center">
-            <h4 className="font-serif text-2xl md:text-3xl text-earth mb-3">Coming Soon to {category.title}</h4>
-            <p className="text-sm text-earth/60 mb-8 max-w-md">
-              We're curating beautiful new pieces for this collection. Join the inner circle to be the first to know when they drop.
+          <div className="w-full bg-[#F5F3EF] border border-earth/10 rounded-sm p-10 md:p-14 flex flex-col items-center justify-center text-center">
+            <h4 className="font-serif text-2xl md:text-3xl text-earth mb-4">Coming Soon</h4>
+            <p className="text-sm text-earth/60 mb-8 max-w-md leading-relaxed">
+              New pieces arriving soon — join our list to be first to know.
             </p>
-            <form onSubmit={handleSubscribe} className="w-full max-w-sm flex flex-col md:flex-row gap-3">
+            <form onSubmit={handleSubscribe} className="w-full max-w-sm flex flex-col sm:flex-row gap-3">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="flex-1 bg-white border border-stone-200 px-4 py-3 text-sm focus:outline-none focus:border-bronze"
+                className="flex-1 bg-white border border-earth/15 px-4 py-3 text-sm text-earth placeholder:text-earth/30 focus:outline-none focus:border-bronze rounded-sm"
               />
               <button
                 type="submit"
                 disabled={subStatus === 'loading' || subStatus === 'success'}
-                className="bg-earth text-white px-6 py-3 text-[10px] uppercase tracking-widest hover:bg-bronze transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                className="bg-earth text-white px-6 py-3 text-[10px] uppercase tracking-widest hover:bg-bronze transition-colors disabled:opacity-70 flex items-center justify-center gap-2 rounded-sm"
               >
                 {subStatus === 'loading' ? 'Joining...' : subStatus === 'success' ? <><Check className="w-4 h-4" /> Joined</> : 'Notify Me'}
               </button>
@@ -735,12 +771,17 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
           <section className="px-4 md:px-8 py-12 md:py-16 min-h-[60vh]">
             <div className="container mx-auto">
               {filteredProducts.length === 0 ? (
-                <div className="text-center py-20 animate-fade-in-up">
-                  <p className="font-serif text-2xl text-earth/50 mb-4">No products found in {selectedCategory}.</p>
-                  <p className="text-xs uppercase tracking-widest text-earth/30">Check back soon for new arrivals.</p>
-                  <button onClick={() => handleCategoryChange(getBackDestination())} className="mt-8 text-xs uppercase tracking-widest text-bronze border-b border-bronze pb-1 hover:text-earth hover:border-earth transition-colors">
-                    Go Back
-                  </button>
+                <div className="flex flex-col items-center justify-center text-center py-16 md:py-24 animate-fade-in-up">
+                  <div className="w-full max-w-lg bg-[#F5F3EF] border border-earth/10 rounded-sm p-10 md:p-14">
+                    <h3 className="font-serif text-3xl md:text-4xl text-earth mb-4">Coming Soon</h3>
+                    <p className="text-sm text-earth/60 mb-8 leading-relaxed max-w-md mx-auto">
+                      New pieces arriving soon — join our list to be first to know.
+                    </p>
+                    <ComingSoonSignup />
+                    <button onClick={() => handleCategoryChange(getBackDestination())} className="mt-8 text-xs uppercase tracking-widest text-bronze border-b border-bronze pb-1 hover:text-earth hover:border-earth transition-colors">
+                      Go Back
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
