@@ -6,7 +6,8 @@ import { Product } from '../types';
 import { ArrowRight, Check } from 'lucide-react';
 
 // Collection drop configuration
-const DROP_NAME = "Spring 2026 Collection";
+const DROP_NAME = "Spring";
+const DROP_YEAR = "2026";
 const DROP_TAGLINE = "Curated pieces for the season ahead";
 
 const CATEGORY_SECTIONS = [
@@ -22,70 +23,79 @@ const navigateTo = (hash: string) => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
 };
 
-const ProductCard: React.FC<{ product: Product; index: number }> = ({ product, index }) => (
-    <FadeIn delay={index * 100} className="group cursor-pointer flex-shrink-0 w-[240px] md:w-[280px] snap-center">
-        <div
-            className="relative aspect-[3/4] overflow-hidden bg-stone-50 mb-4 rounded-sm border border-stone-200"
-            onClick={() => navigateTo(`#collection/${product.collection}?cat=${encodeURIComponent(product.category)}`)}
-        >
-            <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-        </div>
-        <div className="px-1 text-center md:text-left flex justify-between items-start gap-4">
-            <h3 className="font-serif text-base text-earth leading-tight group-hover:text-bronze transition-colors">
-                {product.name}
-            </h3>
-            <span className="font-serif italic text-earth/80 text-sm whitespace-nowrap">${product.price}</span>
-        </div>
-    </FadeIn>
-);
+// Luxury Product Card with floating effects and staggered layout
+const LuxuryProductCard: React.FC<{ product: Product; index: number }> = ({ product, index }) => {
+    // Offset every other item on desktop for a staggered editorial grid look
+    const isOffset = index % 2 !== 0;
+    const offsetClass = isOffset ? "md:mt-24" : "";
 
-const CategorySection: React.FC<{
+    return (
+        <FadeIn delay={index * 150} className={`group cursor-pointer flex flex-col w-full ${offsetClass}`}>
+            <div
+                className="relative aspect-[3/4] overflow-hidden bg-stone-50 mb-6 rounded-sm shadow-sm transition-all duration-700 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] hover:-translate-y-3"
+                onClick={() => navigateTo(`#collection/${product.collection}?cat=${encodeURIComponent(product.category)}`)}
+            >
+                <img
+                    src={product.images[0]}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-[1.03]"
+                />
+
+                {/* Floating glass overlay on hover */}
+                <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/10 transition-colors duration-500" />
+
+                {/* Information Pill ascending on hover */}
+                <div className="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 flex justify-between items-center bg-white/90 backdrop-blur-md px-5 py-3 rounded-sm">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-earth font-medium">View Piece</span>
+                    <span className="font-serif italic text-earth text-sm">${product.price}</span>
+                </div>
+            </div>
+
+            <div className="text-center md:text-left px-2">
+                <h3 className="font-serif text-xl md:text-2xl text-earth leading-tight transition-colors">
+                    {product.name}
+                </h3>
+                <p className="text-earth/60 text-[10px] uppercase tracking-[0.2em] mt-3">{product.category}</p>
+            </div>
+        </FadeIn>
+    );
+};
+
+const LuxuryCategorySection: React.FC<{
     title: string;
+    subtitle: string;
     products: Product[];
     route: string;
-}> = ({ title, products, route }) => {
+}> = ({ title, subtitle, products, route }) => {
     if (products.length === 0) return null;
 
     return (
-        <section className="py-16 md:py-24 border-b border-stone-200/50 last:border-0">
+        <section className="py-24 md:py-40 border-b border-stone-200/40 last:border-0 relative">
             <div className="container mx-auto px-6 md:px-12">
-                {/* Section Header */}
-                <FadeIn className="flex justify-between items-end mb-12">
-                    <h2 className="font-serif text-3xl md:text-5xl text-earth">{title}</h2>
-                    <button
-                        onClick={() => navigateTo(route)}
-                        className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest text-earth/60 hover:text-earth hover:border-b hover:border-earth transition-all pb-1 group"
-                    >
-                        View All <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-                    </button>
-                </FadeIn>
-
-                {/* Products Grid (Desktop) / Scroll (Mobile) */}
-                <div className="relative -mx-6 px-6 md:mx-0 md:px-0">
-                    <div
-                        className="flex md:grid md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 overflow-x-auto md:overflow-visible scrollbar-hide pb-8 md:pb-0 snap-x snap-mandatory"
-                        style={{ WebkitOverflowScrolling: 'touch' }}
-                    >
-                        {products.map((product, idx) => (
-                            <ProductCard key={product.id} product={product} index={idx} />
-                        ))}
+                {/* Minimalist Editorial Section Header */}
+                <FadeIn className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 md:mb-24">
+                    <div className="max-w-xl mb-8 md:mb-0">
+                        <h2 className="font-serif text-4xl md:text-6xl lg:text-7xl text-earth mb-4 tracking-tight">{title}</h2>
+                        <p className="text-[10px] text-earth/50 uppercase tracking-[0.3em] leading-relaxed">{subtitle}</p>
                     </div>
-                </div>
-
-                {/* Mobile View All */}
-                <FadeIn className="md:hidden mt-8 text-center flex justify-center">
                     <button
                         onClick={() => navigateTo(route)}
-                        className="text-[10px] uppercase tracking-widest text-earth border-b border-earth pb-1 flex items-center gap-2"
+                        className="group flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-earth/60 hover:text-earth transition-colors"
                     >
-                        View All {title} <ArrowRight className="w-3 h-3" />
+                        <span className="relative">
+                            Explore Archive
+                            <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-earth transition-all group-hover:w-full" />
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-2" />
                     </button>
                 </FadeIn>
+
+                {/* Staggered Masonry-style Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 lg:gap-x-12 gap-y-16">
+                    {products.map((product, idx) => (
+                        <LuxuryProductCard key={product.id} product={product} index={idx} />
+                    ))}
+                </div>
             </div>
         </section>
     );
@@ -133,103 +143,134 @@ export const NewCollectionPage: React.FC = () => {
 
     return (
         <div className="bg-[#FAF9F6] min-h-screen pt-[72px] selection:bg-stone-200">
-            {/* Editorial Hero */}
-            <div className="relative h-[60vh] md:h-[70vh] w-full bg-stone-100 overflow-hidden">
-                <img
-                    src="/images/brand/hero-living-organic.png"
-                    alt="Spring Collection"
-                    className="absolute inset-0 w-full h-full object-cover object-center opacity-90"
+            {/* Extremely Luxury Editorial Hero */}
+            <div className="relative h-screen w-full overflow-hidden bg-stone-900 flex items-center justify-center">
+                {/* Parallax Background */}
+                <div
+                    className="absolute inset-0 w-full h-full bg-cover bg-center opacity-80"
+                    style={{
+                        backgroundImage: `url('/images/brand/hero-living-organic.png')`,
+                        backgroundAttachment: 'fixed' // Creates the parallax effect
+                    }}
                 />
-                <div className="absolute inset-0 bg-stone-900/10 mix-blend-multiply" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#FAF9F6] via-transparent to-transparent opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-b from-stone-900/30 via-stone-900/10 to-stone-900/50" />
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-                    <FadeIn delay={100}>
-                        <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-white drop-shadow-sm mb-4 md:mb-6">
+                <div className="relative z-10 flex flex-col items-center justify-center w-full px-6 pt-20">
+                    <FadeIn delay={200} className="mb-8 md:mb-12">
+                        {/* Frosted Glass Pill */}
+                        <div className="px-6 py-2.5 backdrop-blur-md bg-white/5 border border-white/20 rounded-full shadow-2xl shadow-black/20">
+                            <p className="font-sans text-white/90 text-[9px] md:text-[10px] uppercase tracking-[0.4em] font-medium">
+                                {DROP_TAGLINE}
+                            </p>
+                        </div>
+                    </FadeIn>
+                    <FadeIn delay={500}>
+                        <h1 className="font-serif text-7xl md:text-9xl lg:text-[150px] leading-none text-white drop-shadow-2xl text-center tracking-tight">
                             {DROP_NAME}
+                            <br />
+                            <span className="italic font-light text-white/90">{DROP_YEAR}</span>
                         </h1>
                     </FadeIn>
-                    <FadeIn delay={300}>
-                        <p className="font-sans text-white text-[10px] md:text-sm uppercase tracking-[0.3em] font-medium drop-shadow-sm">
-                            {DROP_TAGLINE}
-                        </p>
-                    </FadeIn>
                 </div>
+
+                {/* Floating scroll indicator */}
+                <FadeIn delay={1200} className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                    <div className="w-[1px] h-16 bg-gradient-to-b from-white/0 via-white/50 to-white/0 animate-pulse" />
+                    <span className="text-[9px] text-white/50 uppercase tracking-[0.3em] mt-4">Scroll to discover</span>
+                </FadeIn>
             </div>
 
-            {/* Editorial Intro Text */}
-            <section className="py-20 md:py-32 px-6 text-center max-w-3xl mx-auto">
+            {/* Quiet Luxury Intro Text */}
+            <section className="py-32 md:py-48 px-6 text-center max-w-4xl mx-auto relative">
                 <FadeIn>
-                    <p className="font-serif text-2xl md:text-4xl text-earth leading-snug italic text-stone-600">
-                        "A celebration of soft textures, earthy tones, and the joy of dressing for warmer days. Curated with intention for your home and wardrobe."
+                    <p className="font-serif text-3xl md:text-5xl lg:text-6xl text-earth leading-tight md:leading-snug italic text-stone-600/90 font-light tracking-tight">
+                        "A celebration of pristine textures, earthy tones, and the profound joy of curating a sanctuary. Elevated intention for your home and wardrobe."
                     </p>
                 </FadeIn>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-earth/10 to-transparent -z-10" />
             </section>
 
-            {/* Collection Sections */}
-            <div className="pb-24">
+            {/* Collection Gallery Sections */}
+            <div className="pb-32 bg-gradient-to-b from-[#FAF9F6] to-white">
                 {CATEGORY_SECTIONS.map((section) => (
-                    <CategorySection
+                    <LuxuryCategorySection
                         key={section.id}
                         title={section.title}
+                        subtitle={section.subtitle}
                         products={dropProducts[section.id] || []}
                         route={section.route}
                     />
                 ))}
             </div>
 
-            {/* VIP Early Access Newsletter Signup */}
-            <section className="py-24 md:py-32 bg-earth text-center px-6">
-                <FadeIn className="max-w-xl mx-auto">
-                    <h2 className="font-serif text-3xl md:text-5xl text-cream mb-4">Never Miss a Drop</h2>
-                    <p className="text-sm text-sand/80 mb-3 max-w-md mx-auto leading-relaxed">
-                        Join the Inner Circle and get <span className="text-white font-medium">24-hour early access</span> to every new collection before anyone else.
-                    </p>
-                    <p className="text-xs text-sand/50 mb-10 uppercase tracking-widest">
-                        First to know · First to shop · Exclusive pieces
-                    </p>
+            {/* The Velvet Rope - Waitlist */}
+            <section className="relative py-32 md:py-48 flex items-center justify-center overflow-hidden">
+                <div
+                    className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90"
+                    style={{
+                        backgroundImage: `url('/images/brand/hero-living.png')`,
+                        backgroundAttachment: 'fixed'
+                    }}
+                />
+                <div className="absolute inset-0 bg-stone-950/70" />
 
-                    {signupStatus === 'success' ? (
-                        <FadeIn className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-sm p-8">
-                            <div className="flex justify-center mb-4">
-                                <div className="w-12 h-12 rounded-full bg-bronze/20 flex items-center justify-center">
-                                    <Check className="w-6 h-6 text-bronze" />
+                <FadeIn className="relative z-10 w-full max-w-2xl mx-auto px-6">
+                    <div className="backdrop-blur-2xl bg-black/30 border border-white/10 p-10 md:p-16 rounded-sm shadow-2xl relative overflow-hidden">
+                        {/* Subtle light effect inside the card */}
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+                        <div className="text-center mb-12">
+                            <h2 className="font-serif text-5xl md:text-6xl text-white mb-6 tracking-tight">Never Miss<br /><span className="italic text-white/80 font-light">a Drop</span></h2>
+                            <p className="text-[10px] md:text-xs text-white/60 uppercase tracking-[0.2em] leading-relaxed max-w-md mx-auto">
+                                Join the inner circle. Receive 24-hour early access to curated drops before they open to the public.
+                            </p>
+                        </div>
+
+                        {signupStatus === 'success' ? (
+                            <FadeIn className="text-center py-8">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-white/20 mb-6 bg-white/5">
+                                    <Check className="w-6 h-6 text-white" />
                                 </div>
-                            </div>
-                            <h3 className="font-serif text-2xl text-cream mb-2">You're In! ✨</h3>
-                            <p className="text-sm text-sand/70">
-                                Welcome to the Inner Circle. You'll be the first to know when our next collection drops.
-                            </p>
-                        </FadeIn>
-                    ) : (
-                        <form onSubmit={handleVipSignup} className="space-y-4 max-w-md mx-auto">
-                            <input
-                                type="text"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                placeholder="First Name"
-                                className="w-full bg-white/10 border border-white/20 px-5 py-3.5 text-sm text-cream placeholder:text-sand/40 focus:outline-none focus:border-bronze transition-colors rounded-sm"
-                            />
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Email Address"
-                                required
-                                className="w-full bg-white/10 border border-white/20 px-5 py-3.5 text-sm text-cream placeholder:text-sand/40 focus:outline-none focus:border-bronze transition-colors rounded-sm"
-                            />
-                            <button
-                                type="submit"
-                                disabled={signupStatus === 'loading'}
-                                className="w-full bg-bronze text-white py-3.5 text-[10px] uppercase tracking-[0.25em] hover:bg-bronze/80 transition-colors rounded-sm disabled:opacity-70 font-medium"
-                            >
-                                {signupStatus === 'loading' ? 'Joining...' : 'Join the Inner Circle'}
-                            </button>
-                            <p className="text-[10px] text-sand/40 pt-2">
-                                No spam, ever. Just early access & curated drops.
-                            </p>
-                        </form>
-                    )}
+                                <h3 className="font-serif text-3xl md:text-4xl text-white mb-3">Welcome In.</h3>
+                                <p className="text-[10px] text-white/50 uppercase tracking-[0.2em]">Your early access is secured.</p>
+                            </FadeIn>
+                        ) : (
+                            <form onSubmit={handleVipSignup} className="space-y-10">
+                                <div className="space-y-8">
+                                    <div className="relative group">
+                                        <input
+                                            type="text"
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                            placeholder="First Name"
+                                            className="w-full bg-transparent border-b border-white/20 pb-3 text-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white transition-colors"
+                                        />
+                                    </div>
+                                    <div className="relative group">
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="Email Address"
+                                            required
+                                            className="w-full bg-transparent border-b border-white/20 pb-3 text-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white transition-colors"
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={signupStatus === 'loading'}
+                                    className="w-full bg-white text-stone-900 py-5 text-[10px] uppercase tracking-[0.25em] hover:bg-stone-200 transition-colors disabled:opacity-70 font-medium"
+                                >
+                                    {signupStatus === 'loading' ? 'Requesting Access...' : 'Request Early Access'}
+                                </button>
+                                <p className="text-[9px] text-center text-white/30 uppercase tracking-[0.2em] pt-4">
+                                    A quiet, curated inbox experience.
+                                </p>
+                            </form>
+                        )}
+                    </div>
                 </FadeIn>
             </section>
         </div>

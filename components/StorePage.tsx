@@ -241,21 +241,23 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     };
 
     return (
-      <form onSubmit={handleCsSubscribe} className="w-full max-w-sm mx-auto flex flex-col sm:flex-row gap-3">
-        <input
-          type="email"
-          value={csEmail}
-          onChange={(e) => setCsEmail(e.target.value)}
-          placeholder="Enter your email"
-          required
-          className="flex-1 bg-white border border-earth/15 px-4 py-3 text-sm text-earth placeholder:text-earth/30 focus:outline-none focus:border-bronze rounded-sm"
-        />
+      <form onSubmit={handleCsSubscribe} className="w-full max-w-sm flex flex-col gap-6 mt-6">
+        <div className="relative group w-full">
+          <input
+            type="email"
+            value={csEmail}
+            onChange={(e) => setCsEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+            className="w-full bg-transparent border-b border-earth/20 pb-3 text-sm md:text-base text-earth placeholder:text-earth/40 focus:outline-none focus:border-earth transition-colors"
+          />
+        </div>
         <button
           type="submit"
           disabled={csStatus === 'loading' || csStatus === 'success'}
-          className="bg-earth text-white px-6 py-3 text-[10px] uppercase tracking-widest hover:bg-bronze transition-colors disabled:opacity-70 flex items-center justify-center gap-2 rounded-sm"
+          className="w-full bg-earth text-white px-8 py-3.5 text-[10px] uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors disabled:opacity-70 flex items-center justify-center gap-3 font-medium mt-2"
         >
-          {csStatus === 'loading' ? 'Joining...' : csStatus === 'success' ? <><Check className="w-4 h-4" /> Joined</> : 'Notify Me'}
+          {csStatus === 'loading' ? 'Requesting Access...' : csStatus === 'success' ? <><Check className="w-4 h-4" /> Secured</> : 'Request Early Access'}
         </button>
       </form>
     );
@@ -315,26 +317,31 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             ))}
           </div>
         ) : (
-          <div className="w-full bg-[#F5F3EF] border border-earth/10 rounded-sm p-10 md:p-14 flex flex-col items-center justify-center text-center">
-            <h4 className="font-serif text-2xl md:text-3xl text-earth mb-4">Coming Soon</h4>
-            <p className="text-sm text-earth/60 mb-8 max-w-md leading-relaxed">
-              New pieces arriving soon — join our list to be first to know.
+          <div className="w-full max-w-2xl mx-auto bg-white/70 backdrop-blur-3xl border border-white/50 p-12 md:p-16 flex flex-col items-center justify-center text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden my-12">
+            {/* Subtle light orb effect behind the card */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#F5F3EF] rounded-full blur-3xl opacity-60 -z-10 translate-x-1/3 -translate-y-1/3" />
+
+            <h4 className="font-serif text-3xl md:text-4xl text-earth mb-4 tracking-tight">The Archive</h4>
+            <p className="text-sm md:text-base text-earth/60 mb-10 max-w-md leading-relaxed font-light">
+              We are carefully curating new pieces for this collection. Join the waitlist to be first to know when they drop.
             </p>
-            <form onSubmit={handleSubscribe} className="w-full max-w-sm flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-                className="flex-1 bg-white border border-earth/15 px-4 py-3 text-sm text-earth placeholder:text-earth/30 focus:outline-none focus:border-bronze rounded-sm"
-              />
+            <form onSubmit={handleSubscribe} className="w-full max-w-sm flex flex-col gap-6">
+              <div className="relative group w-full">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="w-full bg-transparent border-b border-earth/20 pb-3 text-sm md:text-base text-earth placeholder:text-earth/40 focus:outline-none focus:border-earth transition-colors"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={subStatus === 'loading' || subStatus === 'success'}
-                className="bg-earth text-white px-6 py-3 text-[10px] uppercase tracking-widest hover:bg-bronze transition-colors disabled:opacity-70 flex items-center justify-center gap-2 rounded-sm"
+                className="w-full bg-earth text-white px-8 py-3.5 text-[10px] uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors disabled:opacity-70 flex items-center justify-center gap-3 font-medium mt-2"
               >
-                {subStatus === 'loading' ? 'Joining...' : subStatus === 'success' ? <><Check className="w-4 h-4" /> Joined</> : 'Notify Me'}
+                {subStatus === 'loading' ? 'Requesting Access...' : subStatus === 'success' ? <><Check className="w-4 h-4" /> Secured</> : 'Request Early Access'}
               </button>
             </form>
           </div>
@@ -777,15 +784,18 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
           <section className="px-4 md:px-8 py-12 md:py-16 min-h-[60vh]">
             <div className="container mx-auto">
               {filteredProducts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center py-16 md:py-24 animate-fade-in-up">
-                  <div className="w-full max-w-lg bg-[#F5F3EF] border border-earth/10 rounded-sm p-10 md:p-14">
-                    <h3 className="font-serif text-3xl md:text-4xl text-earth mb-4">Coming Soon</h3>
-                    <p className="text-sm text-earth/60 mb-8 leading-relaxed max-w-md mx-auto">
-                      New pieces arriving soon — join our list to be first to know.
+                <div className="flex flex-col items-center justify-center py-20 animate-fade-in-up md:min-h-[50vh]">
+                  <div className="w-full max-w-2xl mx-auto bg-white/70 backdrop-blur-3xl border border-white/50 p-12 md:p-16 flex flex-col items-center justify-center text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
+                    {/* Subtle light orb effect behind the card */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#F5F3EF] rounded-full blur-3xl opacity-60 -z-10 translate-x-1/3 -translate-y-1/3" />
+
+                    <h3 className="font-serif text-3xl md:text-4xl text-earth mb-4 tracking-tight">The Archive</h3>
+                    <p className="text-sm md:text-base text-earth/60 mb-2 leading-relaxed max-w-md mx-auto font-light">
+                      We are carefully curating new pieces for this collection. Join the waitlist to be first to know when they drop.
                     </p>
                     <ComingSoonSignup />
-                    <button onClick={() => handleCategoryChange(getBackDestination())} className="mt-8 text-xs uppercase tracking-widest text-bronze border-b border-bronze pb-1 hover:text-earth hover:border-earth transition-colors">
-                      Go Back
+                    <button onClick={() => handleCategoryChange(getBackDestination())} className="mt-12 text-[9px] uppercase tracking-[0.2em] text-earth/50 border-b border-earth/30 pb-1 hover:text-earth hover:border-earth transition-colors">
+                      Return to Collections
                     </button>
                   </div>
                 </div>
