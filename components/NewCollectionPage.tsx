@@ -3,7 +3,7 @@ import { FadeIn } from './FadeIn';
 import { useSite } from '../contexts/BlogContext';
 import { useNewsletter } from '../contexts/NewsletterContext';
 import { Product } from '../types';
-import { ArrowRight, Check, Sparkles } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 
 // Collection drop configuration
 const DROP_NAME = "Spring 2026 Collection";
@@ -181,9 +181,6 @@ export const NewCollectionPage: React.FC = () => {
             {/* VIP Early Access Newsletter Signup */}
             <section className="py-24 md:py-32 bg-earth text-center px-6">
                 <FadeIn className="max-w-xl mx-auto">
-                    <div className="flex justify-center mb-6">
-                        <Sparkles className="w-6 h-6 text-bronze" />
-                    </div>
                     <h2 className="font-serif text-3xl md:text-5xl text-cream mb-4">Never Miss a Drop</h2>
                     <p className="text-sm text-sand/80 mb-3 max-w-md mx-auto leading-relaxed">
                         Join the Inner Circle and get <span className="text-white font-medium">24-hour early access</span> to every new collection before anyone else.
