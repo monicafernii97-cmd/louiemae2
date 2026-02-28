@@ -3,11 +3,12 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { FadeIn } from './FadeIn';
 import { useSite } from '../contexts/BlogContext';
 import { Product, CollectionType, ProductVariant, Category } from '../types';
-import { ArrowLeft, X, ArrowUpRight, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, X, ArrowUpRight, ShoppingBag, Check } from 'lucide-react';
 import { AddToCartButton } from './cart';
 import { CircularGallery, GalleryItem } from './ui/circular-gallery-2';
 import { CurvedCategoryCarousel } from './ui/CurvedCategoryCarousel';
 import { GlassButton } from './ui/GlassButton';
+import { useNewsletter } from '../contexts/NewsletterContext';
 
 interface StorePageProps {
   collection: CollectionType;
@@ -224,9 +225,23 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   // Subcategory box with product previews
   const SubcategoryWithPreviews: React.FC<{ category: Category; index: number }> = ({ category, index }) => {
     const previewProducts = getProductsForCategory(category.title, 4);
+    const { addSubscriber } = useNewsletter();
+    const [email, setEmail] = useState('');
+    const [subStatus, setSubStatus] = useState<'idle' | 'loading' | 'success'>('idle');
 
-    // Only render if there are products to show, or if we want to show empty categories too
-    // Taking the user's "product displays" requirement literally, empty categories might be hidden or just show "Coming Soon"
+    const handleSubscribe = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!email) return;
+      setSubStatus('loading');
+      const success = await addSubscriber(email, 'Guest'); // Default name since we only ask for email here
+      if (success) {
+        setSubStatus('success');
+        setEmail('');
+      } else {
+        setSubStatus('idle');
+        alert('Already subscribed!');
+      }
+    };
 
     return (
       <FadeIn delay={index * 100} className="mb-16">
@@ -258,8 +273,28 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             ))}
           </div>
         ) : (
-          <div className="bg-white/50 rounded-lg p-10 text-center border border-dashed border-earth/10">
-            <p className="text-earth/40 text-sm italic font-serif">New arrivals coming to {category.title} soon.</p>
+          <div className="w-full bg-stone-50 border border-stone-200 rounded-sm p-8 md:p-12 flex flex-col items-center justify-center text-center">
+            <h4 className="font-serif text-2xl md:text-3xl text-earth mb-3">Coming Soon to {category.title}</h4>
+            <p className="text-sm text-earth/60 mb-8 max-w-md">
+              We're curating beautiful new pieces for this collection. Join the inner circle to be the first to know when they drop.
+            </p>
+            <form onSubmit={handleSubscribe} className="w-full max-w-sm flex flex-col md:flex-row gap-3">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                className="flex-1 bg-white border border-stone-200 px-4 py-3 text-sm focus:outline-none focus:border-bronze"
+              />
+              <button
+                type="submit"
+                disabled={subStatus === 'loading' || subStatus === 'success'}
+                className="bg-earth text-white px-6 py-3 text-[10px] uppercase tracking-widest hover:bg-bronze transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {subStatus === 'loading' ? 'Joining...' : subStatus === 'success' ? <><Check className="w-4 h-4" /> Joined</> : 'Notify Me'}
+              </button>
+            </form>
           </div>
         )}
       </FadeIn>

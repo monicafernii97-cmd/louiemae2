@@ -68,9 +68,9 @@ export const HomePage: React.FC = () => {
           </FadeIn>
           <FadeIn delay={400}>
             <GlassButton
-              onClick={() => navigateTo('#shop')}
+              onClick={() => navigateTo('#collection/new')}
             >
-              {home.hero.buttonText}
+              New Collection
             </GlassButton>
           </FadeIn>
         </div>

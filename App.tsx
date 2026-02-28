@@ -12,6 +12,7 @@ import { DynamicPage } from './components/DynamicPage';
 import { StorePage } from './components/StorePage';
 import { SupportPage } from './components/SupportPage';
 import { NewArrivalsPage } from './components/NewArrivalsPage';
+import { NewCollectionPage } from './components/NewCollectionPage';
 import { ShopLandingPage } from './components/ShopLandingPage';
 import { NewsletterPopup } from './components/NewsletterPopup';
 import { SiteProvider, useSite } from './contexts/BlogContext';
@@ -137,6 +138,7 @@ const AppContent = () => {
       else if (baseHash === '#checkout/success') setActivePage('checkout-success');
       else if (baseHash === '#checkout/cancel') setActivePage('checkout-cancel');
       else if (baseHash.startsWith('#pages/')) setActivePage(baseHash);
+      else if (baseHash === '#collection/new') setActivePage('new-collection');
       else if (baseHash.startsWith('#collection/')) setActivePage(fullHash); // Pass full hash to parse query later
       else setActivePage('home');
     };
@@ -165,6 +167,7 @@ const AppContent = () => {
     else if (baseHash === '#new-arrivals') setActivePage('new-arrivals');
     else if (baseHash.startsWith('#support')) setActivePage(href);
     else if (baseHash.startsWith('#pages/')) setActivePage(baseHash);
+    else if (baseHash === '#collection/new') setActivePage('new-collection');
     else if (baseHash.startsWith('#collection/')) setActivePage(href);
     else setActivePage('home');
 
@@ -246,6 +249,7 @@ const AppContent = () => {
   else if (activePage === 'story') CurrentComponent = StoryPage;
   else if (activePage === 'shop') CurrentComponent = ShopLandingPage;
   else if (activePage === 'new-arrivals') CurrentComponent = NewArrivalsPage;
+  else if (activePage === 'new-collection') CurrentComponent = NewCollectionPage;
   else if (activePage === 'aliexpress-test') CurrentComponent = AliExpressTest;
   else if (activePage === 'checkout-success') CurrentComponent = CheckoutSuccess;
   else if (activePage === 'checkout-cancel') CurrentComponent = CheckoutCancel;

@@ -320,45 +320,48 @@ export const fixBrokenImages = mutation({
 });
 
 /**
- * MIGRATION: Fix Berry Sweet Cardigan Set
- * - Fix protocol-relative image URLs (// -> https://)
- * - Clear misleading error message
- * - Reset CJ status to pending for resubmission
+ * MIGRATION: Approve Berry Sweet Cardigan Set with CJ variant data
+ * CJ sourcing succeeded (status 9) with cjProductId and 4 size variants
  */
 export const fixBerrySweetCardigan = mutation({
     args: {},
     handler: async (ctx) => {
         const products = await ctx.db.query("products").collect();
-        let imagesFixed = 0;
-
-        // Fix ALL products with protocol-relative URLs
-        for (const product of products) {
-            const hasProtocolRelative = (product.images || []).some(
-                (img: string) => img.startsWith("//")
-            );
-            if (hasProtocolRelative) {
-                const fixedImages = product.images.map((img: string) =>
-                    img.startsWith("//") ? "https:" + img : img
-                );
-                await ctx.db.patch(product._id, { images: fixedImages });
-                imagesFixed++;
-            }
-        }
-
-        // Fix Berry Sweet Cardigan Set specifically
         const berry = products.find(p => p.name === "Berry Sweet Cardigan Set");
-        if (berry) {
-            await ctx.db.patch(berry._id, {
-                cjSourcingError: "CJ rejected initial request — ready for resubmission",
-                cjSourcingStatus: "pending",
-            });
+        if (!berry) {
+            return { success: false, message: "Berry Sweet Cardigan Set not found" };
         }
+
+        await ctx.db.patch(berry._id, {
+            cjSourcingStatus: "approved",
+            cjProductId: "2602080412251614300",
+            cjVariantId: "2602080412251614700", // Default variant (66cm)
+            cjSku: "CJYE275801801AZ",
+            cjSourcingError: undefined,
+            cjApprovedAt: new Date().toISOString(),
+            inStock: true,
+            // CJ variants for admin linking UI
+            cjVariants: [
+                { vid: "2602080412251614700", sku: "CJYE275801801AZ", name: "Red - 66cm (3-6M)", price: 6.97, image: "https://cf.cjdropshipping.com/quick/product/7d28668d-d69c-4d9a-9c9e-57c475da085b.jpg" },
+                { vid: "2602080412251615000", sku: "CJYE275801802BY", name: "Red - 73cm (6-12M)", price: 6.97, image: "https://cf.cjdropshipping.com/quick/product/7d28668d-d69c-4d9a-9c9e-57c475da085b.jpg" },
+                { vid: "2602080412251615300", sku: "CJYE275801803CX", name: "Red - 80cm (12-18M)", price: 6.97, image: "https://cf.cjdropshipping.com/quick/product/7d28668d-d69c-4d9a-9c9e-57c475da085b.jpg" },
+                { vid: "2602080412251615600", sku: "CJYE275801804DW", name: "Red - 90cm (18-24M)", price: 6.97, image: "https://cf.cjdropshipping.com/quick/product/7d28668d-d69c-4d9a-9c9e-57c475da085b.jpg" },
+            ],
+            // Customer-facing size variants linked to CJ variant IDs
+            variants: [
+                { id: "size_66cm", name: "Size: 66cm (3-6M)", priceAdjustment: 0, inStock: true, cjVariantId: "2602080412251614700", cjSku: "CJYE275801801AZ" },
+                { id: "size_73cm", name: "Size: 73cm (6-12M)", priceAdjustment: 0, inStock: true, cjVariantId: "2602080412251615000", cjSku: "CJYE275801802BY" },
+                { id: "size_80cm", name: "Size: 80cm (12-18M)", priceAdjustment: 0, inStock: true, cjVariantId: "2602080412251615300", cjSku: "CJYE275801803CX" },
+                { id: "size_90cm", name: "Size: 90cm (18-24M)", priceAdjustment: 0, inStock: true, cjVariantId: "2602080412251615600", cjSku: "CJYE275801804DW" },
+            ],
+        });
 
         return {
             success: true,
-            imagesFixed,
-            berryFound: !!berry,
-            message: "Fixed protocol-relative images and reset Berry Sweet Cardigan for resubmission"
+            message: "Berry Sweet Cardigan Set approved with 4 size variants linked to CJ",
+            cjProductId: "2602080412251614300",
+            variantCount: 4,
         };
     },
 });
+

@@ -278,3 +278,182 @@ export const getTokenStatus = action({
         }
     },
 });
+
+/**
+ * Fetch product details and variants from CJ API by SPU code
+ * Used when the CJ dashboard is inaccessible but the product is already sourced
+ */
+export const fetchProductBySpu = action({
+    args: {
+        spu: v.string(),
+    },
+    handler: async (ctx, args): Promise<{
+        success: boolean;
+        product?: any;
+        variants?: any[];
+        error?: string;
+    }> => {
+        try {
+            const token = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
+            if (!token) {
+                return { success: false, error: "Failed to authenticate with CJ API" };
+            }
+
+            const headers = {
+                "Content-Type": "application/json",
+                "CJ-Access-Token": token,
+            };
+
+            const results: any = {};
+
+            // 1. Try product detail by SPU (GET request with query param)
+            try {
+                const detailRes = await fetch(
+                    `${CJ_API_BASE}/product/query?productSpu=${encodeURIComponent(args.spu)}`,
+                    { method: "GET", headers }
+                );
+                const detailData = await detailRes.json();
+                results.productQuery = detailData;
+                console.log("CJ product/query response:", JSON.stringify(detailData, null, 2));
+            } catch (e: any) {
+                results.productQueryError = e.message;
+            }
+
+            // 2. Try getting variants specifically (GET request)
+            try {
+                const variantRes = await fetch(
+                    `${CJ_API_BASE}/product/variant/query?productSpu=${encodeURIComponent(args.spu)}`,
+                    { method: "GET", headers }
+                );
+                const variantData = await variantRes.json();
+                results.variantQuery = variantData;
+                console.log("CJ variant/query response:", JSON.stringify(variantData, null, 2));
+            } catch (e: any) {
+                results.variantQueryError = e.message;
+            }
+
+            // 3. Try product list search with GET as well
+            try {
+                const listRes = await fetch(
+                    `${CJ_API_BASE}/product/list?productSpu=${encodeURIComponent(args.spu)}&pageNum=1&pageSize=10`,
+                    { method: "GET", headers }
+                );
+                const listData = await listRes.json();
+                results.productList = listData;
+                console.log("CJ product/list response:", JSON.stringify(listData, null, 2));
+            } catch (e: any) {
+                results.productListError = e.message;
+            }
+
+            // Extract the best result
+            const productData = results.productQuery?.data || results.productList?.data?.list?.[0];
+            const variants = productData?.variants || results.variantQuery?.data || [];
+
+            return {
+                success: true,
+                product: productData || results,
+                variants: Array.isArray(variants) ? variants : [],
+            };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
+});
+
+/**
+ * Fetch full product details from CJ using sourcing ID and/or product ID
+ * Queries multiple endpoints to find variants
+ */
+export const fetchProductDetails = action({
+    args: {
+        sourcingId: v.optional(v.string()),
+        pid: v.optional(v.string()),
+    },
+    handler: async (ctx, args): Promise<{
+        success: boolean;
+        results: any;
+    }> => {
+        try {
+            const token = await ctx.runAction(internal.cjDropshipping.getAccessToken, {});
+            if (!token) {
+                return { success: false, results: { error: "Failed to authenticate" } };
+            }
+
+            const headers = {
+                "Content-Type": "application/json",
+                "CJ-Access-Token": token,
+            };
+
+            const results: any = {};
+
+            // 1. Check sourcing status to get cjProductId
+            if (args.sourcingId) {
+                try {
+                    const sourcingRes = await fetch(`${CJ_API_BASE}/product/sourcing/query`, {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ sourceIds: [args.sourcingId] }),
+                    });
+                    const sourcingData = await sourcingRes.json();
+                    results.sourcingQuery = sourcingData;
+                    console.log("CJ sourcing/query:", JSON.stringify(sourcingData, null, 2));
+
+                    // Extract pid from sourcing result if found
+                    const sourcing = Array.isArray(sourcingData.data)
+                        ? sourcingData.data[0]
+                        : sourcingData.data;
+                    if (sourcing?.cjProductId) {
+                        args.pid = sourcing.cjProductId;
+                    }
+                } catch (e: any) {
+                    results.sourcingQueryError = e.message;
+                }
+            }
+
+            // 2. Get product detail by pid (GET with pid in URL path)
+            if (args.pid) {
+                try {
+                    const detailRes = await fetch(
+                        `${CJ_API_BASE}/product/query?pid=${encodeURIComponent(args.pid)}`,
+                        { method: "GET", headers }
+                    );
+                    const detailData = await detailRes.json();
+                    results.productDetail = detailData;
+                    console.log("CJ product detail:", JSON.stringify(detailData, null, 2));
+                } catch (e: any) {
+                    results.productDetailError = e.message;
+                }
+
+                // 3. Get variants by pid
+                try {
+                    const variantRes = await fetch(
+                        `${CJ_API_BASE}/product/variant/query/byPid?pid=${encodeURIComponent(args.pid)}`,
+                        { method: "GET", headers }
+                    );
+                    const variantData = await variantRes.json();
+                    results.variantsByPid = variantData;
+                    console.log("CJ variants by pid:", JSON.stringify(variantData, null, 2));
+                } catch (e: any) {
+                    results.variantsByPidError = e.message;
+                }
+            }
+
+            // 4. Also try the "my products" / sourcing list to find it
+            try {
+                const myProductsRes = await fetch(
+                    `${CJ_API_BASE}/product/sourcing/list?pageNum=1&pageSize=20`,
+                    { method: "GET", headers }
+                );
+                const myProductsData = await myProductsRes.json();
+                results.sourcingList = myProductsData;
+                console.log("CJ sourcing/list:", JSON.stringify(myProductsData, null, 2));
+            } catch (e: any) {
+                results.sourcingListError = e.message;
+            }
+
+            return { success: true, results };
+        } catch (error: any) {
+            return { success: false, results: { error: error.message } };
+        }
+    },
+});

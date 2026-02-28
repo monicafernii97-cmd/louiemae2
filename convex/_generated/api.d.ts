@@ -20,7 +20,6 @@ import type * as customPages from "../customPages.js";
 import type * as emails from "../emails.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
-import type * as migrations from "../migrations.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 import type * as scraper from "../scraper.js";
@@ -46,7 +45,6 @@ declare const fullApi: ApiFromModules<{
   emails: typeof emails;
   files: typeof files;
   http: typeof http;
-  migrations: typeof migrations;
   orders: typeof orders;
   products: typeof products;
   scraper: typeof scraper;
