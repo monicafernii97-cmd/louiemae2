@@ -9,6 +9,7 @@ interface NewsletterContextType {
   subscribers: Subscriber[];
   campaigns: EmailCampaign[];
   addSubscriber: (email: string, firstName?: string) => Promise<boolean>;
+  addSubscriberWithTags: (email: string, firstName: string, tags: string[]) => Promise<boolean>;
   deleteSubscriber: (id: string) => void;
   createCampaign: (campaign: Omit<EmailCampaign, 'id' | 'stats' | 'status'>) => void;
   updateCampaign: (id: string, updates: Partial<EmailCampaign>) => void;
@@ -99,6 +100,12 @@ export const NewsletterProvider: React.FC<{ children: ReactNode }> = ({ children
     return true;
   };
 
+  const addSubscriberWithTags = async (email: string, firstName: string, tags: string[]): Promise<boolean> => {
+    const result = await createSubscriber({ email, firstName, tags });
+    // Even if subscriber already existed, their tags were merged, so always show success
+    return true;
+  };
+
   const deleteSubscriber = (id: string) => {
     removeSubscriber({ id: id as Id<"subscribers"> });
   };
@@ -132,6 +139,7 @@ export const NewsletterProvider: React.FC<{ children: ReactNode }> = ({ children
       subscribers,
       campaigns,
       addSubscriber,
+      addSubscriberWithTags,
       deleteSubscriber,
       createCampaign,
       updateCampaign,

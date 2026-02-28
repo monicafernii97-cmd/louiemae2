@@ -12,6 +12,7 @@ export const create = mutation({
     args: {
         email: v.string(),
         firstName: v.optional(v.string()),
+        tags: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
         // Check for duplicates
@@ -21,15 +22,23 @@ export const create = mutation({
             .first();
 
         if (existing) {
-            return null; // Already exists
+            // If new tags are provided, merge them into existing tags
+            if (args.tags && args.tags.length > 0) {
+                const mergedTags = [...new Set([...existing.tags, ...args.tags])];
+                await ctx.db.patch(existing._id, { tags: mergedTags });
+            }
+            return null; // Already exists (but tags were merged)
         }
+
+        const defaultTags = ["new"];
+        const allTags = args.tags ? [...new Set([...defaultTags, ...args.tags])] : defaultTags;
 
         return await ctx.db.insert("subscribers", {
             email: args.email,
             firstName: args.firstName,
             dateSubscribed: new Date().toISOString().split('T')[0],
             status: "active",
-            tags: ["new"],
+            tags: allTags,
             openRate: 0,
         });
     },
