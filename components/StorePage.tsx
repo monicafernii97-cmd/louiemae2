@@ -232,7 +232,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       e.preventDefault();
       if (!csEmail) return;
       setCsStatus('loading');
-      await addSubscriberWithTags(csEmail, 'Guest', ['vip', 'early-access']);
+
+      const categoryTag = `category:${selectedCategory.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+      await addSubscriberWithTags(csEmail, 'Guest', ['vip', 'early-access', categoryTag]);
+
       setCsStatus('success');
       setCsEmail('');
     };
@@ -261,7 +264,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   // Subcategory box with product previews
   const SubcategoryWithPreviews: React.FC<{ category: Category; index: number }> = ({ category, index }) => {
     const previewProducts = getProductsForCategory(category.title, 4);
-    const { addSubscriber } = useNewsletter();
+    const { addSubscriberWithTags } = useNewsletter();
     const [email, setEmail] = useState('');
     const [subStatus, setSubStatus] = useState<'idle' | 'loading' | 'success'>('idle');
 
@@ -269,7 +272,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       e.preventDefault();
       if (!email) return;
       setSubStatus('loading');
-      const success = await addSubscriber(email, 'Guest'); // Default name since we only ask for email here
+
+      const categoryTag = `category:${category.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+      const success = await addSubscriberWithTags(email, 'Guest', ['vip', 'early-access', categoryTag]);
+
       if (success) {
         setSubStatus('success');
         setEmail('');
