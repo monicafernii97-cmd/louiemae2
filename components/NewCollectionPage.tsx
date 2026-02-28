@@ -125,7 +125,7 @@ export const NewCollectionPage: React.FC = () => {
             {/* Editorial Hero */}
             <div className="relative h-[60vh] md:h-[70vh] w-full bg-stone-100 overflow-hidden">
                 <img
-                    src="https://images.unsplash.com/photo-1490750967868-88cb4ecb08cb?q=80&w=2500&auto=format&fit=crop"
+                    src="/images/brand/hero-living-organic.png"
                     alt="Spring Floral Setup"
                     className="absolute inset-0 w-full h-full object-cover object-center opacity-90"
                 />
