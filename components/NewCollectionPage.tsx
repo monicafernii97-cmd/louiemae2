@@ -72,18 +72,24 @@ const LuxuryCategorySection: React.FC<{
     return (
         <section className="py-24 md:py-40 border-b border-stone-200/40 last:border-0 relative">
             <div className="container mx-auto px-6 md:px-12">
-                {/* Minimalist Editorial Section Header */}
-                <FadeIn className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 md:mb-24">
-                    <div className="max-w-xl mb-8 md:mb-0">
-                        <h2 className="font-serif text-4xl md:text-6xl lg:text-7xl text-earth mb-4 tracking-tight">{title}</h2>
-                        <p className="text-[10px] text-earth/50 uppercase tracking-[0.3em] leading-relaxed">{subtitle}</p>
+                {/* Centered Editorial Section Header with Line Art */}
+                <FadeIn className="flex flex-col items-center text-center mb-16 md:mb-24">
+                    {/* Decorative Line Art */}
+                    <div className="flex items-center gap-4 md:gap-6 w-full max-w-lg mb-6">
+                        <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent to-earth/20" />
+                        <div className="w-2 h-2 rotate-45 border border-earth/30" />
+                        <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent to-earth/20" />
                     </div>
+
+                    <h2 className="font-serif text-4xl md:text-6xl lg:text-7xl text-earth mb-4 tracking-tight italic font-light">{title}</h2>
+                    <p className="text-[10px] text-earth/50 uppercase tracking-[0.3em] leading-relaxed mb-8">{subtitle}</p>
+
                     <button
                         onClick={() => navigateTo(route)}
                         className="group flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-earth/60 hover:text-earth transition-colors"
                     >
                         <span className="relative">
-                            Explore Archive
+                            Explore Collection
                             <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-earth transition-all group-hover:w-full" />
                         </span>
                         <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-2" />
