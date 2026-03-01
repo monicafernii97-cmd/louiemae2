@@ -187,7 +187,7 @@ export const NewCollectionPage: React.FC = () => {
             </div>
 
             {/* Quiet Luxury Intro Text */}
-            <section className="py-20 md:py-28 px-6 text-center max-w-3xl mx-auto relative">
+            <section className="pt-20 md:pt-28 pb-8 md:pb-12 px-6 text-center max-w-3xl mx-auto relative">
                 <FadeIn>
                     <p className="font-serif text-2xl md:text-3xl lg:text-4xl text-earth leading-relaxed md:leading-snug italic text-stone-600/90 font-light tracking-tight">
                         "A celebration of pristine textures, earthy tones, and the profound joy of curating a sanctuary. Elevated intention for your home and wardrobe."
