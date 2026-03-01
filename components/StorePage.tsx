@@ -241,21 +241,21 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
     };
 
     return (
-      <form onSubmit={handleCsSubscribe} className="w-full max-w-sm flex flex-col gap-6 mt-6">
+      <form onSubmit={handleCsSubscribe} className="w-full max-w-sm mx-auto flex flex-col gap-6 mt-6">
         <div className="relative group w-full">
           <input
             type="email"
             value={csEmail}
             onChange={(e) => setCsEmail(e.target.value)}
-            placeholder="Enter your email"
+            placeholder="Email Address"
             required
-            className="w-full bg-transparent border-b border-earth/20 pb-3 text-sm md:text-base text-earth placeholder:text-earth/40 focus:outline-none focus:border-earth transition-colors"
+            className="w-full bg-transparent border-b border-white/20 pb-3 text-sm md:text-base text-white placeholder:text-white/30 focus:outline-none focus:border-white transition-colors"
           />
         </div>
         <button
           type="submit"
           disabled={csStatus === 'loading' || csStatus === 'success'}
-          className="w-full bg-earth text-white px-8 py-3.5 text-[10px] uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors disabled:opacity-70 flex items-center justify-center gap-3 font-medium mt-2"
+          className="w-full bg-white text-stone-900 py-4 text-[10px] uppercase tracking-[0.25em] hover:bg-stone-200 transition-colors disabled:opacity-70 flex items-center justify-center gap-3 rounded-full font-medium mt-2 shadow-lg"
         >
           {csStatus === 'loading' ? 'Requesting Access...' : csStatus === 'success' ? <><Check className="w-4 h-4" /> Secured</> : 'Request Early Access'}
         </button>
@@ -317,33 +317,47 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             ))}
           </div>
         ) : (
-          <div className="w-full max-w-2xl mx-auto bg-white/70 backdrop-blur-3xl border border-white/50 p-12 md:p-16 flex flex-col items-center justify-center text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden my-12">
-            {/* Subtle light orb effect behind the card */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#F5F3EF] rounded-full blur-3xl opacity-60 -z-10 translate-x-1/3 -translate-y-1/3" />
+          <div className="relative w-full max-w-3xl mx-auto rounded-[2rem] overflow-hidden my-12 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.3)] group hover:-translate-y-2 transition-transform duration-700">
+            {/* Atmospheric Parallax Background Image */}
+            <div
+              className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 transition-transform duration-1000 group-hover:scale-105"
+              style={{
+                backgroundImage: `url('/images/brand/hero-living.png')`,
+              }}
+            />
+            <div className="absolute inset-0 bg-stone-950/70" />
 
-            <h4 className="font-serif text-3xl md:text-4xl text-earth mb-4 tracking-tight">The Archive</h4>
-            <p className="text-sm md:text-base text-earth/60 mb-10 max-w-md leading-relaxed font-light">
-              We are carefully curating new pieces for this collection. Join the waitlist to be first to know when they drop.
-            </p>
-            <form onSubmit={handleSubscribe} className="w-full max-w-sm flex flex-col gap-6">
-              <div className="relative group w-full">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  className="w-full bg-transparent border-b border-earth/20 pb-3 text-sm md:text-base text-earth placeholder:text-earth/40 focus:outline-none focus:border-earth transition-colors"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={subStatus === 'loading' || subStatus === 'success'}
-                className="w-full bg-earth text-white px-8 py-3.5 text-[10px] uppercase tracking-[0.2em] hover:bg-stone-800 transition-colors disabled:opacity-70 flex items-center justify-center gap-3 font-medium mt-2"
-              >
-                {subStatus === 'loading' ? 'Requesting Access...' : subStatus === 'success' ? <><Check className="w-4 h-4" /> Secured</> : 'Request Early Access'}
-              </button>
-            </form>
+            {/* Glassmorphic Floating Module */}
+            <div className="relative z-10 w-full p-12 md:p-20 flex flex-col items-center justify-center text-center backdrop-blur-2xl bg-black/30 border border-white/10 rounded-[2rem]">
+              {/* Subtle light effect inside the card */}
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl opacity-50 -z-10 translate-x-1/3 -translate-y-1/3" />
+
+              <h4 className="font-serif text-4xl md:text-5xl text-white mb-4 tracking-tight">Coming Soon</h4>
+              <p className="text-sm md:text-xs text-white/60 uppercase tracking-[0.2em] mb-12 max-w-md mx-auto leading-relaxed font-light">
+                Join the inner circle. Receive 24-hour early access to {category.title} drops before they open to the public.
+              </p>
+
+              <form onSubmit={handleSubscribe} className="w-full max-w-sm flex flex-col gap-6">
+                <div className="relative group w-full">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email Address"
+                    required
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-sm md:text-base text-white placeholder:text-white/30 focus:outline-none focus:border-white transition-colors"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={subStatus === 'loading' || subStatus === 'success'}
+                  className="w-full bg-white text-stone-900 py-4 text-[10px] uppercase tracking-[0.25em] hover:bg-stone-200 transition-colors disabled:opacity-70 flex items-center justify-center gap-3 font-medium mt-2 rounded-full shadow-lg"
+                >
+                  {subStatus === 'loading' ? 'Requesting Access...' : subStatus === 'success' ? <><Check className="w-4 h-4" /> Secured</> : 'Request Early Access'}
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </FadeIn>
@@ -784,19 +798,35 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
           <section className="px-4 md:px-8 py-12 md:py-16 min-h-[60vh]">
             <div className="container mx-auto">
               {filteredProducts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 animate-fade-in-up md:min-h-[50vh]">
-                  <div className="w-full max-w-2xl mx-auto bg-white/70 backdrop-blur-3xl border border-white/50 p-12 md:p-16 flex flex-col items-center justify-center text-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
-                    {/* Subtle light orb effect behind the card */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#F5F3EF] rounded-full blur-3xl opacity-60 -z-10 translate-x-1/3 -translate-y-1/3" />
+                <div className="flex flex-col items-center justify-center py-24 animate-fade-in-up md:min-h-[60vh]">
+                  <div className="relative w-full max-w-3xl mx-auto rounded-[2rem] overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.3)] hover:-translate-y-2 transition-transform duration-700">
+                    {/* Atmospheric Parallax Background Image */}
+                    <div
+                      className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90"
+                      style={{
+                        backgroundImage: `url('/images/brand/hero-living.png')`,
+                        backgroundAttachment: 'fixed'
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-stone-950/70" />
 
-                    <h3 className="font-serif text-3xl md:text-4xl text-earth mb-4 tracking-tight">The Archive</h3>
-                    <p className="text-sm md:text-base text-earth/60 mb-2 leading-relaxed max-w-md mx-auto font-light">
-                      We are carefully curating new pieces for this collection. Join the waitlist to be first to know when they drop.
-                    </p>
-                    <ComingSoonSignup />
-                    <button onClick={() => handleCategoryChange(getBackDestination())} className="mt-12 text-[9px] uppercase tracking-[0.2em] text-earth/50 border-b border-earth/30 pb-1 hover:text-earth hover:border-earth transition-colors">
-                      Return to Collections
-                    </button>
+                    {/* Glassmorphic Floating Module */}
+                    <div className="relative z-10 w-full p-12 md:p-24 flex flex-col items-center justify-center text-center backdrop-blur-2xl bg-black/30 border border-white/10 rounded-[2rem]">
+                      {/* Subtle light effect inside the card */}
+                      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl opacity-50 -z-10 translate-x-1/3 -translate-y-1/3" />
+
+                      <h3 className="font-serif text-4xl md:text-6xl text-white mb-6 tracking-tight">Coming Soon</h3>
+                      <p className="text-sm md:text-xs text-white/60 uppercase tracking-[0.2em] mb-12 max-w-md mx-auto font-light leading-relaxed">
+                        Join the inner circle. Receive 24-hour early access to {selectedCategory} drops before they open to the public.
+                      </p>
+
+                      <ComingSoonSignup />
+
+                      <button onClick={() => handleCategoryChange(getBackDestination())} className="mt-16 text-[9px] uppercase tracking-[0.2em] text-white/50 border-b border-white/30 pb-1 hover:text-white hover:border-white transition-colors z-20 relative">
+                        Return to Collections
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
