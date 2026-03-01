@@ -317,7 +317,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             ))}
           </div>
         ) : (
-          <div className="relative w-full max-w-3xl mx-auto rounded-[2rem] overflow-hidden my-12 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.3)] group hover:-translate-y-2 transition-transform duration-700">
+          <div className="relative w-full max-w-3xl mx-auto rounded-[2rem] overflow-hidden my-12 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.3)] group translate-y-0 hover:-translate-y-2 transition-transform duration-700">
             {/* Atmospheric Parallax Background Image */}
             <div
               className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90 transition-transform duration-1000 group-hover:scale-105"
@@ -799,7 +799,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             <div className="container mx-auto">
               {filteredProducts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 animate-fade-in-up md:min-h-[60vh]">
-                  <div className="relative w-full max-w-3xl mx-auto rounded-[2rem] overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.3)] hover:-translate-y-2 transition-transform duration-700">
+                  <div className="relative w-full max-w-3xl mx-auto rounded-[2rem] overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.3)] translate-y-0 hover:-translate-y-2 transition-transform duration-700">
                     {/* Atmospheric Parallax Background Image */}
                     <div
                       className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90"
