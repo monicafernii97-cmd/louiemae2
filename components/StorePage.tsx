@@ -325,10 +325,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                 backgroundImage: `url('/images/brand/hero-living.png')`,
               }}
             />
-            <div className="absolute inset-0 bg-stone-950/70" />
+            <div className="absolute inset-0 bg-earth/40" />
 
             {/* Glassmorphic Floating Module */}
-            <div className="relative z-10 w-full p-12 md:p-20 flex flex-col items-center justify-center text-center backdrop-blur-2xl bg-black/30 border border-white/10 rounded-[2rem]">
+            <div className="relative z-10 w-full p-12 md:p-20 flex flex-col items-center justify-center text-center backdrop-blur-2xl bg-earth/15 border border-white/10 rounded-[2rem]">
               {/* Subtle light effect inside the card */}
               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl opacity-50 -z-10 translate-x-1/3 -translate-y-1/3" />
@@ -808,10 +808,10 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                         backgroundAttachment: 'fixed'
                       }}
                     />
-                    <div className="absolute inset-0 bg-stone-950/70" />
+                    <div className="absolute inset-0 bg-earth/40" />
 
                     {/* Glassmorphic Floating Module */}
-                    <div className="relative z-10 w-full p-12 md:p-24 flex flex-col items-center justify-center text-center backdrop-blur-2xl bg-black/30 border border-white/10 rounded-[2rem]">
+                    <div className="relative z-10 w-full p-12 md:p-24 flex flex-col items-center justify-center text-center backdrop-blur-2xl bg-earth/15 border border-white/10 rounded-[2rem]">
                       {/* Subtle light effect inside the card */}
                       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl opacity-50 -z-10 translate-x-1/3 -translate-y-1/3" />

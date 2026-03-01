@@ -212,10 +212,10 @@ export const NewCollectionPage: React.FC = () => {
                         backgroundAttachment: 'fixed'
                     }}
                 />
-                <div className="absolute inset-0 bg-stone-950/70" />
+                <div className="absolute inset-0 bg-earth/40" />
 
                 <FadeIn className="relative z-10 w-full max-w-2xl mx-auto px-6">
-                    <div className="backdrop-blur-2xl bg-black/30 border border-white/10 p-10 md:p-16 rounded-sm shadow-2xl relative overflow-hidden">
+                    <div className="backdrop-blur-2xl bg-earth/15 border border-white/10 p-10 md:p-16 rounded-[2rem] shadow-2xl relative overflow-hidden">
                         {/* Subtle light effect inside the card */}
                         <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
