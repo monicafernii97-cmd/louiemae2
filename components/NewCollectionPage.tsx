@@ -6,8 +6,7 @@ import { Product } from '../types';
 import { ArrowRight, Check } from 'lucide-react';
 
 // Collection drop configuration
-const DROP_NAME = "Spring";
-const DROP_YEAR = "2026";
+const DROP_NAME = "Consider the Lilies";
 const DROP_TAGLINE = "Curated pieces for the season ahead";
 
 const CATEGORY_SECTIONS = [
@@ -161,23 +160,32 @@ export const NewCollectionPage: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-stone-900/30 via-stone-900/10 to-stone-900/50" />
 
-                <div className="relative z-10 flex flex-col items-center justify-center w-full px-6 pt-20">
-                    <FadeIn delay={200} className="mb-8 md:mb-12">
-                        {/* Frosted Glass Pill */}
-                        <div className="px-6 py-2.5 backdrop-blur-md bg-white/5 border border-white/20 rounded-full shadow-2xl shadow-black/20">
-                            <p className="font-sans text-white/90 text-[9px] md:text-[10px] uppercase tracking-[0.4em] font-medium">
-                                {DROP_TAGLINE}
-                            </p>
-                        </div>
-                    </FadeIn>
-                    <FadeIn delay={500}>
-                        <h1 className="font-serif text-7xl md:text-9xl lg:text-[150px] leading-none text-white drop-shadow-2xl text-center tracking-tight">
+                <div className="relative z-10 flex flex-col items-center justify-center w-full px-6">
+                    <FadeIn delay={300}>
+                        <h1 className="font-serif text-6xl md:text-8xl lg:text-[130px] leading-none text-white drop-shadow-2xl text-center tracking-tight italic font-light">
                             {DROP_NAME}
-                            <br />
-                            <span className="italic font-light text-white/90">{DROP_YEAR}</span>
                         </h1>
                     </FadeIn>
+                    <FadeIn delay={500}>
+                        <p className="font-sans text-white/70 text-xs md:text-sm uppercase tracking-[0.4em] mt-6">
+                            Collection
+                        </p>
+                    </FadeIn>
+                    <FadeIn delay={700}>
+                        <p className="font-sans text-white/50 text-[10px] md:text-xs uppercase tracking-[0.3em] mt-3">
+                            Spring 2026
+                        </p>
+                    </FadeIn>
                 </div>
+
+                {/* Frosted Glass Pill — toward the bottom */}
+                <FadeIn delay={900} className="absolute bottom-24 left-1/2 -translate-x-1/2">
+                    <div className="px-6 py-2.5 backdrop-blur-md bg-white/5 border border-white/20 rounded-full shadow-2xl shadow-black/20">
+                        <p className="font-sans text-white/90 text-[9px] md:text-[10px] uppercase tracking-[0.4em] font-medium">
+                            {DROP_TAGLINE}
+                        </p>
+                    </div>
+                </FadeIn>
 
                 {/* Floating scroll indicator */}
                 <FadeIn delay={1200} className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
