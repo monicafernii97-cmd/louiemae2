@@ -70,10 +70,10 @@ const LuxuryCategorySection: React.FC<{
     if (products.length === 0) return null;
 
     return (
-        <section className="py-24 md:py-40 border-b border-stone-200/40 last:border-0 relative">
+        <section className="py-12 md:py-20 border-b border-stone-200/40 last:border-0 relative">
             <div className="container mx-auto px-6 md:px-12">
                 {/* Centered Editorial Section Header with Line Art */}
-                <FadeIn className="flex flex-col items-center text-center mb-16 md:mb-24">
+                <FadeIn className="flex flex-col items-center text-center mb-10 md:mb-16">
                     {/* Decorative Line Art */}
                     <div className="flex items-center gap-4 md:gap-6 w-full max-w-lg mb-6">
                         <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent to-earth/20" />
@@ -187,9 +187,9 @@ export const NewCollectionPage: React.FC = () => {
             </div>
 
             {/* Quiet Luxury Intro Text */}
-            <section className="py-32 md:py-48 px-6 text-center max-w-4xl mx-auto relative">
+            <section className="py-16 md:py-24 px-6 text-center max-w-3xl mx-auto relative">
                 <FadeIn>
-                    <p className="font-serif text-3xl md:text-5xl lg:text-6xl text-earth leading-tight md:leading-snug italic text-stone-600/90 font-light tracking-tight">
+                    <p className="font-serif text-xl md:text-2xl lg:text-3xl text-earth leading-relaxed md:leading-snug italic text-stone-600/90 font-light tracking-tight">
                         "A celebration of pristine textures, earthy tones, and the profound joy of curating a sanctuary. Elevated intention for your home and wardrobe."
                     </p>
                 </FadeIn>
