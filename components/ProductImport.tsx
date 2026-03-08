@@ -37,9 +37,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             return saved ? JSON.parse(saved) : [];
         } catch { return []; }
     });
-    const setSearchResults = (results: ImportableProduct[]) => {
-        setSearchResultsRaw(results);
-        try { sessionStorage.setItem('import-search-results', JSON.stringify(results)); } catch { }
+    const setSearchResults = (resultsOrUpdater: ImportableProduct[] | ((prev: ImportableProduct[]) => ImportableProduct[])) => {
+        if (typeof resultsOrUpdater === 'function') {
+            setSearchResultsRaw(prev => {
+                const next = resultsOrUpdater(prev);
+                try { sessionStorage.setItem('import-search-results', JSON.stringify(next)); } catch { }
+                return next;
+            });
+        } else {
+            setSearchResultsRaw(resultsOrUpdater);
+            try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { }
+        }
     };
     const [totalResults, setTotalResults] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
@@ -281,9 +289,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             return saved ? parseInt(saved, 10) : 0;
         } catch { return 0; }
     });
-    const setReviewIndex = (idx: number) => {
-        setReviewIndexRaw(idx);
-        try { sessionStorage.setItem('import-review-index', String(idx)); } catch { }
+    const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
+        if (typeof idxOrUpdater === 'function') {
+            setReviewIndexRaw(prev => {
+                const next = idxOrUpdater(prev);
+                try { sessionStorage.setItem('import-review-index', String(next)); } catch { }
+                return next;
+            });
+        } else {
+            setReviewIndexRaw(idxOrUpdater);
+            try { sessionStorage.setItem('import-review-index', String(idxOrUpdater)); } catch { }
+        }
     };
 
     // Modify handleImport to start review instead of direct import
