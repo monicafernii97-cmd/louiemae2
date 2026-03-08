@@ -656,7 +656,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             let importableProduct: ImportableProduct;
 
-            if (result.source === 'aliexpress' || result.source === 'aliexpress-true') {
+            if (result.source === 'aliexpress') {
                 console.log('[URL Import] Processing as AliExpress product');
 
                 // Handle multiple API response structures:
@@ -688,25 +688,18 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     raw.sku?.def?.price || raw.originalPrice || raw.original_price || salePrice
                 );
 
-                // Extract images from multiple possible locations
-                const images: string[] = [];
-                if (raw.image) {
-                    images.push(raw.image.startsWith('//') ? `https:${raw.image}` : raw.image);
-                }
-                if (raw.imageUrl) {
-                    images.push(raw.imageUrl.startsWith('//') ? `https:${raw.imageUrl}` : raw.imageUrl);
-                }
-                if (Array.isArray(raw.images)) {
-                    raw.images.forEach((img: string) => {
-                        if (img) images.push(img.startsWith('//') ? `https:${img}` : img);
-                    });
-                }
-                // True API sometimes puts images in different fields
-                if (raw.productImages && Array.isArray(raw.productImages)) {
-                    raw.productImages.forEach((img: string) => {
-                        if (img) images.push(img.startsWith('//') ? `https:${img}` : img);
-                    });
-                }
+                // Extract images from multiple possible locations, deduplicated
+                const imageSet = new Set<string>();
+                const addImage = (img: string) => {
+                    if (!img) return;
+                    const normalized = img.startsWith('//') ? `https:${img}` : img;
+                    imageSet.add(normalized);
+                };
+                if (raw.image) addImage(raw.image);
+                if (raw.imageUrl) addImage(raw.imageUrl);
+                if (Array.isArray(raw.images)) raw.images.forEach(addImage);
+                if (Array.isArray(raw.productImages)) raw.productImages.forEach(addImage);
+                const images = [...imageSet];
 
                 const rating = parseFloat(raw.evaluation?.starRating || raw.averageStarRate || raw.averageRating || raw.avgRating || '0');
 
@@ -891,7 +884,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 <FadeIn mobileFast>
                     <div className="glass-card rounded-[2rem] p-4 md:p-10 relative group transition-all duration-700 shadow-xl border border-white/50">
                         {/* Direct Link Import - Enhanced */}
-                        <FadeIn delay={0.2} className="relative z-20" mobileFast>
+                        <FadeIn delay={200} className="relative z-20" mobileFast>
                             <div className="glass-card max-w-2xl mx-auto rounded-2xl p-6 border border-white/50 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/5 rounded-full blur-3xl -z-10" />
 
@@ -946,10 +939,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                                     {/* Error Display */}
                                     {error && (
-                                        <div className="text-[11px] text-red-700 flex items-center gap-2 font-medium bg-red-50 p-3 rounded-xl border border-red-200 animate-in fade-in">
+                                        <div role="alert" className="text-[11px] text-red-700 flex items-center gap-2 font-medium bg-red-50 p-3 rounded-xl border border-red-200 animate-in fade-in">
                                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                             <span>{error}</span>
-                                            <button type="button" onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600 transition-colors">
+                                            <button type="button" aria-label="Dismiss error" onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600 transition-colors">
                                                 <X className="w-3 h-3" />
                                             </button>
                                         </div>

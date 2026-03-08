@@ -151,10 +151,11 @@ async function scrapeGeneric(url: string) {
                 imgSrc.includes('data:image') || imgSrc.length < 10) continue;
             // Normalize protocol-relative URLs
             if (imgSrc.startsWith('//')) imgSrc = `https:${imgSrc}`;
-            // Only include product-looking images
-            if ((imgSrc.includes('product') || imgSrc.includes('item') || imgSrc.includes('img') ||
-                imgSrc.includes('photo') || imgSrc.includes('upload') || imgSrc.includes('image') ||
-                imgSrc.includes('pic') || imgSrc.includes('media') || imgSrc.includes('cdn')) &&
+            // Accept images matching common extensions or CDN/hosting patterns
+            const hasImageExt = /\.(jpe?g|png|webp|avif)(\?|$)/i.test(imgSrc);
+            const hasCdnPattern = /(cdn|cloudfront|cloudinary|s3\.amazonaws|imgix|akamai|media|upload|photo|product|item|pic)/i.test(imgSrc);
+            const hasSizeParam = /(\d{2,4}x\d{2,4}|width=|height=|w=\d|h=\d|resize)/i.test(imgSrc);
+            if ((hasImageExt || hasCdnPattern || hasSizeParam) &&
                 !images.includes(imgSrc) && images.length < 10) {
                 images.push(imgSrc);
             }
@@ -175,7 +176,7 @@ async function scrapeGeneric(url: string) {
         const currency = getMeta('og:price:currency') ||
             getMeta('product:price:currency') || 'USD';
 
-        if (!title && images.length === 0) {
+        if (title === 'Unknown Product' && images.length === 0) {
             throw new Error("Could not extract meaningful data from this page");
         }
 
