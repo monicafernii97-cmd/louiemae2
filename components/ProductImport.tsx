@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
@@ -31,7 +31,24 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [searchResults, setSearchResults] = useState<ImportableProduct[]>([]);
+    const [searchResults, setSearchResultsRaw] = useState<ImportableProduct[]>(() => {
+        try {
+            const saved = sessionStorage.getItem('import-search-results');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const setSearchResults = (resultsOrUpdater: ImportableProduct[] | ((prev: ImportableProduct[]) => ImportableProduct[])) => {
+        if (typeof resultsOrUpdater === 'function') {
+            setSearchResultsRaw(prev => {
+                const next = resultsOrUpdater(prev);
+                try { sessionStorage.setItem('import-search-results', JSON.stringify(next)); } catch { }
+                return next;
+            });
+        } else {
+            setSearchResultsRaw(resultsOrUpdater);
+            try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { }
+        }
+    };
     const [totalResults, setTotalResults] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [error, setError] = useState<string | null>(null);
@@ -56,6 +73,54 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
     // Actions
     const scrapeProduct = useAction(api.scraper.scrapeProduct);
+
+    // Convex file upload mutations
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+    const saveFile = useMutation(api.files.saveFile);
+    const imageUploadRef = useRef<HTMLInputElement>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+    // Handle image upload for current review product
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image must be less than 5MB');
+            return;
+        }
+        setIsUploadingImage(true);
+        try {
+            const uploadUrl = await generateUploadUrl();
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            });
+            if (!response.ok) throw new Error('Upload failed');
+            const { storageId } = await response.json();
+            const result = await saveFile({ storageId, fileName: file.name, fileType: file.type, purpose: 'product' });
+            if (result.url) {
+                // Add the uploaded image to the current review product
+                const currentProduct = searchResults.filter(p => p.selected)[reviewIndex];
+                if (currentProduct) {
+                    const newImages = [...currentProduct.images, result.url];
+                    updateProductField(currentProduct.id, 'images', newImages);
+                    // Auto-select the new image
+                    const newSelectedImages = currentProduct.selectedImages
+                        ? [...currentProduct.selectedImages, newImages.length - 1]
+                        : newImages.map((_, idx) => idx);
+                    updateProductField(currentProduct.id, 'selectedImages', newSelectedImages);
+                    toast.success('Image uploaded!');
+                }
+            }
+        } catch (err) {
+            console.error('Image upload error:', err);
+            toast.error('Failed to upload image');
+        } finally {
+            setIsUploadingImage(false);
+            if (imageUploadRef.current) imageUploadRef.current.value = '';
+        }
+    };
 
     // Get subcategories for the currently selected collection
     const currentCollectionSubcategories = useMemo(() => {
@@ -253,8 +318,37 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     };
 
     // Import Multi-Step Workflow State
-    const [importStep, setImportStep] = useState<'search' | 'review'>('search');
-    const [reviewIndex, setReviewIndex] = useState(0);
+    const [importStep, setImportStepRaw] = useState<'search' | 'review'>(() => {
+        const saved = sessionStorage.getItem('import-step');
+        return (saved === 'review') ? 'review' : 'search';
+    });
+    const setImportStep = (step: 'search' | 'review') => {
+        setImportStepRaw(step);
+        sessionStorage.setItem('import-step', step);
+        if (step === 'search') {
+            // Clear review data when going back to search
+            sessionStorage.removeItem('import-search-results');
+            sessionStorage.removeItem('import-review-index');
+        }
+    };
+    const [reviewIndex, setReviewIndexRaw] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem('import-review-index');
+            return saved ? parseInt(saved, 10) : 0;
+        } catch { return 0; }
+    });
+    const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
+        if (typeof idxOrUpdater === 'function') {
+            setReviewIndexRaw(prev => {
+                const next = idxOrUpdater(prev);
+                try { sessionStorage.setItem('import-review-index', String(next)); } catch { }
+                return next;
+            });
+        } else {
+            setReviewIndexRaw(idxOrUpdater);
+            try { sessionStorage.setItem('import-review-index', String(idxOrUpdater)); } catch { }
+        }
+    };
 
     // Modify handleImport to start review instead of direct import
     const handleImport = () => {
@@ -338,7 +432,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     }
                 `}</style>
 
-                <FadeIn className="w-full max-w-6xl">
+                <FadeIn className="w-full max-w-6xl" mobileFast>
                     <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
                         {/* Header / Progress */}
                         <div className="bg-cream/50 p-4 md:p-8 border-b border-earth/5 flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-center relative overflow-hidden">
@@ -383,14 +477,27 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {/* Left: Product Images & Basic Info */}
                             <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
-                                    <img
-                                        src={currentProduct.images[0]}
-                                        alt="Main Preview"
-                                        className="w-full h-full object-contain p-4"
-                                    />
-                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
-                                        {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length} Selected
-                                    </div>
+                                    {currentProduct.images.length > 0 ? (
+                                        <img
+                                            src={currentProduct.images[0]}
+                                            alt="Main Preview"
+                                            className="w-full h-full object-contain p-4"
+                                        />
+                                    ) : (
+                                        <div
+                                            onClick={() => imageUploadRef.current?.click()}
+                                            className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-bronze/5 transition-colors"
+                                        >
+                                            <ImageIcon className="w-16 h-16 text-earth/10 mb-4" />
+                                            <p className="text-sm text-earth/30 font-medium">No images yet</p>
+                                            <p className="text-xs text-earth/20 mt-1">Tap to upload</p>
+                                        </div>
+                                    )}
+                                    {currentProduct.images.length > 0 && (
+                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
+                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length} Selected
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Selectable Image Grid - CLICK TO SELECT */}
@@ -428,7 +535,43 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             </div>
                                         );
                                     })}
+
+                                    {/* Upload Image Button */}
+                                    <div
+                                        onClick={() => !isUploadingImage && imageUploadRef.current?.click()}
+                                        className="aspect-square rounded-lg border-2 border-dashed border-earth/20 bg-white/50 cursor-pointer hover:border-bronze/40 hover:bg-bronze/5 transition-all flex flex-col items-center justify-center gap-1"
+                                    >
+                                        {isUploadingImage ? (
+                                            <Loader2 className="w-5 h-5 text-bronze animate-spin" />
+                                        ) : (
+                                            <>
+                                                <Upload className="w-4 h-4 text-earth/30" />
+                                                <span className="text-[8px] uppercase tracking-widest text-earth/30 font-bold">Add</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <input
+                                        ref={imageUploadRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageUpload}
+                                    />
                                 </div>
+
+                                {/* Empty state when no images */}
+                                {currentProduct.images.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                                        <ImageIcon className="w-10 h-10 text-earth/15 mb-3" />
+                                        <p className="text-xs text-earth/40 mb-3">No images available</p>
+                                        <button
+                                            onClick={() => imageUploadRef.current?.click()}
+                                            className="px-4 py-2 bg-earth text-cream rounded-xl text-[10px] uppercase tracking-widest font-bold hover:bg-bronze transition-colors shadow-sm"
+                                        >
+                                            <Upload className="w-3 h-3 inline mr-1" /> Upload Images
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="mt-8 space-y-6">
                                     <div>
@@ -645,8 +788,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         try {
             // Call generic scraper action
             console.log('[URL Import] Calling scraper for:', importUrl);
+            toast.loading('Fetching product data...', { id: 'url-import' });
             const result = await scrapeProduct({ url: importUrl });
             console.log('[URL Import] Scraper result:', result);
+            toast.dismiss('url-import');
 
             if (!result) {
                 throw new Error("Failed to fetch product data");
@@ -656,77 +801,87 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             if (result.source === 'aliexpress') {
                 console.log('[URL Import] Processing as AliExpress product');
-                // The scraper returns the raw API response in `result.data`.
-                // We need to transform it using the existing service logic if available, 
-                // or manually map it here. Ideally `aliexpressService.transformProduct` is exported?
-                // Checking `aliexpressService.ts`... it seems `transformProduct` is private/internal to valid? 
-                // Actually `aliexpressService.getProductDetails` calls it.
-                // To minimize code duplication, we will actually rely on `aliexpressService` AGAIN 
-                // if the scraper returns 'aliexpress' source, OR we reimplement the transform here.
-                //
-                // Wait: `result.data` from backend scraper is the raw JSON from RapidAPI.
-                // The `aliexpressService.transformProduct` expects that exact format.
-                // Since `aliexpressService` logic is in client-side file, we CAN use it if we expose `transformProduct`.
-                // Or, since we already did a validation in backend, maybe we pass the raw data?
 
-                // Simpler approach: If it's aliexpress, the backend used the same API as the frontend service.
-                // Let's assume the backend passed us the `item` object wrapped in `result.data`.
-                // Actually, looking at `aliexpressService.ts` (which I read previously), `getProductDetails` does fetch + transform.
-                // The backend scraper is doing fetch.
-                // I will define a helper locally or update `aliexpressService` to expose user transform.
-                // For now, let's just use `aliexpressService.transformProduct` if I can access it? 
-                // I cannot easily see exports without reading file again. 
-                // Assuming I can't, I'll map it manually based on `result.data`.
+                // Handle multiple API response structures:
+                // Datahub: data.result.item.{...} or data.result.resultList[0].item.{...}
+                // True API: data.{...} directly or data.result.{...}
+                const raw = result.data?.result?.item
+                    || result.data?.result?.resultList?.[0]?.item
+                    || result.data?.result
+                    || result.data?.data
+                    || result.data || {};
 
-                // Actually, `scrapeProduct` returns `{ source: 'aliexpress', data: ... }`.
-                // `aliexpressService.getProductDetails` also handles caching.
-                // Let's try to map it here best effort.
+                console.log('[URL Import] Extracted raw data keys:', Object.keys(raw));
 
-                const rawData = result.data.result?.item;
-                if (!rawData) throw new Error("Invalid AliExpress data");
+                // Robust field extraction (mirrors aliexpressService.transformProduct)
+                const parsePrice = (val: any): number => {
+                    if (!val) return 0;
+                    const str = String(val).replace(/[^0-9.]/g, '');
+                    return parseFloat(str) || 0;
+                };
 
-                // Quick transformation - map to AliExpressProduct structure
+                const productName = raw.title || raw.subject || raw.product_title || raw.name || 'Unknown Product';
+                const productId = raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || 'unknown';
+
+                const salePrice = parsePrice(
+                    raw.sku?.def?.promotionPrice || raw.sku?.def?.price ||
+                    raw.salePrice || raw.sale_price || raw.price?.salePrice || raw.minPrice || raw.price
+                );
+                const origPrice = parsePrice(
+                    raw.sku?.def?.price || raw.originalPrice || raw.original_price || salePrice
+                );
+
+                // Extract images from multiple possible locations, deduplicated
+                const imageSet = new Set<string>();
+                const addImage = (img: string) => {
+                    if (!img) return;
+                    const normalized = img.startsWith('//') ? `https:${img}` : img;
+                    imageSet.add(normalized);
+                };
+                if (raw.image) addImage(raw.image);
+                if (raw.imageUrl) addImage(raw.imageUrl);
+                if (Array.isArray(raw.images)) raw.images.forEach(addImage);
+                if (Array.isArray(raw.productImages)) raw.productImages.forEach(addImage);
+                const images = [...imageSet];
+
+                const rating = parseFloat(raw.evaluation?.starRating || raw.averageStarRate || raw.averageRating || raw.avgRating || '0');
+
                 importableProduct = {
-                    // Base Product fields
-                    id: rawData.itemId || String(rawData.sku?.skuId) || 'unknown',
-                    name: rawData.title || 'Unknown Product',
-                    price: parseFloat(rawData.sku?.def?.promotionPrice || rawData.sku?.def?.price || '0'),
-                    description: rawData.description || 'Imported from AliExpress',
-                    images: rawData.images || [],
+                    id: String(productId),
+                    name: productName,
+                    price: salePrice || origPrice,
+                    description: raw.description || raw.detail || 'Imported from AliExpress',
+                    images: images.length > 0 ? images : [],
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    // AliExpressProduct specific fields
-                    aliExpressId: rawData.itemId || '',
-                    originalPrice: parseFloat(rawData.sku?.def?.price || '0'),
-                    salePrice: parseFloat(rawData.sku?.def?.promotionPrice || rawData.sku?.def?.price || '0'),
+                    aliExpressId: String(productId),
+                    originalPrice: origPrice,
+                    salePrice: salePrice || origPrice,
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
                     seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
                     reviewCount: 0,
-                    averageRating: parseFloat(rawData.evaluation?.starRating || '0'),
+                    averageRating: rating,
                     productUrl: importUrl,
                     source: 'aliexpress',
-                    // ImportableProduct fields
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: 0
                 };
                 importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
-                // Generic source - still needs to satisfy AliExpressProduct structure
+                // Generic source
                 console.log('[URL Import] Processing as generic product:', result.data);
                 const data = result.data;
                 importableProduct = {
-                    // Base Product fields
                     id: `gen_${Date.now()}`,
                     name: data.title || 'Unknown',
                     price: data.price || 0,
                     description: data.description || '',
-                    images: data.image ? [data.image] : [],
+                    images: (data.images && data.images.length > 0) ? data.images : (data.image ? [data.image] : []),
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    // AliExpressProduct specific fields (with placeholder values for generic)
                     aliExpressId: `gen_${Date.now()}`,
                     originalPrice: data.price || 0,
                     salePrice: data.price || 0,
@@ -736,7 +891,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     averageRating: 0,
                     productUrl: data.url || importUrl,
                     source: 'generic',
-                    // ImportableProduct fields
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: calculateFinalPrice(data.price || 0)
@@ -756,11 +910,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         keywords: extractKeywords(importableProduct.name + ' ' + (importableProduct.description || '')),
                     };
 
+                    toast.loading('Enhancing with AI...', { id: 'ai-enhance' });
+
                     // Run in parallel
                     const [enhancedName, enhancedDescription] = await Promise.all([
                         generateProductNameV2(context),
                         generateProductDescriptionV2(context)
                     ]);
+
+                    toast.dismiss('ai-enhance');
 
                     // Only use AI results if they look valid (not generic fallbacks)
                     const isValidAiName = enhancedName && !enhancedName.includes('Chair') && !enhancedName.includes('Table') && !enhancedName.includes('Lamp');
@@ -778,6 +936,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         toast.success('Product found (AI used defaults)');
                     }
                 } catch (aiErr) {
+                    toast.dismiss('ai-enhance');
                     console.error('Auto-AI failed:', aiErr);
                     toast.error('Product found, but AI enhancement failed');
                 }
@@ -793,8 +952,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         } catch (err) {
             console.error('Import by URL failed:', err);
-            setError(err instanceof Error ? err.message : 'Failed to import product. Please try a different link.');
+            const errorMsg = err instanceof Error ? err.message : 'Failed to import product. Please try a different link.';
+            setError(errorMsg);
+            toast.error('Import failed', { description: errorMsg });
         } finally {
+            toast.dismiss('url-import');
             setIsImportingUrl(false);
         }
     };
@@ -829,11 +991,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     border: 1px solid rgba(166, 124, 82, 0.1); /* Slight bronze tint to border */
                     box-shadow: 0 8px 32px 0 rgba(74, 59, 50, 0.1);
                 }
-                .glass-card:hover {
-                    background: rgba(255, 255, 255, 0.95);
-                    border-color: rgba(166, 124, 82, 0.3);
-                    transform: translateY(-5px);
-                    box-shadow: 0 20px 40px -10px rgba(166, 124, 82, 0.2);
+                @media (hover: hover) {
+                    .glass-card:hover {
+                        background: rgba(255, 255, 255, 0.95);
+                        border-color: rgba(166, 124, 82, 0.3);
+                        transform: translateY(-5px);
+                        box-shadow: 0 20px 40px -10px rgba(166, 124, 82, 0.2);
+                    }
                 }
             `}</style>
 
@@ -860,10 +1024,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 </div>
 
                 {/* Hero Search Module */}
-                <FadeIn>
+                <FadeIn mobileFast>
                     <div className="glass-card rounded-[2rem] p-4 md:p-10 relative group transition-all duration-700 shadow-xl border border-white/50">
                         {/* Direct Link Import - Enhanced */}
-                        <FadeIn delay={0.2} className="relative z-20">
+                        <FadeIn delay={200} className="relative z-20" mobileFast>
                             <div className="glass-card max-w-2xl mx-auto rounded-2xl p-6 border border-white/50 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/5 rounded-full blur-3xl -z-10" />
 
@@ -913,6 +1077,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         <div className="text-[10px] text-orange-600 flex items-center gap-1 font-medium bg-orange-50 p-2 rounded-lg border border-orange-100">
                                             <AlertCircle className="w-3 h-3" />
                                             Please enter a valid URL (starting with http/https)
+                                        </div>
+                                    )}
+
+                                    {/* Error Display */}
+                                    {error && (
+                                        <div role="alert" className="text-[11px] text-red-700 flex items-center gap-2 font-medium bg-red-50 p-3 rounded-xl border border-red-200 animate-in fade-in">
+                                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                            <span>{error}</span>
+                                            <button type="button" aria-label="Dismiss error" onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600 transition-colors">
+                                                <X className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     )}
                                 </div>
