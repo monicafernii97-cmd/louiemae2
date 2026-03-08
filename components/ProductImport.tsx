@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
@@ -73,6 +73,54 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
     // Actions
     const scrapeProduct = useAction(api.scraper.scrapeProduct);
+
+    // Convex file upload mutations
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+    const saveFile = useMutation(api.files.saveFile);
+    const imageUploadRef = useRef<HTMLInputElement>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+    // Handle image upload for current review product
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image must be less than 5MB');
+            return;
+        }
+        setIsUploadingImage(true);
+        try {
+            const uploadUrl = await generateUploadUrl();
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            });
+            if (!response.ok) throw new Error('Upload failed');
+            const { storageId } = await response.json();
+            const result = await saveFile({ storageId, fileName: file.name, fileType: file.type, purpose: 'product' });
+            if (result.url) {
+                // Add the uploaded image to the current review product
+                const currentProduct = searchResults.filter(p => p.selected)[reviewIndex];
+                if (currentProduct) {
+                    const newImages = [...currentProduct.images, result.url];
+                    updateProductField(currentProduct.id, 'images', newImages);
+                    // Auto-select the new image
+                    const newSelectedImages = currentProduct.selectedImages
+                        ? [...currentProduct.selectedImages, newImages.length - 1]
+                        : newImages.map((_, idx) => idx);
+                    updateProductField(currentProduct.id, 'selectedImages', newSelectedImages);
+                    toast.success('Image uploaded!');
+                }
+            }
+        } catch (err) {
+            console.error('Image upload error:', err);
+            toast.error('Failed to upload image');
+        } finally {
+            setIsUploadingImage(false);
+            if (imageUploadRef.current) imageUploadRef.current.value = '';
+        }
+    };
 
     // Get subcategories for the currently selected collection
     const currentCollectionSubcategories = useMemo(() => {
@@ -429,14 +477,27 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {/* Left: Product Images & Basic Info */}
                             <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
-                                    <img
-                                        src={currentProduct.images[0]}
-                                        alt="Main Preview"
-                                        className="w-full h-full object-contain p-4"
-                                    />
-                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
-                                        {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length} Selected
-                                    </div>
+                                    {currentProduct.images.length > 0 ? (
+                                        <img
+                                            src={currentProduct.images[0]}
+                                            alt="Main Preview"
+                                            className="w-full h-full object-contain p-4"
+                                        />
+                                    ) : (
+                                        <div
+                                            onClick={() => imageUploadRef.current?.click()}
+                                            className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-bronze/5 transition-colors"
+                                        >
+                                            <ImageIcon className="w-16 h-16 text-earth/10 mb-4" />
+                                            <p className="text-sm text-earth/30 font-medium">No images yet</p>
+                                            <p className="text-xs text-earth/20 mt-1">Tap to upload</p>
+                                        </div>
+                                    )}
+                                    {currentProduct.images.length > 0 && (
+                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
+                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length} Selected
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Selectable Image Grid - CLICK TO SELECT */}
@@ -474,7 +535,43 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             </div>
                                         );
                                     })}
+
+                                    {/* Upload Image Button */}
+                                    <div
+                                        onClick={() => !isUploadingImage && imageUploadRef.current?.click()}
+                                        className="aspect-square rounded-lg border-2 border-dashed border-earth/20 bg-white/50 cursor-pointer hover:border-bronze/40 hover:bg-bronze/5 transition-all flex flex-col items-center justify-center gap-1"
+                                    >
+                                        {isUploadingImage ? (
+                                            <Loader2 className="w-5 h-5 text-bronze animate-spin" />
+                                        ) : (
+                                            <>
+                                                <Upload className="w-4 h-4 text-earth/30" />
+                                                <span className="text-[8px] uppercase tracking-widest text-earth/30 font-bold">Add</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <input
+                                        ref={imageUploadRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageUpload}
+                                    />
                                 </div>
+
+                                {/* Empty state when no images */}
+                                {currentProduct.images.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                                        <ImageIcon className="w-10 h-10 text-earth/15 mb-3" />
+                                        <p className="text-xs text-earth/40 mb-3">No images available</p>
+                                        <button
+                                            onClick={() => imageUploadRef.current?.click()}
+                                            className="px-4 py-2 bg-earth text-cream rounded-xl text-[10px] uppercase tracking-widest font-bold hover:bg-bronze transition-colors shadow-sm"
+                                        >
+                                            <Upload className="w-3 h-3 inline mr-1" /> Upload Images
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="mt-8 space-y-6">
                                     <div>
