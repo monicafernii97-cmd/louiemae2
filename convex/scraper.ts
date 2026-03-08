@@ -5,26 +5,58 @@ import { v } from "convex/values";
 export const scrapeProduct = action({
     args: { url: v.string() },
     handler: async (ctx, { url }) => {
+        // 0. Resolve shortened/redirect URLs (e.g. a.aliexpress.com/_xxx)
+        //    Mobile share links redirect to the full product URL
+        let resolvedUrl = url;
+        if (url.includes('a.aliexpress.com') || url.includes('s.click.aliexpress.com')) {
+            console.log(`[Scraper] Resolving shortened URL: ${url}`);
+            try {
+                const redirectRes = await fetch(url, {
+                    method: 'HEAD',
+                    redirect: 'follow',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+                    },
+                });
+                resolvedUrl = redirectRes.url || url;
+                console.log(`[Scraper] Resolved to: ${resolvedUrl}`);
+            } catch (e: any) {
+                console.log(`[Scraper] HEAD redirect failed, trying GET: ${e.message}`);
+                try {
+                    const redirectRes = await fetch(url, {
+                        redirect: 'follow',
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+                        },
+                    });
+                    resolvedUrl = redirectRes.url || url;
+                    console.log(`[Scraper] Resolved via GET to: ${resolvedUrl}`);
+                } catch (e2: any) {
+                    console.log(`[Scraper] Could not resolve shortened URL: ${e2.message}`);
+                }
+            }
+        }
+
         // 1. Check for AliExpress
         // Support formats:
         // https://www.aliexpress.com/item/10050012345678.html
         // https://www.aliexpress.us/item/325680456789.html
-        const aliMatch = url.match(/\/item\/(\d+)\.html/) || url.match(/productId=(\d+)/);
+        const aliMatch = resolvedUrl.match(/\/item\/(\d+)\.html/) || resolvedUrl.match(/productId=(\d+)/);
 
-        if (aliMatch && url.includes("aliexpress")) {
+        if (aliMatch && resolvedUrl.includes("aliexpress")) {
             const productId = aliMatch[1];
             try {
                 return await scrapeAliExpress(productId);
             } catch (apiErr: any) {
                 // RapidAPI failed — fall back to generic HTML scraping
                 console.log(`[Scraper] RapidAPI failed for AliExpress product ${productId}: ${apiErr.message}`);
-                console.log(`[Scraper] Falling back to generic HTML scraping for: ${url}`);
-                return await scrapeGeneric(url);
+                console.log(`[Scraper] Falling back to generic HTML scraping for: ${resolvedUrl}`);
+                return await scrapeGeneric(resolvedUrl);
             }
         }
 
         // 2. Generic Scraper
-        return await scrapeGeneric(url);
+        return await scrapeGeneric(resolvedUrl);
     },
 });
 
