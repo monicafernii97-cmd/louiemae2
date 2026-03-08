@@ -784,6 +784,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         toast.success('Product found (AI used defaults)');
                     }
                 } catch (aiErr) {
+                    toast.dismiss('ai-enhance');
                     console.error('Auto-AI failed:', aiErr);
                     toast.error('Product found, but AI enhancement failed');
                 }
