@@ -80,10 +80,11 @@ async function scrapeAliExpress(productId: string) {
 
             console.log(`Successfully fetched from ${endpoint.host}`);
 
-            // Normalize based on API type
+            // Normalize based on API type — always return 'aliexpress' so frontend can parse it
             return {
-                source: endpoint.type === 'true-api' ? 'aliexpress-true' : 'aliexpress',
-                data: data
+                source: 'aliexpress',
+                data: data,
+                apiType: endpoint.type, // pass along for debugging
             };
 
         } catch (e: any) {

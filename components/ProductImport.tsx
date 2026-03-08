@@ -656,70 +656,88 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             let importableProduct: ImportableProduct;
 
-            if (result.source === 'aliexpress') {
+            if (result.source === 'aliexpress' || result.source === 'aliexpress-true') {
                 console.log('[URL Import] Processing as AliExpress product');
-                // The scraper returns the raw API response in `result.data`.
-                // We need to transform it using the existing service logic if available, 
-                // or manually map it here. Ideally `aliexpressService.transformProduct` is exported?
-                // Checking `aliexpressService.ts`... it seems `transformProduct` is private/internal to valid? 
-                // Actually `aliexpressService.getProductDetails` calls it.
-                // To minimize code duplication, we will actually rely on `aliexpressService` AGAIN 
-                // if the scraper returns 'aliexpress' source, OR we reimplement the transform here.
-                //
-                // Wait: `result.data` from backend scraper is the raw JSON from RapidAPI.
-                // The `aliexpressService.transformProduct` expects that exact format.
-                // Since `aliexpressService` logic is in client-side file, we CAN use it if we expose `transformProduct`.
-                // Or, since we already did a validation in backend, maybe we pass the raw data?
 
-                // Simpler approach: If it's aliexpress, the backend used the same API as the frontend service.
-                // Let's assume the backend passed us the `item` object wrapped in `result.data`.
-                // Actually, looking at `aliexpressService.ts` (which I read previously), `getProductDetails` does fetch + transform.
-                // The backend scraper is doing fetch.
-                // I will define a helper locally or update `aliexpressService` to expose user transform.
-                // For now, let's just use `aliexpressService.transformProduct` if I can access it? 
-                // I cannot easily see exports without reading file again. 
-                // Assuming I can't, I'll map it manually based on `result.data`.
+                // Handle multiple API response structures:
+                // Datahub: data.result.item.{...} or data.result.resultList[0].item.{...}
+                // True API: data.{...} directly or data.result.{...}
+                const raw = result.data?.result?.item
+                    || result.data?.result?.resultList?.[0]?.item
+                    || result.data?.result
+                    || result.data?.data
+                    || result.data || {};
 
-                // Actually, `scrapeProduct` returns `{ source: 'aliexpress', data: ... }`.
-                // `aliexpressService.getProductDetails` also handles caching.
-                // Let's try to map it here best effort.
+                console.log('[URL Import] Extracted raw data keys:', Object.keys(raw));
 
-                const rawData = result.data.result?.item;
-                if (!rawData) throw new Error("Invalid AliExpress data");
+                // Robust field extraction (mirrors aliexpressService.transformProduct)
+                const parsePrice = (val: any): number => {
+                    if (!val) return 0;
+                    const str = String(val).replace(/[^0-9.]/g, '');
+                    return parseFloat(str) || 0;
+                };
 
-                // Quick transformation - map to AliExpressProduct structure
+                const productName = raw.title || raw.subject || raw.product_title || raw.name || 'Unknown Product';
+                const productId = raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || 'unknown';
+
+                const salePrice = parsePrice(
+                    raw.sku?.def?.promotionPrice || raw.sku?.def?.price ||
+                    raw.salePrice || raw.sale_price || raw.price?.salePrice || raw.minPrice || raw.price
+                );
+                const origPrice = parsePrice(
+                    raw.sku?.def?.price || raw.originalPrice || raw.original_price || salePrice
+                );
+
+                // Extract images from multiple possible locations
+                const images: string[] = [];
+                if (raw.image) {
+                    images.push(raw.image.startsWith('//') ? `https:${raw.image}` : raw.image);
+                }
+                if (raw.imageUrl) {
+                    images.push(raw.imageUrl.startsWith('//') ? `https:${raw.imageUrl}` : raw.imageUrl);
+                }
+                if (Array.isArray(raw.images)) {
+                    raw.images.forEach((img: string) => {
+                        if (img) images.push(img.startsWith('//') ? `https:${img}` : img);
+                    });
+                }
+                // True API sometimes puts images in different fields
+                if (raw.productImages && Array.isArray(raw.productImages)) {
+                    raw.productImages.forEach((img: string) => {
+                        if (img) images.push(img.startsWith('//') ? `https:${img}` : img);
+                    });
+                }
+
+                const rating = parseFloat(raw.evaluation?.starRating || raw.averageStarRate || raw.averageRating || raw.avgRating || '0');
+
                 importableProduct = {
-                    // Base Product fields
-                    id: rawData.itemId || String(rawData.sku?.skuId) || 'unknown',
-                    name: rawData.title || 'Unknown Product',
-                    price: parseFloat(rawData.sku?.def?.promotionPrice || rawData.sku?.def?.price || '0'),
-                    description: rawData.description || 'Imported from AliExpress',
-                    images: rawData.images || [],
+                    id: String(productId),
+                    name: productName,
+                    price: salePrice || origPrice,
+                    description: raw.description || raw.detail || 'Imported from AliExpress',
+                    images: images.length > 0 ? images : [],
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    // AliExpressProduct specific fields
-                    aliExpressId: rawData.itemId || '',
-                    originalPrice: parseFloat(rawData.sku?.def?.price || '0'),
-                    salePrice: parseFloat(rawData.sku?.def?.promotionPrice || rawData.sku?.def?.price || '0'),
+                    aliExpressId: String(productId),
+                    originalPrice: origPrice,
+                    salePrice: salePrice || origPrice,
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
                     seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
                     reviewCount: 0,
-                    averageRating: parseFloat(rawData.evaluation?.starRating || '0'),
+                    averageRating: rating,
                     productUrl: importUrl,
                     source: 'aliexpress',
-                    // ImportableProduct fields
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: 0
                 };
                 importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
-                // Generic source - still needs to satisfy AliExpressProduct structure
+                // Generic source
                 console.log('[URL Import] Processing as generic product:', result.data);
                 const data = result.data;
                 importableProduct = {
-                    // Base Product fields
                     id: `gen_${Date.now()}`,
                     name: data.title || 'Unknown',
                     price: data.price || 0,
@@ -728,7 +746,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    // AliExpressProduct specific fields (with placeholder values for generic)
                     aliExpressId: `gen_${Date.now()}`,
                     originalPrice: data.price || 0,
                     salePrice: data.price || 0,
@@ -738,7 +755,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     averageRating: 0,
                     productUrl: data.url || importUrl,
                     source: 'generic',
-                    // ImportableProduct fields
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: calculateFinalPrice(data.price || 0)
