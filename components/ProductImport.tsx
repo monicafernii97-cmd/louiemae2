@@ -31,7 +31,16 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [searchResults, setSearchResults] = useState<ImportableProduct[]>([]);
+    const [searchResults, setSearchResultsRaw] = useState<ImportableProduct[]>(() => {
+        try {
+            const saved = sessionStorage.getItem('import-search-results');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const setSearchResults = (results: ImportableProduct[]) => {
+        setSearchResultsRaw(results);
+        try { sessionStorage.setItem('import-search-results', JSON.stringify(results)); } catch { }
+    };
     const [totalResults, setTotalResults] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [error, setError] = useState<string | null>(null);
@@ -253,8 +262,29 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     };
 
     // Import Multi-Step Workflow State
-    const [importStep, setImportStep] = useState<'search' | 'review'>('search');
-    const [reviewIndex, setReviewIndex] = useState(0);
+    const [importStep, setImportStepRaw] = useState<'search' | 'review'>(() => {
+        const saved = sessionStorage.getItem('import-step');
+        return (saved === 'review') ? 'review' : 'search';
+    });
+    const setImportStep = (step: 'search' | 'review') => {
+        setImportStepRaw(step);
+        sessionStorage.setItem('import-step', step);
+        if (step === 'search') {
+            // Clear review data when going back to search
+            sessionStorage.removeItem('import-search-results');
+            sessionStorage.removeItem('import-review-index');
+        }
+    };
+    const [reviewIndex, setReviewIndexRaw] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem('import-review-index');
+            return saved ? parseInt(saved, 10) : 0;
+        } catch { return 0; }
+    });
+    const setReviewIndex = (idx: number) => {
+        setReviewIndexRaw(idx);
+        try { sessionStorage.setItem('import-review-index', String(idx)); } catch { }
+    };
 
     // Modify handleImport to start review instead of direct import
     const handleImport = () => {
