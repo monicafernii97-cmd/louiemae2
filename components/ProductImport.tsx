@@ -931,7 +931,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         <div className="text-[11px] text-red-700 flex items-center gap-2 font-medium bg-red-50 p-3 rounded-xl border border-red-200 animate-in fade-in">
                                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                             <span>{error}</span>
-                                            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600 transition-colors">
+                                            <button type="button" onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600 transition-colors">
                                                 <X className="w-3 h-3" />
                                             </button>
                                         </div>
