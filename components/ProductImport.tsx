@@ -338,7 +338,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     }
                 `}</style>
 
-                <FadeIn className="w-full max-w-6xl">
+                <FadeIn className="w-full max-w-6xl" mobileFast>
                     <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
                         {/* Header / Progress */}
                         <div className="bg-cream/50 p-4 md:p-8 border-b border-earth/5 flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-center relative overflow-hidden">
@@ -645,8 +645,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         try {
             // Call generic scraper action
             console.log('[URL Import] Calling scraper for:', importUrl);
+            toast.loading('Fetching product data...', { id: 'url-import' });
             const result = await scrapeProduct({ url: importUrl });
             console.log('[URL Import] Scraper result:', result);
+            toast.dismiss('url-import');
 
             if (!result) {
                 throw new Error("Failed to fetch product data");
@@ -756,11 +758,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         keywords: extractKeywords(importableProduct.name + ' ' + (importableProduct.description || '')),
                     };
 
+                    toast.loading('Enhancing with AI...', { id: 'ai-enhance' });
+
                     // Run in parallel
                     const [enhancedName, enhancedDescription] = await Promise.all([
                         generateProductNameV2(context),
                         generateProductDescriptionV2(context)
                     ]);
+
+                    toast.dismiss('ai-enhance');
 
                     // Only use AI results if they look valid (not generic fallbacks)
                     const isValidAiName = enhancedName && !enhancedName.includes('Chair') && !enhancedName.includes('Table') && !enhancedName.includes('Lamp');
