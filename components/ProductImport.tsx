@@ -793,7 +793,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         } catch (err) {
             console.error('Import by URL failed:', err);
-            setError(err instanceof Error ? err.message : 'Failed to import product. Please try a different link.');
+            const errorMsg = err instanceof Error ? err.message : 'Failed to import product. Please try a different link.';
+            setError(errorMsg);
+            toast.error('Import failed', { description: errorMsg });
         } finally {
             setIsImportingUrl(false);
         }
@@ -829,11 +831,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     border: 1px solid rgba(166, 124, 82, 0.1); /* Slight bronze tint to border */
                     box-shadow: 0 8px 32px 0 rgba(74, 59, 50, 0.1);
                 }
-                .glass-card:hover {
-                    background: rgba(255, 255, 255, 0.95);
-                    border-color: rgba(166, 124, 82, 0.3);
-                    transform: translateY(-5px);
-                    box-shadow: 0 20px 40px -10px rgba(166, 124, 82, 0.2);
+                @media (hover: hover) {
+                    .glass-card:hover {
+                        background: rgba(255, 255, 255, 0.95);
+                        border-color: rgba(166, 124, 82, 0.3);
+                        transform: translateY(-5px);
+                        box-shadow: 0 20px 40px -10px rgba(166, 124, 82, 0.2);
+                    }
                 }
             `}</style>
 
@@ -860,10 +864,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 </div>
 
                 {/* Hero Search Module */}
-                <FadeIn>
+                <FadeIn mobileFast>
                     <div className="glass-card rounded-[2rem] p-4 md:p-10 relative group transition-all duration-700 shadow-xl border border-white/50">
                         {/* Direct Link Import - Enhanced */}
-                        <FadeIn delay={0.2} className="relative z-20">
+                        <FadeIn delay={0.2} className="relative z-20" mobileFast>
                             <div className="glass-card max-w-2xl mx-auto rounded-2xl p-6 border border-white/50 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/5 rounded-full blur-3xl -z-10" />
 
@@ -913,6 +917,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         <div className="text-[10px] text-orange-600 flex items-center gap-1 font-medium bg-orange-50 p-2 rounded-lg border border-orange-100">
                                             <AlertCircle className="w-3 h-3" />
                                             Please enter a valid URL (starting with http/https)
+                                        </div>
+                                    )}
+
+                                    {/* Error Display */}
+                                    {error && (
+                                        <div className="text-[11px] text-red-700 flex items-center gap-2 font-medium bg-red-50 p-3 rounded-xl border border-red-200 animate-in fade-in">
+                                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                            <span>{error}</span>
+                                            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600 transition-colors">
+                                                <X className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     )}
                                 </div>
