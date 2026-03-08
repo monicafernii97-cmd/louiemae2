@@ -13,7 +13,14 @@ export const scrapeProduct = action({
 
         if (aliMatch && url.includes("aliexpress")) {
             const productId = aliMatch[1];
-            return await scrapeAliExpress(productId);
+            try {
+                return await scrapeAliExpress(productId);
+            } catch (apiErr: any) {
+                // RapidAPI failed — fall back to generic HTML scraping
+                console.log(`[Scraper] RapidAPI failed for AliExpress product ${productId}: ${apiErr.message}`);
+                console.log(`[Scraper] Falling back to generic HTML scraping for: ${url}`);
+                return await scrapeGeneric(url);
+            }
         }
 
         // 2. Generic Scraper
@@ -29,16 +36,13 @@ async function scrapeAliExpress(productId: string) {
     }
 
     // Try multiple API versions/endpoints for resilience
-    // Priority: item_detail_2 > item_detail_3 > item_detail > True API
     const DATAHUB_HOST = "aliexpress-datahub.p.rapidapi.com";
     const TRUE_API_HOST = "aliexpress-true-api.p.rapidapi.com";
 
     const endpoints = [
-        // Datahub endpoints (multiple versions)
         { url: `https://${DATAHUB_HOST}/item_detail_2?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
         { url: `https://${DATAHUB_HOST}/item_detail_3?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
         { url: `https://${DATAHUB_HOST}/item_detail?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
-        // AliExpress True API as fallback
         { url: `https://${TRUE_API_HOST}/api/v3/product/${productId}`, host: TRUE_API_HOST, type: 'true-api' },
         { url: `https://${TRUE_API_HOST}/api/product/${productId}`, host: TRUE_API_HOST, type: 'true-api' },
     ];
@@ -64,14 +68,12 @@ async function scrapeAliExpress(productId: string) {
 
             const data = await response.json();
 
-            // Check internal error for datahub
             if (endpoint.type === 'datahub' && data.result?.status?.data === "error") {
                 lastError = data.result?.status?.msg?.["internal-error"] || "API returned error";
                 console.log(`Datahub endpoint returned internal error, trying next...`);
                 continue;
             }
 
-            // Check for True API error format
             if (endpoint.type === 'true-api' && (data.error || data.status === 'error')) {
                 lastError = data.error || data.message || "True API returned error";
                 console.log(`True API endpoint returned error, trying next...`);
@@ -80,11 +82,10 @@ async function scrapeAliExpress(productId: string) {
 
             console.log(`Successfully fetched from ${endpoint.host}`);
 
-            // Normalize based on API type — always return 'aliexpress' so frontend can parse it
             return {
                 source: 'aliexpress',
                 data: data,
-                apiType: endpoint.type, // pass along for debugging
+                apiType: endpoint.type,
             };
 
         } catch (e: any) {
@@ -93,15 +94,18 @@ async function scrapeAliExpress(productId: string) {
         }
     }
 
-    throw new Error(lastError || "this endpoint is temporarily unavailable, try again later. If this persists, contact developer for more information. Meanwhile, try using other version of this Endpoint if it exists");
+    throw new Error(lastError || "All AliExpress API endpoints failed");
 }
 
 async function scrapeGeneric(url: string) {
     try {
         const response = await fetch(url, {
             headers: {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
-            }
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            redirect: 'follow',
         });
 
         if (!response.ok) {
@@ -110,7 +114,7 @@ async function scrapeGeneric(url: string) {
 
         const html = await response.text();
 
-        // simple regex based scraping
+        // Extract meta tags
         const getMeta = (prop: string) => {
             const match = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, 'i')) ||
                 html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'));
@@ -127,30 +131,61 @@ async function scrapeGeneric(url: string) {
             getMeta('twitter:description') ||
             '';
 
-        const image = getMeta('og:image') ||
-            getMeta('twitter:image');
+        // Extract images — collect multiple sources
+        const images: string[] = [];
+        const ogImage = getMeta('og:image');
+        if (ogImage) images.push(ogImage.startsWith('//') ? `https:${ogImage}` : ogImage);
+        const twitterImage = getMeta('twitter:image');
+        if (twitterImage && twitterImage !== ogImage) {
+            images.push(twitterImage.startsWith('//') ? `https:${twitterImage}` : twitterImage);
+        }
 
+        // Look for additional product images in the HTML
+        const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi);
+        for (const match of imgMatches) {
+            let imgSrc = match[1];
+            // Skip tiny icons, tracking pixels, logos, etc.
+            if (imgSrc.includes('pixel') || imgSrc.includes('icon') || imgSrc.includes('logo') ||
+                imgSrc.includes('avatar') || imgSrc.includes('flag') || imgSrc.includes('badge') ||
+                imgSrc.includes('.svg') || imgSrc.includes('1x1') || imgSrc.includes('blank') ||
+                imgSrc.includes('data:image') || imgSrc.length < 10) continue;
+            // Normalize protocol-relative URLs
+            if (imgSrc.startsWith('//')) imgSrc = `https:${imgSrc}`;
+            // Only include product-looking images
+            if ((imgSrc.includes('product') || imgSrc.includes('item') || imgSrc.includes('img') ||
+                imgSrc.includes('photo') || imgSrc.includes('upload') || imgSrc.includes('image') ||
+                imgSrc.includes('pic') || imgSrc.includes('media') || imgSrc.includes('cdn')) &&
+                !images.includes(imgSrc) && images.length < 10) {
+                images.push(imgSrc);
+            }
+        }
+
+        // Extract price
         const priceAmount = getMeta('og:price:amount') ||
             getMeta('product:price:amount');
+        let price = priceAmount ? parseFloat(priceAmount) : 0;
+
+        // If no meta price, try common price patterns in HTML
+        if (!price) {
+            const priceMatch = html.match(/"price"\s*:\s*"?([\d.]+)"?/i) ||
+                html.match(/\$\s*([\d]+\.[\d]{2})/);
+            if (priceMatch) price = parseFloat(priceMatch[1]) || 0;
+        }
+
         const currency = getMeta('og:price:currency') ||
             getMeta('product:price:currency') || 'USD';
 
-        // Extract price from logic if possible
-        let price = priceAmount ? parseFloat(priceAmount) : 0;
-
-        // If no structured price, try naive regex on title/desc (very risky, maybe skip)
-        // Or look for $123.45 patterns nearby? Too complex for regex parser.
-
-        if (!title && !image) {
-            throw new Error("Could not extract meaningful data");
+        if (!title && images.length === 0) {
+            throw new Error("Could not extract meaningful data from this page");
         }
 
         return {
             source: 'generic',
             data: {
-                title,
-                description,
-                image,
+                title: title.trim(),
+                description: description.trim(),
+                image: images[0] || null,
+                images, // pass all found images
                 price,
                 currency,
                 url

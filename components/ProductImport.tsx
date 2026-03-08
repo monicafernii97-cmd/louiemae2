@@ -742,7 +742,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     name: data.title || 'Unknown',
                     price: data.price || 0,
                     description: data.description || '',
-                    images: data.image ? [data.image] : [],
+                    images: (data.images && data.images.length > 0) ? data.images : (data.image ? [data.image] : []),
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
