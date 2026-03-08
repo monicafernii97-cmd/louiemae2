@@ -820,6 +820,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             setError(errorMsg);
             toast.error('Import failed', { description: errorMsg });
         } finally {
+            toast.dismiss('url-import');
             setIsImportingUrl(false);
         }
     };
