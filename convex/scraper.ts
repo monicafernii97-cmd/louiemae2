@@ -339,7 +339,7 @@ async function scrapeGeneric(url: string) {
                 images, // pass all found images
                 price,
                 currency,
-                url
+                url: finalUrl
             }
         };
 

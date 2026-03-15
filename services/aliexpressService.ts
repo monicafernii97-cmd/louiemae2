@@ -349,23 +349,7 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         });
     }
 
-    // Method 4: Generate common clothing sizes if title suggests it's clothing
-    if (variants.length === 0) {
-        const titleLower = productName.toLowerCase();
-        const isClothing = ['shirt', 'top', 'dress', 'blouse', 'pants', 'jeans', 'skirt', 'jacket', 'coat', 'sweater', 'hoodie', 't-shirt', 'shorts'].some(term => titleLower.includes(term));
-
-        if (isClothing) {
-            const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-            sizes.forEach((size, index) => {
-                variants.push({
-                    id: `size_${size.toLowerCase()}`,
-                    name: `Size: ${size}`,
-                    priceAdjustment: 0,
-                    inStock: true,
-                });
-            });
-        }
-    }
+    // Do not synthesize variants when source data does not provide real SKUs.
 
     return {
         // Base Product fields
@@ -463,8 +447,8 @@ export const aliexpressService = {
                     transformProduct(item)
                 ),
                 totalCount,
-                currentPage: page,
-                totalPages,
+                currentPage: data.currentPage ?? page,
+                totalPages: data.totalPages ?? totalPages,
             };
 
             // Cache for 15 minutes
@@ -543,8 +527,8 @@ export const aliexpressService = {
                     source: p.source || '1688',
                 } as SourceProduct)),
                 totalCount: data.totalCount || data.products?.length || 0,
-                currentPage: page,
-                totalPages: Math.ceil((data.totalCount || data.products?.length || 1) / pageSize),
+                currentPage: data.currentPage ?? page,
+                totalPages: data.totalPages ?? Math.ceil((data.totalCount || data.products?.length || 1) / pageSize),
                 sources: data.sources,
                 errors: data.errors,
             };

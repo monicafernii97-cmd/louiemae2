@@ -678,9 +678,10 @@ http.route({
             );
         } catch (error: any) {
             console.error("OTAPI 1688 search error:", error);
+            const isTimeout = error?.name === 'AbortError';
             return new Response(
-                JSON.stringify({ error: error.message || "Search failed" }),
-                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                JSON.stringify({ error: isTimeout ? 'Upstream request timed out' : (error.message || 'Search failed') }),
+                { status: isTimeout ? 504 : 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
     }),
@@ -722,15 +723,22 @@ http.route({
                 );
             }
 
-            // Ensure ID has the abb- prefix for OTAPI
+            // Ensure ID has the abb- prefix for OTAPI and validate format
             const otapiId = productId.startsWith('abb-') ? productId : `abb-${productId}`;
+            if (!/^abb-\d+$/.test(otapiId)) {
+                return new Response(
+                    JSON.stringify({ error: "Product ID must be numeric (with optional abb- prefix)" }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+            const detailParams = new URLSearchParams({ language: 'en', itemId: otapiId });
 
             const detailController = new AbortController();
             const detailTimeout = setTimeout(() => detailController.abort(), 15000);
             let response: Response;
             try {
                 response = await fetch(
-                    `https://${RAPIDAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
+                    `https://${RAPIDAPI_HOST}/BatchGetItemFullInfo?${detailParams.toString()}`,
                     {
                         method: "GET",
                         headers: {
@@ -769,9 +777,10 @@ http.route({
             );
         } catch (error: any) {
             console.error("OTAPI 1688 product detail error:", error);
+            const isTimeout = error?.name === 'AbortError';
             return new Response(
-                JSON.stringify({ error: error.message || "Failed to get product details" }),
-                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                JSON.stringify({ error: isTimeout ? 'Upstream request timed out' : (error.message || 'Failed to get product details') }),
+                { status: isTimeout ? 504 : 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
     }),
@@ -1061,9 +1070,10 @@ http.route({
             );
         } catch (error: any) {
             console.error("Aggregated search error:", error);
+            const isTimeout = error?.name === 'AbortError';
             return new Response(
-                JSON.stringify({ error: error.message || "Search failed" }),
-                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                JSON.stringify({ error: isTimeout ? 'Upstream request timed out' : (error.message || 'Search failed') }),
+                { status: isTimeout ? 504 : 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
     }),
