@@ -634,9 +634,12 @@ http.route({
                 if (Number.isFinite(parsed)) params.append("MaxPrice", String(Math.round(parsed * usdToCny)));
             }
 
+            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
             const searchUrl = `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`;
-            console.log(`[Search /aliexpress Debug] Query: "${rawQuery}", page=${page}, pageSize=${pageSize}`);
-            console.log(`[Search /aliexpress Debug] Fetching: ${searchUrl.replace(rapidApiKey, '***')}`);
+            if (SEARCH_DEBUG) {
+                console.log(`[Search /aliexpress Debug] page=${page}, pageSize=${pageSize}`);
+                console.log(`[Search /aliexpress Debug] Fetching upstream endpoint: BatchSearchItemsFrame`);
+            }
 
             const searchController = new AbortController();
             const searchTimeout = setTimeout(() => searchController.abort(), 15000);
@@ -966,8 +969,11 @@ http.route({
             const hasSynonym = synQuery !== query;
 
             // Each query fetches exactly 1 upstream page at the correct offset
+            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
             const frameOffset = Math.max(0, page - 1) * pageSize;
-            console.log(`[Search Debug] Query: "${query}"${hasSynonym ? ` (synonym: "${synQuery}")` : ''}, page=${page}, pageSize=${pageSize}, offset=${frameOffset}`);
+            if (SEARCH_DEBUG) {
+                console.log(`[Search Debug] page=${page}, pageSize=${pageSize}, offset=${frameOffset}, hasSynonym=${hasSynonym}`);
+            }
 
             const errors: string[] = [];
             let upstreamTotalCount = 0;
@@ -976,7 +982,9 @@ http.route({
             const fetchWithTimeout = async (url: string, timeoutMs = 20000) => {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), timeoutMs);
-                console.log(`[Search Debug] Fetching upstream: ${url.replace(rapidApiKey, '***')}`);
+                if (SEARCH_DEBUG) {
+                    console.log(`[Search Debug] Fetching upstream endpoint: BatchSearchItemsFrame`);
+                }
                 const fetchStart = Date.now();
                 try {
                     const response = await fetch(url, {
@@ -989,14 +997,18 @@ http.route({
                     });
                     clearTimeout(timeout);
                     const elapsed = Date.now() - fetchStart;
-                    console.log(`[Search Debug] Upstream response: status=${response.status}, time=${elapsed}ms`);
+                    if (SEARCH_DEBUG) {
+                        console.log(`[Search Debug] Upstream response: status=${response.status}, time=${elapsed}ms`);
+                    }
                     if (!response.ok) {
                         const errorBody = await response.text();
-                        console.error(`[Search Debug] Upstream error body: ${errorBody.slice(0, 500)}`);
+                        console.error(`[Search Debug] Upstream error: status=${response.status}, bodyLength=${errorBody.length}`);
                         throw new Error(`HTTP ${response.status}: ${errorBody.slice(0, 200)}`);
                     }
                     const data = await response.json();
-                    console.log(`[Search Debug] Upstream JSON keys: ${Object.keys(data).join(', ')}, ErrorCode: ${data.ErrorCode || 'N/A'}`);
+                    if (SEARCH_DEBUG) {
+                        console.log(`[Search Debug] Upstream JSON keys: ${Object.keys(data).join(', ')}, ErrorCode: ${data.ErrorCode || 'N/A'}`);
+                    }
                     return data;
                 } catch (e: any) {
                     clearTimeout(timeout);
@@ -1038,7 +1050,9 @@ http.route({
                 const { products, totalCount } = normalizeOtapi1688(data);
                 primaryResults = products;
                 upstreamTotalCount = totalCount;
-                console.log(`[Search Debug] Primary results: ${products.length} products, totalCount: ${totalCount}`);
+                if (SEARCH_DEBUG) {
+                    console.log(`[Search Debug] Primary results: ${products.length} products, totalCount: ${totalCount}`);
+                }
             } catch (e: any) {
                 console.error(`[Search Debug] OTAPI primary fetch FAILED: ${e.message}`);
                 errors.push(`1688: ${e.message}`);
