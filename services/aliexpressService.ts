@@ -477,28 +477,41 @@ export const aliexpressService = {
 
         try {
             // Call Convex HTTP proxy aggregated endpoint
+            const searchUrl = `${CONVEX_SITE_URL}/products/search`;
+            const searchBody = {
+                query,
+                page,
+                pageSize,
+                minPrice,
+                maxPrice,
+                sortBy,
+                sources,
+            };
+            console.log(`[aliexpressService] searchAllSources: URL=${searchUrl}`);
+            console.log(`[aliexpressService] searchAllSources: body=`, searchBody);
+
             const response = await rateLimitedFetch(
-                `${CONVEX_SITE_URL}/products/search`,
+                searchUrl,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query,
-                        page,
-                        pageSize,
-                        minPrice,
-                        maxPrice,
-                        sortBy,
-                        sources,
-                    })
+                    body: JSON.stringify(searchBody)
                 }
             );
 
             if (!response.ok) {
+                console.error(`[aliexpressService] Search response NOT OK: status=${response.status}`);
                 await handleApiError(response);
             }
 
             const data = await response.json();
+            const errorSummary =
+                Array.isArray(data.errors) && data.errors.length > 0
+                    ? `, errors: ${data.errors.join('; ')}`
+                    : '';
+            console.log(
+                `[aliexpressService] Search response: ${data.products?.length || 0} products, totalCount=${data.totalCount || 0}${errorSummary}`
+            );
 
             // Transform normalized products to SourceProduct format
             const result: SourceSearchResult & { sources?: string[], errors?: string[] } = {
