@@ -802,21 +802,21 @@ function normalizeOtapi1688(data: any): NormalizedProduct[] {
         // URL
         const url = item.TaobaoItemUrl || item.ExternalItemUrl || '';
 
-        // Variants from QuantityRanges (tier pricing)
-        const variants: NormalizedProduct['variants'] = [];
+        // Tier pricing from QuantityRanges (stored as metadata, not variants)
+        // These are bulk-pricing thresholds, not selectable SKUs
+        const tierPricing: Array<{ minQty: number; price: number }> = [];
         if (Array.isArray(item.QuantityRanges) && item.QuantityRanges.length > 1) {
-            item.QuantityRanges.forEach((range: any, index: number) => {
+            item.QuantityRanges.forEach((range: any) => {
                 const tierPrice = getUsdPrice(range.Price);
-                variants.push({
-                    id: `qty_${index}`,
-                    name: `Min Qty: ${range.MinQuantity}+`,
-                    priceAdjustment: tierPrice - price,
-                    inStock: true,
+                tierPricing.push({
+                    minQty: range.MinQuantity || 1,
+                    price: tierPrice,
                 });
             });
         }
 
         // Variants from ConfiguredItems (color/size SKUs) — for detail responses
+        const variants: NormalizedProduct['variants'] = [];
         if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
             item.ConfiguredItems.forEach((cfg: any, index: number) => {
                 const cfgPrice = getUsdPrice(cfg.Price);
@@ -875,6 +875,7 @@ http.route({
             const synQuery = words.map((w: string) => synonyms[w] || w).join(' ');
             const allQueries = query !== synQuery ? [query, synQuery] : [query];
             const pagesPerQuery = 3; // 3 pages per query variation
+            const startFrame = Math.max(0, page - 1) * pagesPerQuery;
 
             const results: NormalizedProduct[] = [];
             const errors: string[] = [];
@@ -907,7 +908,7 @@ http.route({
 
             for (const q of allQueries) {
                 for (let p = 0; p < pagesPerQuery; p++) {
-                    const framePosition = p * pageSize;
+                    const framePosition = (startFrame + p) * pageSize;
                     const params = new URLSearchParams({
                         language: 'en',
                         framePosition: String(framePosition),
@@ -928,17 +929,13 @@ http.route({
             }
 
             // Execute with concurrency limit to avoid throttling
-            const executing: Promise<void>[] = [];
+            const executing = new Set<Promise<void>>();
             for (const task of fetchTasks) {
                 const p = task();
-                executing.push(p);
-                if (executing.length >= MAX_CONCURRENT) {
+                executing.add(p);
+                p.finally(() => executing.delete(p));
+                if (executing.size >= MAX_CONCURRENT) {
                     await Promise.race(executing);
-                    // Remove settled promises
-                    for (let i = executing.length - 1; i >= 0; i--) {
-                        const settled = await Promise.race([executing[i].then(() => true), Promise.resolve(false)]);
-                        if (settled) executing.splice(i, 1);
-                    }
                 }
             }
             await Promise.all(executing);

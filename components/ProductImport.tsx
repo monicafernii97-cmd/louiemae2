@@ -889,6 +889,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 console.log('[URL Import] Processing as generic product:', result.data);
                 const data = result.data;
                 const genId = `gen_${Date.now()}`;
+                // Guard against non-USD prices from foreign pages
+                if (data.currency && data.currency !== 'USD') {
+                    throw new Error(`Generic import currently supports USD pages only; received ${data.currency}.`);
+                }
                 importableProduct = {
                     id: genId,
                     name: data.title || 'Unknown',

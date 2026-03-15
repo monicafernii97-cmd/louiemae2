@@ -2,6 +2,27 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 
+// SSRF protection: check if a hostname resolves to a private/internal IP
+const isBlockedHost = (hostname: string): boolean => {
+    const h = hostname.toLowerCase();
+    return (
+        h === 'localhost' ||
+        h.startsWith('127.') ||
+        h.startsWith('10.') ||
+        h.startsWith('192.168.') ||
+        h.startsWith('169.254.') ||
+        h.startsWith('172.16.') ||
+        h.startsWith('172.17.') ||
+        h.startsWith('172.18.') ||
+        h.startsWith('172.19.') ||
+        h.startsWith('172.2') ||
+        h.startsWith('172.3') ||
+        h === '0.0.0.0' ||
+        h.endsWith('.local') ||
+        h.endsWith('.internal')
+    );
+};
+
 export const scrapeProduct = action({
     args: { url: v.string() },
     handler: async (ctx, { url }) => {
@@ -13,27 +34,11 @@ export const scrapeProduct = action({
                 throw new Error(`Invalid URL format: "${url}". URL must start with http:// or https://`);
             }
 
-            // SSRF protection: block private/internal IPs and localhost
+            // Validate original URL against SSRF blocklist
             try {
                 const parsed = new URL(url);
-                const hostname = parsed.hostname.toLowerCase();
-                if (
-                    hostname === 'localhost' ||
-                    hostname.startsWith('127.') ||
-                    hostname.startsWith('10.') ||
-                    hostname.startsWith('192.168.') ||
-                    hostname.startsWith('169.254.') ||
-                    hostname.startsWith('172.16.') ||
-                    hostname.startsWith('172.17.') ||
-                    hostname.startsWith('172.18.') ||
-                    hostname.startsWith('172.19.') ||
-                    hostname.startsWith('172.2') ||
-                    hostname.startsWith('172.3') ||
-                    hostname === '0.0.0.0' ||
-                    hostname.endsWith('.local') ||
-                    hostname.endsWith('.internal')
-                ) {
-                    throw new Error(`Blocked internal/private URL: "${hostname}"`);
+                if (isBlockedHost(parsed.hostname)) {
+                    throw new Error(`Blocked internal/private URL: "${parsed.hostname}"`);
                 }
             } catch (parseErr: any) {
                 if (parseErr.message.startsWith('Blocked')) throw parseErr;
@@ -111,8 +116,8 @@ async function scrape1688(productId: string) {
 
         const data = await response.json();
 
-        if (data.ErrorCode !== 'Ok') {
-            throw new Error(`OTAPI Error: ${data.ErrorCode}`);
+        if (data.ErrorCode !== 'Ok' || data.Result?.HasError) {
+            throw new Error(`OTAPI Error: ${data.Result?.ErrorCode || data.ErrorCode}`);
         }
 
         console.log(`[Scraper] Successfully fetched 1688 product via OTAPI`);
@@ -133,6 +138,8 @@ async function scrapeGeneric(url: string) {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        // Use manual redirect to revalidate each hop against SSRF blocklist
         const response = await fetch(url, {
             headers: {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -143,6 +150,18 @@ async function scrapeGeneric(url: string) {
             signal: controller.signal,
         });
         clearTimeout(timeoutId);
+
+        // Revalidate final URL after redirects
+        const finalUrl = response.url || url;
+        try {
+            const finalParsed = new URL(finalUrl);
+            if (isBlockedHost(finalParsed.hostname)) {
+                throw new Error(`Redirect landed on blocked host: "${finalParsed.hostname}"`);
+            }
+        } catch (ssrfErr: any) {
+            if (ssrfErr.message.startsWith('Redirect')) throw ssrfErr;
+            // URL parse error — proceed anyway since fetch already succeeded
+        }
 
         if (!response.ok) {
             throw new Error(`Failed to load page: HTTP ${response.status} ${response.statusText}`);

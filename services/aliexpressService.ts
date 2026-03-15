@@ -117,8 +117,14 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         return parseFloat(str) || 0;
     };
 
-    // Price is under sku.def.promotionPrice (sale) or sku.def.price (original)
+    // Price is under OTAPI ConvertedPriceList or legacy sku.def.promotionPrice
+    const getUsdPrice = (priceObj: any): number => {
+        return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
+    };
+
     const salePrice = parsePrice(
+        getUsdPrice(raw.PromotionPrice) ||
+        getUsdPrice(raw.Price) ||
         raw.sku?.def?.promotionPrice ||
         raw.sku?.def?.price ||
         raw.salePrice ||
@@ -127,40 +133,52 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         raw.minPrice
     );
     const originalPrice = parsePrice(
+        getUsdPrice(raw.Price) ||
         raw.sku?.def?.price ||
         raw.originalPrice ||
         raw.original_price ||
         salePrice
     );
 
-    // Get product ID - itemId in this API version
-    const productId = raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || '';
+    // Get product ID — OTAPI uses 'Id', legacy uses 'itemId'
+    const productId = raw.Id || raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || '';
 
-    // Get product title
-    const productName = raw.title || raw.subject || raw.product_title || raw.name || 'Unnamed Product';
+    // Get product title — OTAPI uses 'Title'/'OriginalTitle', legacy uses 'title'
+    const productName = raw.Title || raw.OriginalTitle || raw.title || raw.subject || raw.product_title || raw.name || 'Unnamed Product';
 
-    // Get images - single image field in this API, need to add https:
+    // Get images — OTAPI uses Pictures[], legacy uses image/imageUrl/images
     const images: string[] = [];
-    if (raw.image) {
-        // API returns URLs starting with // so add https:
+    // OTAPI Pictures array
+    if (Array.isArray(raw.Pictures)) {
+        raw.Pictures.forEach((pic: any) => {
+            const picUrl = pic.Large?.Url || pic.Medium?.Url || pic.Url;
+            if (picUrl) images.push(picUrl);
+        });
+    }
+    // OTAPI MainPictureUrl
+    if (images.length === 0 && raw.MainPictureUrl) {
+        images.push(raw.MainPictureUrl);
+    }
+    // Legacy image fields
+    if (images.length === 0 && raw.image) {
         const imgUrl = raw.image.startsWith('//') ? `https:${raw.image}` : raw.image;
         images.push(imgUrl);
     }
     if (raw.imageUrl) {
         const imgUrl = raw.imageUrl.startsWith('//') ? `https:${raw.imageUrl}` : raw.imageUrl;
-        images.push(imgUrl);
+        if (!images.includes(imgUrl)) images.push(imgUrl);
     }
     if (raw.images && Array.isArray(raw.images)) {
         raw.images.forEach((img: string) => {
             const imgUrl = img.startsWith('//') ? `https:${img}` : img;
-            images.push(imgUrl);
+            if (!images.includes(imgUrl)) images.push(imgUrl);
         });
     }
     // Fallback placeholder if no images
     if (images.length === 0) images.push('https://via.placeholder.com/300x300?text=No+Image');
 
-    // Get product URL and make it complete
-    let productUrl = raw.itemUrl || raw.productUrl || raw.product_url || raw.url || '';
+    // Get product URL — OTAPI uses TaobaoItemUrl, legacy uses itemUrl
+    let productUrl = raw.TaobaoItemUrl || raw.ExternalItemUrl || raw.itemUrl || raw.productUrl || raw.product_url || raw.url || '';
     if (productUrl.startsWith('//')) {
         productUrl = `https:${productUrl}`;
     }
@@ -431,6 +449,9 @@ export const aliexpressService = {
                         query,
                         page,
                         pageSize,
+                        minPrice,
+                        maxPrice,
+                        sortBy,
                         sources,
                     })
                 }
