@@ -189,7 +189,7 @@ async function scrape1688(productId: string) {
  */
 async function scrapeGeneric(url: string) {
     try {
-        let response: Response;
+        let response: Response | undefined;
         let currentUrl = url;
         const MAX_REDIRECTS = 5;
 
@@ -247,6 +247,10 @@ async function scrapeGeneric(url: string) {
         }
 
         const finalUrl = currentUrl;
+
+        if (!response) {
+            throw new Error('No response received from server');
+        }
 
         if (!response.ok) {
             throw new Error(`Failed to load page: HTTP ${response.status} ${response.statusText}`);
