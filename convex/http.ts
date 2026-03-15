@@ -642,8 +642,16 @@ http.route({
 
             const data = await response.json();
 
+            // Normalize through the same pipeline as aggregated search
+            // so callers (searchProducts, getHotProducts) get a consistent shape
+            const normalized = normalizeOtapi1688(data);
+
             return new Response(
-                JSON.stringify(data),
+                JSON.stringify({
+                    products: normalized,
+                    totalCount: normalized.length,
+                    currentPage: page,
+                }),
                 { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         } catch (error: any) {
@@ -976,11 +984,17 @@ http.route({
             if (sortBy === 'price_asc') uniqueResults.sort((a, b) => a.price - b.price);
             else if (sortBy === 'price_desc') uniqueResults.sort((a, b) => b.price - a.price);
 
+            // Cap results to requested pageSize to honor pagination contract
+            const pagedResults = uniqueResults.slice(0, pageSize);
+            const totalAvailable = uniqueResults.length;
+
             return new Response(
                 JSON.stringify({
-                    products: uniqueResults,
-                    totalCount: uniqueResults.length,
+                    products: pagedResults,
+                    totalCount: totalAvailable,
                     currentPage: page,
+                    totalPages: Math.ceil(totalAvailable / pageSize),
+                    hasMore: uniqueResults.length > pageSize,
                     sources: ['1688'],
                     queriesUsed: allQueries,
                     errors: errors.length > 0 ? errors : undefined,

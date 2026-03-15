@@ -303,7 +303,22 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         });
     }
 
-    // Method 3: Generate common clothing sizes if title suggests it's clothing
+    // Method 3: OTAPI ConfiguredItems (1688 color/size SKUs)
+    if (variants.length === 0 && Array.isArray(raw.ConfiguredItems) && raw.ConfiguredItems.length > 0) {
+        raw.ConfiguredItems.forEach((cfg: any, index: number) => {
+            const cfgPrice = getUsdPrice(cfg.Price);
+            const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
+            variants.push({
+                id: cfg.Id || `cfg_${index}`,
+                name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${index + 1}`,
+                image: cfgImage || undefined,
+                priceAdjustment: cfgPrice ? cfgPrice - salePrice : 0,
+                inStock: (cfg.MasterQuantity || 0) > 0,
+            });
+        });
+    }
+
+    // Method 4: Generate common clothing sizes if title suggests it's clothing
     if (variants.length === 0) {
         const titleLower = productName.toLowerCase();
         const isClothing = ['shirt', 'top', 'dress', 'blouse', 'pants', 'jeans', 'skirt', 'jacket', 'coat', 'sweater', 'hoodie', 't-shirt', 'shorts'].some(term => titleLower.includes(term));
@@ -402,8 +417,8 @@ export const aliexpressService = {
 
             const data = await response.json();
 
-            // The API returns data in .result.resultList format
-            const items = data.result?.resultList || data.result?.items || data.items || data.resultList || [];
+            // Support both normalized response shape (from updated proxy) and legacy shapes
+            const items = data.products || data.result?.resultList || data.result?.items || data.items || data.resultList || [];
 
             const result: AliExpressSearchResult = {
                 products: items.map((item: any) =>

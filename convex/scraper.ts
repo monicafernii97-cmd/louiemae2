@@ -196,32 +196,41 @@ async function scrapeGeneric(url: string) {
             '';
 
         // Extract images — collect multiple sources
+        // Helper to resolve any URL (relative, protocol-relative, absolute) against the page
+        const resolveUrl = (src: string): string => {
+            if (!src) return '';
+            try {
+                return new URL(src, finalUrl).toString();
+            } catch {
+                return src.startsWith('//') ? `https:${src}` : src;
+            }
+        };
+
         const images: string[] = [];
         const ogImage = getMeta('og:image');
-        if (ogImage) images.push(ogImage.startsWith('//') ? `https:${ogImage}` : ogImage);
+        if (ogImage) images.push(resolveUrl(ogImage));
         const twitterImage = getMeta('twitter:image');
         if (twitterImage && twitterImage !== ogImage) {
-            images.push(twitterImage.startsWith('//') ? `https:${twitterImage}` : twitterImage);
+            images.push(resolveUrl(twitterImage));
         }
 
         // Look for additional product images in the HTML
         const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi);
         for (const match of imgMatches) {
-            let imgSrc = match[1];
+            const imgSrc = match[1];
             // Skip tiny icons, tracking pixels, logos, etc.
             if (imgSrc.includes('pixel') || imgSrc.includes('icon') || imgSrc.includes('logo') ||
                 imgSrc.includes('avatar') || imgSrc.includes('flag') || imgSrc.includes('badge') ||
                 imgSrc.includes('.svg') || imgSrc.includes('1x1') || imgSrc.includes('blank') ||
                 imgSrc.includes('data:image') || imgSrc.length < 10) continue;
-            // Normalize protocol-relative URLs
-            if (imgSrc.startsWith('//')) imgSrc = `https:${imgSrc}`;
+            const resolved = resolveUrl(imgSrc);
             // Accept images matching common extensions or CDN/hosting patterns
-            const hasImageExt = /\.(jpe?g|png|webp|avif)(\?|$)/i.test(imgSrc);
-            const hasCdnPattern = /(cdn|cloudfront|cloudinary|s3\.amazonaws|imgix|akamai|media|upload|photo|product|item|pic)/i.test(imgSrc);
-            const hasSizeParam = /(\d{2,4}x\d{2,4}|width=|height=|w=\d|h=\d|resize)/i.test(imgSrc);
+            const hasImageExt = /\.(jpe?g|png|webp|avif)(\?|$)/i.test(resolved);
+            const hasCdnPattern = /(cdn|cloudfront|cloudinary|s3\.amazonaws|imgix|akamai|media|upload|photo|product|item|pic)/i.test(resolved);
+            const hasSizeParam = /(\d{2,4}x\d{2,4}|width=|height=|w=\d|h=\d|resize)/i.test(resolved);
             if ((hasImageExt || hasCdnPattern || hasSizeParam) &&
-                !images.includes(imgSrc) && images.length < 10) {
-                images.push(imgSrc);
+                !images.includes(resolved) && images.length < 10) {
+                images.push(resolved);
             }
         }
 
