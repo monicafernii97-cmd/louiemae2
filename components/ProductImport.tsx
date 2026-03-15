@@ -160,6 +160,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         setIsSearching(true);
         setError(null);
+        console.log(`[Import Search] Starting search: query="${searchQuery}", page=${page}`);
+        toast.loading('Searching 1688 catalog...', { id: 'search-progress' });
 
         try {
             const result = await aliexpressService.searchAllSources({
@@ -171,6 +173,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 sortBy: sortBy === 'default' ? undefined : sortBy,
                 sources: ['1688'],
             });
+
+            console.log(`[Import Search] Got ${result.products.length} products, totalCount: ${result.totalCount}`);
+            if (result.errors && result.errors.length > 0) {
+                console.warn('[Import Search] Partial errors:', result.errors);
+            }
 
             const filteredProducts = result.products
                 .filter(p => minRating === 0 || (p.averageRating || 0) >= minRating)
@@ -186,8 +193,34 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             setTotalPages(result.totalPages || Math.ceil(result.totalCount / 20));
             setCurrentPage(page);
             setSelectAll(false);
+            toast.dismiss('search-progress');
+
+            if (filteredProducts.length === 0 && result.totalCount === 0) {
+                toast.info('No products found', { description: 'Try different keywords or adjust your filters.' });
+            } else {
+                toast.success(`Found ${filteredProducts.length} products`);
+            }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Search failed');
+            console.error('[Import Search] Search FAILED:', err);
+            toast.dismiss('search-progress');
+
+            let errorMsg = 'Search failed';
+            if (err instanceof Error) {
+                errorMsg = err.message;
+                // Add guidance for common errors
+                if (errorMsg.includes('RapidAPI key not configured')) {
+                    errorMsg = 'RapidAPI key not configured. Go to Convex Dashboard → Environment Variables and set RAPIDAPI_KEY.';
+                } else if (errorMsg.includes('429') || errorMsg.includes('Rate limit')) {
+                    errorMsg = 'API rate limit reached. Please wait a moment and try again.';
+                } else if (errorMsg.includes('timed out') || errorMsg.includes('AbortError')) {
+                    errorMsg = 'Search request timed out. The 1688 API may be slow — please try again.';
+                } else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                    errorMsg = 'Network error — could not reach the search API. Check your internet connection.';
+                }
+            }
+
+            setError(errorMsg);
+            toast.error('Search failed', { description: errorMsg, duration: 8000 });
             setSearchResults([]);
         } finally {
             setIsSearching(false);
