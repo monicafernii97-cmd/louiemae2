@@ -381,6 +381,7 @@ http.route({
 });
 
 // Handle CJ Order status webhook
+/** Handles CJ Dropshipping order status webhook events. */
 async function handleCjOrderWebhook(ctx: any, params: any, messageType: string) {
     const { cjOrderId, orderNumber, orderStatus, trackNumber, logisticName, trackingUrl } = params;
 
@@ -407,6 +408,7 @@ async function handleCjOrderWebhook(ctx: any, params: any, messageType: string) 
 }
 
 // Handle CJ Logistics/tracking webhook
+/** Handles CJ Dropshipping logistics/tracking webhook events. */
 async function handleCjLogisticsWebhook(ctx: any, params: any) {
     const { orderId, trackingNumber, logisticName, trackingStatus, trackingUrl } = params;
 
@@ -434,6 +436,7 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
 }
 
 // Handle CJ Product webhook (approval/rejection status)
+/** Handles CJ Dropshipping product info webhook events. */
 async function handleCjProductWebhook(ctx: any, params: any) {
     const { pid, productName, productStatus, statusReason } = params;
 
@@ -474,6 +477,7 @@ async function handleCjProductWebhook(ctx: any, params: any) {
 }
 
 // Handle CJ Variant webhook (variant IDs for fulfillment)
+/** Handles CJ Dropshipping variant/SKU webhook events. */
 async function handleCjVariantWebhook(ctx: any, params: any) {
     const {
         pid,
@@ -544,6 +548,7 @@ async function handleCjVariantWebhook(ctx: any, params: any) {
 
 
 // Map CJ order status strings to our status
+/** Maps CJ Dropshipping order status codes to internal status strings. */
 function mapCjOrderStatus(cjStatus: string): string {
     const statusMap: Record<string, string> = {
         "CREATED": "confirmed",
@@ -559,13 +564,27 @@ function mapCjOrderStatus(cjStatus: string): string {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ALIEXPRESS API PROXY ROUTES
-// Proxies API calls to RapidAPI to avoid CORS issues and keep API key secure
+// OTAPI 1688 API PROXY ROUTES
+// Proxies API calls to OTAPI 1688 on RapidAPI to avoid CORS and keep API key secure
 // ═══════════════════════════════════════════════════════════════════════════
 
-const RAPIDAPI_HOST = "aliexpress-datahub.p.rapidapi.com";
+const RAPIDAPI_HOST = "otapi-1688.p.rapidapi.com";
 
-// Search products on AliExpress
+// Map our sort options to OTAPI OrderBy values
+/** Maps client-side sortBy value to OTAPI OrderBy parameter. */
+function mapSortOrder(sortBy?: string): string {
+    switch (sortBy) {
+        case 'price_asc': return 'Price:Asc';
+        case 'price_desc': return 'Price:Desc';
+        case 'orders': return 'Popularity:Desc';
+        case 'rating': return 'Popularity:Desc'; // OTAPI doesn't have rating sort, use popularity
+        default: return 'Popularity:Desc';
+    }
+}
+
+// Search products on 1688 via OTAPI
+// NOTE: Route path "/aliexpress/search" is kept for backward compatibility.
+// This endpoint now proxies to OTAPI 1688, not AliExpress.
 http.route({
     path: "/aliexpress/search",
     method: "POST",
@@ -575,81 +594,94 @@ http.route({
         if (!rapidApiKey) {
             return new Response(
                 JSON.stringify({ error: "RapidAPI key not configured. Please set RAPIDAPI_KEY in Convex dashboard." }),
-                {
-                    status: 500,
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...corsHeaders,
-                    }
-                }
+                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
 
         try {
             const body = await request.json();
-            const { query, page = 1, pageSize = 20, minPrice, maxPrice, sortBy } = body;
+            const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
+            if (!rawQuery) {
+                return new Response(
+                    JSON.stringify({ error: "Query parameter is required and must be a non-empty string" }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+            const page = Math.max(1, Math.floor(Number(body.page) || 1));
+            const pageSize = Math.min(100, Math.max(1, Math.floor(Number(body.pageSize) || 40)));
+            const { minPrice, maxPrice, sortBy } = body;
 
-            // Build query params
+            // OTAPI uses framePosition (0-based offset) and frameSize
+            const framePosition = (page - 1) * pageSize;
             const params = new URLSearchParams({
-                q: query,
-                page: String(page),
-                limit: String(pageSize),
+                language: 'en',
+                framePosition: String(framePosition),
+                frameSize: String(pageSize),
+                ItemTitle: rawQuery,
+                OrderBy: mapSortOrder(sortBy),
             });
 
-            if (minPrice) params.append("startPrice", String(minPrice));
-            if (maxPrice) params.append("endPrice", String(maxPrice));
-            if (sortBy && sortBy !== "default") params.append("sort", sortBy);
+            // OTAPI prices are in CNY — convert USD input (configurable rate, default 7.2)
+            const usdToCny = parseFloat(process.env.USD_CNY_RATE || '7.2') || 7.2;
+            if (minPrice) {
+                const parsed = parseFloat(minPrice);
+                if (Number.isFinite(parsed)) params.append("MinPrice", String(Math.round(parsed * usdToCny)));
+            }
+            if (maxPrice) {
+                const parsed = parseFloat(maxPrice);
+                if (Number.isFinite(parsed)) params.append("MaxPrice", String(Math.round(parsed * usdToCny)));
+            }
 
-            const response = await fetch(
-                `https://${RAPIDAPI_HOST}/item_search_3?${params.toString()}`,
-                {
-                    method: "GET",
-                    headers: {
-                        "X-RapidAPI-Key": rapidApiKey,
-                        "X-RapidAPI-Host": RAPIDAPI_HOST,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            const searchController = new AbortController();
+            const searchTimeout = setTimeout(() => searchController.abort(), 15000);
+            let response: Response;
+            try {
+                response = await fetch(
+                    `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "X-RapidAPI-Key": rapidApiKey,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
+                            "Content-Type": "application/json",
+                        },
+                        signal: searchController.signal,
+                    }
+                );
+            } finally {
+                clearTimeout(searchTimeout);
+            }
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error("AliExpress API Error:", response.status, errorText);
+                console.error("OTAPI 1688 Search Error:", response.status, errorText);
                 return new Response(
                     JSON.stringify({ error: `API Error: ${response.status}` }),
-                    {
-                        status: response.status,
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...corsHeaders,
-                        }
-                    }
+                    { status: response.status, headers: { "Content-Type": "application/json", ...corsHeaders } }
                 );
             }
 
             const data = await response.json();
 
+            // Normalize through the same pipeline as aggregated search
+            // so callers (searchProducts, getHotProducts) get a consistent shape
+            const { products: normalized, totalCount: upstreamTotal } = normalizeOtapi1688(data);
+
             return new Response(
-                JSON.stringify(data),
-                {
-                    status: 200,
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...corsHeaders,
-                    }
-                }
+                JSON.stringify({
+                    products: normalized,
+                    totalCount: upstreamTotal,
+                    currentPage: page,
+                    totalPages: Math.ceil(upstreamTotal / pageSize),
+                }),
+                { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         } catch (error: any) {
-            console.error("AliExpress search error:", error);
+            console.error("OTAPI 1688 search error:", error);
+            const isTimeout = error?.name === 'AbortError';
             return new Response(
-                JSON.stringify({ error: error.message || "Search failed" }),
-                {
-                    status: 500,
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...corsHeaders,
-                    }
-                }
+                JSON.stringify({ error: isTimeout ? 'Upstream request timed out' : (error.message || 'Search failed') }),
+                { status: isTimeout ? 504 : 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
     }),
@@ -660,14 +692,13 @@ http.route({
     path: "/aliexpress/search",
     method: "OPTIONS",
     handler: httpAction(async () => {
-        return new Response(null, {
-            status: 204,
-            headers: corsHeaders,
-        });
+        return new Response(null, { status: 204, headers: corsHeaders });
     }),
 });
 
-// Get product details by ID
+// Get product details by ID (OTAPI 1688)
+// NOTE: Route path "/aliexpress/product" is kept for backward compatibility.
+// This endpoint now proxies to OTAPI 1688, not AliExpress.
 http.route({
     path: "/aliexpress/product",
     method: "POST",
@@ -677,109 +708,79 @@ http.route({
         if (!rapidApiKey) {
             return new Response(
                 JSON.stringify({ error: "RapidAPI key not configured. Please set RAPIDAPI_KEY in Convex dashboard." }),
-                {
-                    status: 500,
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...corsHeaders,
-                    }
-                }
+                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
 
         try {
             const body = await request.json();
-            const { productId } = body;
+            const productId = typeof body.productId === 'string' ? body.productId.trim() : '';
 
             if (!productId) {
                 return new Response(
-                    JSON.stringify({ error: "Product ID is required" }),
-                    {
-                        status: 400,
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...corsHeaders,
-                        }
-                    }
+                    JSON.stringify({ error: "Product ID is required and must be a string" }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
                 );
             }
 
-            // Try multiple API versions with fallback for resilience
-            const endpoints = [
-                `https://${RAPIDAPI_HOST}/item_detail_2?itemId=${productId}`,
-                `https://${RAPIDAPI_HOST}/item_detail_3?itemId=${productId}`,
-                `https://${RAPIDAPI_HOST}/item_detail?itemId=${productId}`,
-            ];
+            // Ensure ID has the abb- prefix for OTAPI and validate format
+            const otapiId = productId.startsWith('abb-') ? productId : `abb-${productId}`;
+            if (!/^abb-\d+$/.test(otapiId)) {
+                return new Response(
+                    JSON.stringify({ error: "Product ID must be numeric (with optional abb- prefix)" }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+            const detailParams = new URLSearchParams({ language: 'en', itemId: otapiId });
 
-            let lastError = null;
-
-            for (const endpoint of endpoints) {
-                try {
-                    const response = await fetch(endpoint, {
+            const detailController = new AbortController();
+            const detailTimeout = setTimeout(() => detailController.abort(), 15000);
+            let response: Response;
+            try {
+                response = await fetch(
+                    `https://${RAPIDAPI_HOST}/BatchGetItemFullInfo?${detailParams.toString()}`,
+                    {
                         method: "GET",
                         headers: {
                             "X-RapidAPI-Key": rapidApiKey,
-                            "X-RapidAPI-Host": RAPIDAPI_HOST,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
                             "Content-Type": "application/json",
                         },
-                    });
-
-                    if (!response.ok) {
-                        lastError = `API Error: ${response.status}`;
-                        console.log(`Endpoint ${endpoint} failed with ${response.status}, trying next...`);
-                        continue; // Try next endpoint
+                        signal: detailController.signal,
                     }
-
-                    const data = await response.json();
-
-                    // Check if the response indicates an error (some APIs return 200 with error in body)
-                    if (data.result?.status?.data === "error") {
-                        lastError = data.result?.status?.msg?.["internal-error"] || "API returned error";
-                        console.log(`Endpoint ${endpoint} returned error in body, trying next...`);
-                        continue; // Try next endpoint
-                    }
-
-                    // Success! Return the data
-                    return new Response(
-                        JSON.stringify(data),
-                        {
-                            status: 200,
-                            headers: {
-                                "Content-Type": "application/json",
-                                ...corsHeaders,
-                            }
-                        }
-                    );
-                } catch (fetchError: any) {
-                    lastError = fetchError.message;
-                    console.log(`Endpoint ${endpoint} threw error: ${fetchError.message}, trying next...`);
-                    continue; // Try next endpoint
-                }
+                );
+            } finally {
+                clearTimeout(detailTimeout);
             }
 
-            // All endpoints failed
-            console.error("All AliExpress product detail endpoints failed:", lastError);
+            if (!response.ok) {
+                console.error("OTAPI 1688 product detail error:", response.status);
+                return new Response(
+                    JSON.stringify({ error: `API Error: ${response.status}` }),
+                    { status: response.status, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+
+            const data = await response.json();
+
+            if (data.ErrorCode !== 'Ok' || data.Result?.HasError) {
+                console.error("OTAPI returned error:", data.ErrorCode, data.Result?.ErrorCode);
+                return new Response(
+                    JSON.stringify({ error: data.Result?.ErrorCode || data.ErrorCode || "Product not found" }),
+                    { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+
             return new Response(
-                JSON.stringify({ error: lastError || "All API endpoints unavailable" }),
-                {
-                    status: 503,
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...corsHeaders,
-                    }
-                }
+                JSON.stringify(data),
+                { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         } catch (error: any) {
-            console.error("AliExpress product detail error:", error);
+            console.error("OTAPI 1688 product detail error:", error);
+            const isTimeout = error?.name === 'AbortError';
             return new Response(
-                JSON.stringify({ error: error.message || "Failed to get product details" }),
-                {
-                    status: 500,
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...corsHeaders,
-                    }
-                }
+                JSON.stringify({ error: isTimeout ? 'Upstream request timed out' : (error.message || 'Failed to get product details') }),
+                { status: isTimeout ? 504 : 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
     }),
@@ -790,16 +791,13 @@ http.route({
     path: "/aliexpress/product",
     method: "OPTIONS",
     handler: httpAction(async () => {
-        return new Response(null, {
-            status: 204,
-            headers: corsHeaders,
-        });
+        return new Response(null, { status: 204, headers: corsHeaders });
     }),
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AGGREGATED MULTI-SOURCE PRODUCT SEARCH
-// Searches AliExpress, Alibaba, and more in parallel and combines results
+// OTAPI 1688 AGGREGATED PRODUCT SEARCH
+// Single-source search using OTAPI 1688 with multi-page parallel fetching
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface NormalizedProduct {
@@ -810,10 +808,11 @@ interface NormalizedProduct {
     image: string;
     images?: string[];
     url: string;
-    source: 'aliexpress' | 'alibaba' | 'aliexpress-true' | 'temu';
+    source: '1688';
     rating?: number;
     sales?: number;
     shipping?: string;
+    tierPricing?: Array<{ minQty: number; price: number }>;
     variants?: Array<{
         id: string;
         name: string;
@@ -823,244 +822,104 @@ interface NormalizedProduct {
     }>;
 }
 
-// Normalize AliExpress Datahub products
-function normalizeAliExpressDatahub(data: any): NormalizedProduct[] {
-    const items = data?.result?.resultList || [];
-    return items.map((wrapper: any) => {
-        const item = wrapper?.item || wrapper;
-        const basePrice = parseFloat(item.sku?.def?.promotionPrice) || parseFloat(item.sku?.def?.price) || 0;
+// Helper: extract a named value from OTAPI FeaturedValues array
+/** Extracts a named value from an OTAPI item's FeaturedValues array. */
+function getFeaturedValue(item: any, name: string): string | undefined {
+    const fv = item.FeaturedValues;
+    if (!Array.isArray(fv)) return undefined;
+    const entry = fv.find((v: any) => v.Name === name);
+    return entry?.Value;
+}
 
-        // Extract variants from SKU data
+// Helper: get USD price from OTAPI price object
+/** Extracts USD price from an OTAPI ConvertedPriceList or OriginalPrice field. */
+function getUsdPrice(priceObj: any): number {
+    return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
+}
+
+// Normalize OTAPI 1688 search results to NormalizedProduct[]
+/** Result shape returned by normalizeOtapi1688. */
+interface OtapiNormalizedResult {
+    products: NormalizedProduct[];
+    totalCount: number;
+}
+
+/**
+ * Normalizes raw OTAPI BatchSearchItemsFrame response into a flat NormalizedProduct array.
+ * Filters out items with missing title or zero price.
+ * @returns Object containing normalized products and the upstream TotalCount.
+ */
+function normalizeOtapi1688(data: any): OtapiNormalizedResult {
+    const items = data?.Result?.Items?.Items?.Content || [];
+    const totalCount = data?.Result?.Items?.Items?.TotalCount || data?.Result?.Items?.TotalCount || items.length;
+    const products = items.map((item: any) => {
+        // Price — prefer PromotionPrice (discounted) over Price (regular)
+        const promoPrice = getUsdPrice(item.PromotionPrice);
+        const regularPrice = getUsdPrice(item.Price);
+        const price = promoPrice > 0 ? promoPrice : regularPrice;
+
+        // Images from Pictures array
+        const images = (item.Pictures || [])
+            .map((pic: any) => pic.Large?.Url || pic.Medium?.Url || pic.Url)
+            .filter(Boolean);
+        const mainImage = item.MainPictureUrl || images[0] || '';
+
+        // Rating and sales from FeaturedValues
+        const rating = parseFloat(getFeaturedValue(item, 'rating') || '0') || undefined;
+        const salesStr = getFeaturedValue(item, 'SalesInLast30Days') || getFeaturedValue(item, 'TotalSales');
+        const sales = salesStr ? parseInt(salesStr, 10) : undefined;
+
+        // URL
+        const url = item.TaobaoItemUrl || item.ExternalItemUrl || '';
+
+        // Tier pricing from QuantityRanges (stored as metadata, not variants)
+        // These are bulk-pricing thresholds, not selectable SKUs
+        const tierPricing: Array<{ minQty: number; price: number }> = [];
+        if (Array.isArray(item.QuantityRanges) && item.QuantityRanges.length > 1) {
+            item.QuantityRanges.forEach((range: any) => {
+                const tierPrice = getUsdPrice(range.Price);
+                tierPricing.push({
+                    minQty: range.MinQuantity || 1,
+                    price: tierPrice,
+                });
+            });
+        }
+
+        // Variants from ConfiguredItems (color/size SKUs) — for detail responses
         const variants: NormalizedProduct['variants'] = [];
-        const skuData = item.sku || {};
-        const skuList = skuData.skuList || skuData.list || [];
-        const skuProps = skuData.props || skuData.properties || [];
-
-        // Build a mapping of propId:valueId -> { name, image } from skuProps
-        // This lets us decode propPath codes like "201336100:28320" into readable names
-        const propValueMap: Record<string, { propName: string; valueName: string; image?: string }> = {};
-
-        if (Array.isArray(skuProps) && skuProps.length > 0) {
-            skuProps.forEach((prop: any) => {
-                const propId = prop.id || prop.attrNameId || prop.pid || '';
-                const propName = prop.name || prop.attrName || 'Option';
-                const values = prop.values || prop.attrValues || [];
-
-                values.forEach((val: any) => {
-                    const valueId = val.id || val.attrValueId || val.vid || '';
-                    const valueName = val.name || val.attrValue || val.value || val;
-                    let valueImage = val.image || val.skuImage || val.img || '';
-                    if (valueImage && valueImage.startsWith('//')) {
-                        valueImage = `https:${valueImage}`;
-                    }
-
-                    // Create multiple lookup keys to handle different API formats
-                    const key1 = `${propId}:${valueId}`;
-                    const key2 = `${propId}#${valueId}`;
-                    const mapValue = { propName, valueName: String(valueName), image: valueImage || undefined };
-
-                    if (propId && valueId) {
-                        propValueMap[key1] = mapValue;
-                        propValueMap[key2] = mapValue;
-                    }
-                });
-            });
-        }
-
-        // Method 1: Parse from skuList (detailed variant data with prices)
-        if (Array.isArray(skuList) && skuList.length > 0) {
-            skuList.forEach((sku: any, index: number) => {
-                // Try to decode propPath using our mapping
-                let variantName = '';
-                let variantImage = sku.image || sku.skuVal?.image || '';
-
-                const propPath = sku.propPath || sku.skuAttr || '';
-                if (propPath) {
-                    // propPath format: "propId:valueId;propId2:valueId2" or "propId:valueId,propId2:valueId2"
-                    const propPairs = propPath.split(/[;,]/);
-                    const decodedParts: string[] = [];
-
-                    propPairs.forEach((pair: string) => {
-                        const [propId, valueId] = pair.split(':');
-                        const key = `${propId}:${valueId}`;
-                        const mapped = propValueMap[key];
-
-                        if (mapped) {
-                            decodedParts.push(`${mapped.propName}: ${mapped.valueName}`);
-                            // Use the mapped image if we don't have one yet
-                            if (!variantImage && mapped.image) {
-                                variantImage = mapped.image;
-                            }
-                        }
-                    });
-
-                    if (decodedParts.length > 0) {
-                        variantName = decodedParts.join(' / ');
-                    }
-                }
-
-                // Fallback to other name sources
-                if (!variantName) {
-                    variantName = sku.name ||
-                        sku.attributes?.map((a: any) => `${a.name || 'Option'}: ${a.value}`).join(' / ') ||
-                        sku.skuAttr ||
-                        `Option ${index + 1}`;
-                }
-
-                const variantPrice = parseFloat(sku.promotionPrice || sku.price || sku.skuVal?.skuCalPrice) || 0;
-                const priceAdjustment = variantPrice ? variantPrice - basePrice : 0;
-
-                if (variantImage && variantImage.startsWith('//')) {
-                    variantImage = `https:${variantImage}`;
-                }
-
+        if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
+            item.ConfiguredItems.forEach((cfg: any, index: number) => {
+                const cfgPrice = getUsdPrice(cfg.Price);
+                const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
                 variants.push({
-                    id: sku.skuId || sku.sku_id || `var_${index}`,
-                    name: variantName,
-                    image: variantImage || undefined,
-                    priceAdjustment: priceAdjustment,
-                    inStock: sku.available !== false && sku.stock !== 0,
-                });
-            });
-        }
-
-        // Method 2: Fallback - parse from props/properties directly (size/color categories)
-        if (variants.length === 0 && Array.isArray(skuProps) && skuProps.length > 0) {
-            skuProps.forEach((prop: any) => {
-                const propName = prop.name || prop.attrName || 'Option';
-                const values = prop.values || prop.attrValues || [];
-
-                values.forEach((val: any, index: number) => {
-                    const valueName = val.name || val.attrValue || val;
-                    let valueImage = val.image || val.skuImage || '';
-                    if (valueImage && valueImage.startsWith('//')) {
-                        valueImage = `https:${valueImage}`;
-                    }
-
-                    variants.push({
-                        id: val.id || val.attrValueId || `${propName}_${index}`,
-                        name: `${propName}: ${valueName}`,
-                        image: valueImage || undefined,
-                        priceAdjustment: 0,
-                        inStock: true,
-                    });
+                    id: cfg.Id || `cfg_${index}`,
+                    name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${index + 1}`,
+                    image: cfgImage || undefined,
+                    priceAdjustment: cfgPrice ? cfgPrice - price : 0,
+                    inStock: (cfg.MasterQuantity || 0) > 0,
                 });
             });
         }
 
         return {
-            id: `ae_${item.itemId}`,
-            title: item.title || 'Unknown Product',
-            price: basePrice,
-            originalPrice: parseFloat(item.sku?.def?.price) || undefined,
-            image: item.image?.startsWith('//') ? `https:${item.image}` : item.image,
-            url: item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '',
-            source: 'aliexpress' as const,
-            rating: item.averageStarRate || undefined,
-            sales: item.sales || undefined,
+            id: item.Id || '',
+            title: item.Title || 'Unknown Product',
+            price: price,
+            originalPrice: promoPrice > 0 && regularPrice > promoPrice ? regularPrice : undefined,
+            image: mainImage,
+            images: images.length > 0 ? images : (mainImage ? [mainImage] : []),
+            url: url,
+            source: '1688' as const,
+            rating: rating,
+            sales: sales,
+            tierPricing: tierPricing.length > 0 ? tierPricing : undefined,
             variants: variants.length > 0 ? variants : undefined,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
+    return { products, totalCount };
 }
 
-// Normalize Alibaba Datahub products
-function normalizeAlibabaDatahub(data: any): NormalizedProduct[] {
-    const items = data?.result?.resultList || [];
-    return items.map((wrapper: any) => {
-        const item = wrapper?.item || wrapper;
-
-        // Alibaba prices are often ranges like "59.8-63.6" - take the first price
-        let price = 0;
-        const priceModule = item.sku?.def?.priceModule;
-        if (priceModule?.price) {
-            // Handle price range format like "59.8-63.6"
-            const priceStr = String(priceModule.price);
-            const firstPrice = priceStr.split('-')[0];
-            price = parseFloat(firstPrice) || 0;
-        } else if (priceModule?.priceList?.[0]?.price) {
-            price = parseFloat(priceModule.priceList[0].price) || 0;
-        }
-
-        const imageUrl = item.image?.startsWith('//') ? `https:${item.image}` : item.image;
-        const itemUrl = item.itemUrl?.startsWith('//') ? `https:${item.itemUrl}` : item.itemUrl || '';
-
-        // Extract variants from Alibaba SKU data
-        const variants: NormalizedProduct['variants'] = [];
-        const skuData = item.sku || {};
-        const skuProps = skuData.props || skuData.properties || item.skuProps || [];
-
-        // Parse from priceList (quantity-based pricing)
-        if (priceModule?.priceList && Array.isArray(priceModule.priceList)) {
-            priceModule.priceList.forEach((pl: any, index: number) => {
-                const variantPrice = parseFloat(pl.price) || 0;
-                variants.push({
-                    id: `qty_${index}`,
-                    name: pl.quantity ? `Qty: ${pl.quantity}+` : `Option ${index + 1}`,
-                    priceAdjustment: variantPrice - price,
-                    inStock: true,
-                });
-            });
-        }
-
-        // Parse from props/properties (color/size options)
-        if (Array.isArray(skuProps) && skuProps.length > 0) {
-            skuProps.forEach((prop: any) => {
-                const propName = prop.name || prop.attrName || 'Option';
-                const values = prop.values || prop.attrValues || [];
-
-                values.forEach((val: any, index: number) => {
-                    const valueName = val.name || val.attrValue || val;
-                    let valueImage = val.image || '';
-                    if (valueImage && valueImage.startsWith('//')) {
-                        valueImage = `https:${valueImage}`;
-                    }
-
-                    variants.push({
-                        id: val.id || `${propName}_${index}`,
-                        name: `${propName}: ${valueName}`,
-                        image: valueImage || undefined,
-                        priceAdjustment: 0,
-                        inStock: true,
-                    });
-                });
-            });
-        }
-
-        return {
-            id: `ab_${item.itemId}`,
-            title: item.title || 'Unknown Product',
-            price: price,
-            image: imageUrl,
-            images: item.images?.map((img: string) => img.startsWith('//') ? `https:${img}` : img) || [imageUrl],
-            url: itemUrl,
-            source: 'alibaba' as const,
-            variants: variants.length > 0 ? variants : undefined,
-        };
-    }).filter((p: NormalizedProduct) => p.title && p.price > 0);
-}
-
-// Normalize AliExpress True API products (search response)
-function normalizeAliExpressTrueApi(data: any): NormalizedProduct[] {
-    // True API returns array directly or in different structures
-    const items = Array.isArray(data) ? data : (data?.products || data?.items || []);
-    return items.map((item: any) => {
-        const price = parseFloat(item.target_sale_price) || parseFloat(item.sale_price) || parseFloat(item.original_price) || 0;
-        const images = item.product_small_image_urls?.string || [];
-        return {
-            id: `aet_${item.product_id || item.itemId}`,
-            title: item.product_title || item.title || 'Unknown Product',
-            price: price,
-            originalPrice: parseFloat(item.original_price) || undefined,
-            image: images[0] || item.product_main_image_url || '',
-            images: images,
-            url: item.product_detail_url || '',
-            source: 'aliexpress-true' as const,
-            rating: item.evaluate_rate ? parseFloat(item.evaluate_rate) : undefined,
-        };
-    }).filter((p: NormalizedProduct) => p.title && p.price > 0);
-}
-
-// Aggregated search endpoint
+// Aggregated search endpoint (now OTAPI 1688 only)
 http.route({
     path: "/products/search",
     method: "POST",
@@ -1076,7 +935,16 @@ http.route({
 
         try {
             const body = await request.json();
-            const { query: rawQuery, page = 1, pageSize = 60, sources = ['aliexpress', 'alibaba'] } = body;
+            const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
+            if (!rawQuery) {
+                return new Response(
+                    JSON.stringify({ error: "Query parameter is required and must be a non-empty string" }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+            const page = Math.max(1, Math.floor(Number(body.page) || 1));
+            const pageSize = Math.min(100, Math.max(1, Math.floor(Number(body.pageSize) || 60)));
+            const { minPrice, maxPrice, sortBy } = body;
 
             // ═══ QUERY OPTIMIZATION - Remove filler words, extract key terms ═══
             const fillerWords = new Set(['the', 'a', 'an', 'and', 'or', 'for', 'with', 'in', 'on', 'to', 'of', 'that', 'this', 'is', 'i', 'my', 'me', 'need', 'want', 'looking', 'find', 'search', 'good', 'best', 'cheap', 'please', 'help']);
@@ -1084,16 +952,18 @@ http.route({
             const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !fillerWords.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
 
-            // Use primary + synonym query for maximum variety
+            // Optional synonym query for backfill only
             const synQuery = words.map((w: string) => synonyms[w] || w).join(' ');
-            const allQueries = query !== synQuery ? [query, synQuery] : [query];
-            const pagesPerApi = 5; // Full 5 pages - requires upgraded RapidAPI plan for high volume
+            const hasSynonym = synQuery !== query;
 
-            const results: NormalizedProduct[] = [];
+            // Each query fetches exactly 1 upstream page at the correct offset
+            const frameOffset = Math.max(0, page - 1) * pageSize;
+
             const errors: string[] = [];
+            let upstreamTotalCount = 0;
 
-            // Helper to fetch with timeout (extended for multi-page)
-            const fetchWithTimeout = async (url: string, host: string, timeoutMs = 20000) => {
+            // Helper to fetch with timeout
+            const fetchWithTimeout = async (url: string, timeoutMs = 20000) => {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), timeoutMs);
                 try {
@@ -1101,7 +971,7 @@ http.route({
                         method: "GET",
                         headers: {
                             "X-RapidAPI-Key": rapidApiKey,
-                            "X-RapidAPI-Host": host,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
                         },
                         signal: controller.signal,
                     });
@@ -1114,93 +984,96 @@ http.route({
                 }
             };
 
-            // Build all fetch promises - fetch multiple pages per API in parallel
-            const fetchPromises: Promise<void>[] = [];
+            const usdToCny = parseFloat(process.env.USD_CNY_RATE || '7.2') || 7.2;
 
-            // AliExpress Datahub - fetch multiple pages for each query variation
-            if (sources.includes('aliexpress')) {
-                for (const q of allQueries) {
-                    for (let p = 1; p <= pagesPerApi; p++) {
-                        const params = new URLSearchParams({ q: q, page: String(p), limit: '60' });
-                        fetchPromises.push(
-                            fetchWithTimeout(
-                                `https://aliexpress-datahub.p.rapidapi.com/item_search_3?${params}`,
-                                "aliexpress-datahub.p.rapidapi.com"
-                            )
-                                .then(data => { results.push(...normalizeAliExpressDatahub(data)); })
-                                .catch(e => { if (p === 1 && q === allQueries[0]) errors.push(`AliExpress: ${e.message}`); })
-                        );
-                    }
+            // Build params helper
+            const buildParams = (q: string) => {
+                const params = new URLSearchParams({
+                    language: 'en',
+                    framePosition: String(frameOffset),
+                    frameSize: String(pageSize),
+                    ItemTitle: q,
+                    OrderBy: mapSortOrder(sortBy),
+                });
+                if (minPrice) {
+                    const parsed = parseFloat(minPrice);
+                    if (Number.isFinite(parsed)) params.append("MinPrice", String(Math.round(parsed * usdToCny)));
                 }
+                if (maxPrice) {
+                    const parsed = parseFloat(maxPrice);
+                    if (Number.isFinite(parsed)) params.append("MaxPrice", String(Math.round(parsed * usdToCny)));
+                }
+                return params;
+            };
+
+            // 1. Fetch primary query
+            let primaryResults: NormalizedProduct[] = [];
+            try {
+                const data = await fetchWithTimeout(
+                    `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${buildParams(query)}`
+                );
+                const { products, totalCount } = normalizeOtapi1688(data);
+                primaryResults = products;
+                upstreamTotalCount = totalCount;
+            } catch (e: any) {
+                console.error(`[Search] OTAPI primary fetch failed: ${e.message}`);
+                errors.push(`1688: ${e.message}`);
             }
 
-            // Alibaba Datahub - fetch multiple pages for each query variation
-            if (sources.includes('alibaba')) {
-                for (const q of allQueries) {
-                    for (let p = 1; p <= pagesPerApi; p++) {
-                        const params = new URLSearchParams({ q: q, page: String(p) });
-                        fetchPromises.push(
-                            fetchWithTimeout(
-                                `https://alibaba-datahub.p.rapidapi.com/item_search?${params}`,
-                                "alibaba-datahub.p.rapidapi.com"
-                            )
-                                .then(data => { results.push(...normalizeAlibabaDatahub(data)); })
-                                .catch(e => { if (p === 1 && q === allQueries[0]) errors.push(`Alibaba: ${e.message}`); })
-                        );
-                    }
-                }
-            }
-
-            // AliExpress True API - fetch multiple pages
-            if (sources.includes('aliexpress-true')) {
-                for (let p = 1; p <= pagesPerApi; p++) {
-                    const params = new URLSearchParams({
-                        keywords: query,
-                        page: String(p),
-                        target_currency: 'USD',
-                        target_language: 'EN',
-                    });
-                    fetchPromises.push(
-                        fetchWithTimeout(
-                            `https://aliexpress-true-api.p.rapidapi.com/api/v3/search?${params}`,
-                            "aliexpress-true-api.p.rapidapi.com"
-                        )
-                            .then(data => { results.push(...normalizeAliExpressTrueApi(data)); })
-                            .catch(e => { if (p === 1) errors.push(`AliExpress True: ${e.message}`); })
-                    );
-                }
-            }
-
-            // Wait for all to complete (with individual error handling)
-            await Promise.all(fetchPromises);
-
-            // Deduplicate results (same product may appear in multiple query variations)
+            // 2. Deduplicate primary results
             const seen = new Set<string>();
-            const uniqueResults = results.filter(p => {
+            const uniqueResults = primaryResults.filter(p => {
                 if (seen.has(p.id)) return false;
                 seen.add(p.id);
                 return true;
             });
 
-            // Sort by price (optional: could add other sort options)
-            uniqueResults.sort((a, b) => a.price - b.price);
+            // 3. If primary under-fills, backfill from synonym query
+            if (hasSynonym && uniqueResults.length < pageSize) {
+                try {
+                    const synData = await fetchWithTimeout(
+                        `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${buildParams(synQuery)}`
+                    );
+                    const { products: synProducts } = normalizeOtapi1688(synData);
+                    // Only add items we haven't seen, up to pageSize
+                    for (const p of synProducts) {
+                        if (uniqueResults.length >= pageSize) break;
+                        if (!seen.has(p.id)) {
+                            seen.add(p.id);
+                            uniqueResults.push(p);
+                        }
+                    }
+                } catch (e: any) {
+                    console.error(`[Search] OTAPI synonym backfill failed: ${e.message}`);
+                }
+            }
+
+            // Sort based on client preference
+            if (sortBy === 'price_asc') uniqueResults.sort((a, b) => a.price - b.price);
+            else if (sortBy === 'price_desc') uniqueResults.sort((a, b) => b.price - a.price);
+
+            // Cap results to requested pageSize
+            const pagedResults = uniqueResults.slice(0, pageSize);
 
             return new Response(
                 JSON.stringify({
-                    products: uniqueResults,
-                    totalCount: uniqueResults.length,
+                    products: pagedResults,
+                    totalCount: upstreamTotalCount || pagedResults.length,
                     currentPage: page,
-                    sources: sources,
-                    queriesUsed: allQueries, // Show what queries were actually searched
+                    totalPages: upstreamTotalCount > 0 ? Math.ceil(upstreamTotalCount / pageSize) : 1,
+                    hasMore: upstreamTotalCount > page * pageSize,
+                    sources: ['1688'],
+                    queriesUsed: hasSynonym ? [query, synQuery] : [query],
                     errors: errors.length > 0 ? errors : undefined,
                 }),
                 { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         } catch (error: any) {
             console.error("Aggregated search error:", error);
+            const isTimeout = error?.name === 'AbortError';
             return new Response(
-                JSON.stringify({ error: error.message || "Search failed" }),
-                { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                JSON.stringify({ error: isTimeout ? 'Upstream request timed out' : (error.message || 'Search failed') }),
+                { status: isTimeout ? 504 : 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
     }),
@@ -1216,3 +1089,4 @@ http.route({
 });
 
 export default http;
+

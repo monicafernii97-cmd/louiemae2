@@ -169,7 +169,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 minPrice: minPrice ? parseFloat(minPrice) : undefined,
                 maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
                 sortBy: sortBy === 'default' ? undefined : sortBy,
-                sources: ['aliexpress', 'alibaba'],
+                sources: ['1688'],
             });
 
             const filteredProducts = result.products
@@ -799,82 +799,102 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             let importableProduct: ImportableProduct;
 
-            if (result.source === 'aliexpress') {
-                console.log('[URL Import] Processing as AliExpress product');
+            if (result.source === '1688') {
+                console.log('[URL Import] Processing as 1688 product');
 
-                // Handle multiple API response structures:
-                // Datahub: data.result.item.{...} or data.result.resultList[0].item.{...}
-                // True API: data.{...} directly or data.result.{...}
-                const raw = result.data?.result?.item
-                    || result.data?.result?.resultList?.[0]?.item
-                    || result.data?.result
-                    || result.data?.data
-                    || result.data || {};
+                // OTAPI BatchGetItemFullInfo response: Result contains item data
+                const item = result.data?.Result ?? result.data;
+                if (!item || typeof item !== 'object') {
+                    throw new Error('1688 payload missing item data');
+                }
 
-                console.log('[URL Import] Extracted raw data keys:', Object.keys(raw));
+                // Extract basic info
+                const productName = item.Title || item.OriginalTitle || 'Unknown Product';
+                const productId = item.Id || `1688_${Date.now()}`;
 
-                // Robust field extraction (mirrors aliexpressService.transformProduct)
-                const parsePrice = (val: any): number => {
-                    if (!val) return 0;
-                    const str = String(val).replace(/[^0-9.]/g, '');
-                    return parseFloat(str) || 0;
+                // Extract USD price from OTAPI price structure
+                const getUsdPrice = (priceObj: any): number => {
+                    return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
                 };
+                const promoPrice = getUsdPrice(item.PromotionPrice);
+                const regularPrice = getUsdPrice(item.Price);
+                const salePrice = promoPrice > 0 ? promoPrice : regularPrice;
+                const origPrice = regularPrice > promoPrice && promoPrice > 0 ? regularPrice : salePrice;
 
-                const productName = raw.title || raw.subject || raw.product_title || raw.name || 'Unknown Product';
-                const productId = raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || 'unknown';
+                // Extract images from Pictures array
+                const images: string[] = [];
+                if (Array.isArray(item.Pictures)) {
+                    item.Pictures.forEach((pic: any) => {
+                        const url = pic.Large?.Url || pic.Medium?.Url || pic.Url;
+                        if (url) images.push(url);
+                    });
+                }
+                if (images.length === 0 && item.MainPictureUrl) {
+                    images.push(item.MainPictureUrl);
+                }
 
-                const salePrice = parsePrice(
-                    raw.sku?.def?.promotionPrice || raw.sku?.def?.price ||
-                    raw.salePrice || raw.sale_price || raw.price?.salePrice || raw.minPrice || raw.price
-                );
-                const origPrice = parsePrice(
-                    raw.sku?.def?.price || raw.originalPrice || raw.original_price || salePrice
-                );
-
-                // Extract images from multiple possible locations, deduplicated
-                const imageSet = new Set<string>();
-                const addImage = (img: string) => {
-                    if (!img) return;
-                    const normalized = img.startsWith('//') ? `https:${img}` : img;
-                    imageSet.add(normalized);
+                // Extract rating from FeaturedValues
+                const getFeaturedValue = (name: string): string | undefined => {
+                    if (!Array.isArray(item.FeaturedValues)) return undefined;
+                    return item.FeaturedValues.find((v: any) => v.Name === name)?.Value;
                 };
-                if (raw.image) addImage(raw.image);
-                if (raw.imageUrl) addImage(raw.imageUrl);
-                if (Array.isArray(raw.images)) raw.images.forEach(addImage);
-                if (Array.isArray(raw.productImages)) raw.productImages.forEach(addImage);
-                const images = [...imageSet];
+                const rating = parseFloat(getFeaturedValue('rating') || '0');
 
-                const rating = parseFloat(raw.evaluation?.starRating || raw.averageStarRate || raw.averageRating || raw.avgRating || '0');
+                // Extract variants from ConfiguredItems
+                const variants: any[] = [];
+                if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
+                    item.ConfiguredItems.forEach((cfg: any, idx: number) => {
+                        const cfgPrice = getUsdPrice(cfg.Price);
+                        const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
+                        variants.push({
+                            id: cfg.Id || `cfg_${idx}`,
+                            name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${idx + 1}`,
+                            image: cfgImage || undefined,
+                            priceAdjustment: cfgPrice ? cfgPrice - salePrice : 0,
+                            inStock: (cfg.MasterQuantity || 0) > 0,
+                        });
+                    });
+                }
 
                 importableProduct = {
                     id: String(productId),
                     name: productName,
                     price: salePrice || origPrice,
-                    description: raw.description || raw.detail || 'Imported from AliExpress',
-                    images: images.length > 0 ? images : [],
+                    description: item.Description || 'Imported from 1688.com',
+                    images: images,
                     category: '',
                     collection: targetCollection as CollectionType,
-                    variants: [],
-                    aliExpressId: String(productId),
+                    variants: variants,
+                    sourceId: String(productId),
                     originalPrice: origPrice,
                     salePrice: salePrice || origPrice,
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
-                    seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
-                    reviewCount: 0,
+                    seller: {
+                        id: item.VendorId || '',
+                        name: item.VendorDisplayName || item.VendorName || 'Unknown',
+                        rating: (item.VendorScore || 0) / 20, // VendorScore is 0-100, convert to 0-5
+                        feedbackScore: item.VendorScore || 0,
+                    },
+                    reviewCount: parseInt(getFeaturedValue('SalesInLast30Days') || '0', 10),
                     averageRating: rating,
-                    productUrl: importUrl,
-                    source: 'aliexpress',
+                    productUrl: item.TaobaoItemUrl || item.ExternalItemUrl || importUrl,
+                    source: '1688',
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: 0
                 };
                 importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
-                // Generic source
+                // Generic source (handles AliExpress, Amazon, and any other URLs)
                 console.log('[URL Import] Processing as generic product:', result.data);
                 const data = result.data;
+                const genId = `gen_${Date.now()}`;
+                // Guard against non-USD prices from foreign pages
+                if (data.currency && String(data.currency).toUpperCase() !== 'USD') {
+                    throw new Error(`Generic import currently supports USD pages only; received ${data.currency}.`);
+                }
                 importableProduct = {
-                    id: `gen_${Date.now()}`,
+                    id: genId,
                     name: data.title || 'Unknown',
                     price: data.price || 0,
                     description: data.description || '',
@@ -882,7 +902,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    aliExpressId: `gen_${Date.now()}`,
+                    sourceId: genId,
                     originalPrice: data.price || 0,
                     salePrice: data.price || 0,
                     shippingInfo: { freeShipping: false, estimatedDays: 'Unknown', cost: 0 },

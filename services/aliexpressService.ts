@@ -1,19 +1,22 @@
 /**
- * AliExpress API Service
- * Uses RapidAPI's AliExpress Datahub for product data
- * Designed to be swappable with official AliExpress API later
+ * Product Sourcing API Service
+ * Uses OTAPI 1688 on RapidAPI for product data from 1688.com
+ * Proxied through Convex HTTP actions to keep API key secure
  */
 
 import type {
-    AliExpressProduct,
-    AliExpressSearchOptions,
-    AliExpressSearchResult,
+    SourceProduct,
+    SourceSearchOptions,
+    SourceSearchResult,
     Product,
     CollectionType
 } from '../types';
 
-// Re-export types for external use
-export type { AliExpressProduct, AliExpressSearchOptions, AliExpressSearchResult };
+// Backward-compatible re-exports
+export type AliExpressProduct = SourceProduct;
+export type AliExpressSearchOptions = SourceSearchOptions;
+export type AliExpressSearchResult = SourceSearchResult;
+export type { SourceProduct, SourceSearchOptions, SourceSearchResult };
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -23,7 +26,7 @@ export type { AliExpressProduct, AliExpressSearchOptions, AliExpressSearchResult
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || '';
 const CONVEX_SITE_URL = CONVEX_URL.replace('.convex.cloud', '.convex.site');
 
-// Collection to AliExpress category mapping
+// Collection to category mapping (kept for future use)
 const CATEGORY_MAPPING: Record<string, string> = {
     furniture: 'home-garden/furniture',
     decor: 'home-garden/home-decor',
@@ -41,8 +44,10 @@ interface CacheEntry<T> {
     ttl: number;
 }
 
+/** In-memory TTL cache for API responses. */
 const cache = new Map<string, CacheEntry<unknown>>();
 
+/** Retrieves a cached value if it hasn't expired, otherwise returns null. */
 const getCached = <T>(key: string): T | null => {
     const entry = cache.get(key) as CacheEntry<T> | undefined;
     if (!entry) return null;
@@ -56,6 +61,7 @@ const getCached = <T>(key: string): T | null => {
     return entry.data;
 };
 
+/** Stores a value in the TTL cache with a configurable expiry (default 15 minutes). */
 const setCache = <T>(key: string, data: T, ttlMs: number = 15 * 60 * 1000): void => {
     cache.set(key, { data, timestamp: Date.now(), ttl: ttlMs });
 };
@@ -64,6 +70,7 @@ const setCache = <T>(key: string, data: T, ttlMs: number = 15 * 60 * 1000): void
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 100; // ms between requests
 
+/** Wraps fetch with rate-limiting to avoid hitting API request limits. */
 const rateLimitedFetch = async (url: string, options: RequestInit): Promise<Response> => {
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime;
@@ -80,6 +87,7 @@ const rateLimitedFetch = async (url: string, options: RequestInit): Promise<Resp
 // API HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Handles non-OK API responses by throwing descriptive errors with status codes. */
 const handleApiError = async (response: Response): Promise<never> => {
     let errorMessage = 'API Error';
     try {
@@ -88,7 +96,7 @@ const handleApiError = async (response: Response): Promise<never> => {
     } catch {
         errorMessage = `API Error: ${response.status}`;
     }
-    console.error('AliExpress API Error:', response.status, errorMessage);
+    console.error('Product API Error:', response.status, errorMessage);
 
     if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please try again later.');
@@ -101,11 +109,17 @@ const handleApiError = async (response: Response): Promise<never> => {
 // DATA TRANSFORMERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Transform RapidAPI AliExpress Datahub response to our AliExpressProduct format
-// API structure: resultList[].item.{itemId, title, sku.def.promotionPrice, image, averageStarRate}
+// Transform product API response to SourceProduct format
+// Supports multiple API structures: OTAPI 1688, legacy imports, etc.
+/**
+ * Transforms raw OTAPI/legacy product data into a normalized AliExpressProduct (SourceProduct).
+ * Handles multiple API response shapes: OTAPI envelope, legacy SKU format, and normalized pipeline.
+ * @param rawWrapper - Raw product data from API response.
+ * @param collection - Product collection category (defaults to 'decor').
+ */
 const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor'): AliExpressProduct => {
-    // The API wraps each product in an "item" property
-    const raw = rawWrapper.item || rawWrapper;
+    // Unwrap OTAPI Result envelope, legacy item wrapper, or use directly
+    const raw = rawWrapper?.item || rawWrapper?.Result?.item || rawWrapper?.Result || rawWrapper;
 
     // Handle price - can be in sku.def.promotionPrice or sku.def.price
     const parsePrice = (val: any): number => {
@@ -114,8 +128,21 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         return parseFloat(str) || 0;
     };
 
-    // Price is under sku.def.promotionPrice (sale) or sku.def.price (original)
+    // Price is under OTAPI ConvertedPriceList or legacy sku.def.promotionPrice
+    const getUsdPrice = (priceObj: any): number => {
+        return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
+    };
+
+    // Extract top-level price only if it's a primitive (not an object like { salePrice: ... })
+    const topLevelPrice =
+        (typeof raw.price === 'number' || typeof raw.price === 'string')
+            ? raw.price
+            : undefined;
+
     const salePrice = parsePrice(
+        topLevelPrice ||
+        getUsdPrice(raw.PromotionPrice) ||
+        getUsdPrice(raw.Price) ||
         raw.sku?.def?.promotionPrice ||
         raw.sku?.def?.price ||
         raw.salePrice ||
@@ -124,40 +151,52 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         raw.minPrice
     );
     const originalPrice = parsePrice(
-        raw.sku?.def?.price ||
         raw.originalPrice ||
+        getUsdPrice(raw.Price) ||
+        raw.sku?.def?.price ||
         raw.original_price ||
         salePrice
     );
 
-    // Get product ID - itemId in this API version
-    const productId = raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || '';
+    // Get product ID — OTAPI uses 'Id', legacy uses 'itemId'
+    const productId = raw.Id || raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || '';
 
-    // Get product title
-    const productName = raw.title || raw.subject || raw.product_title || raw.name || 'Unnamed Product';
+    // Get product title — OTAPI uses 'Title'/'OriginalTitle', legacy uses 'title'
+    const productName = raw.Title || raw.OriginalTitle || raw.title || raw.subject || raw.product_title || raw.name || 'Unnamed Product';
 
-    // Get images - single image field in this API, need to add https:
+    // Get images — OTAPI uses Pictures[], legacy uses image/imageUrl/images
     const images: string[] = [];
-    if (raw.image) {
-        // API returns URLs starting with // so add https:
+    // OTAPI Pictures array
+    if (Array.isArray(raw.Pictures)) {
+        raw.Pictures.forEach((pic: any) => {
+            const picUrl = pic.Large?.Url || pic.Medium?.Url || pic.Url;
+            if (picUrl) images.push(picUrl);
+        });
+    }
+    // OTAPI MainPictureUrl
+    if (images.length === 0 && raw.MainPictureUrl) {
+        images.push(raw.MainPictureUrl);
+    }
+    // Legacy image fields
+    if (images.length === 0 && raw.image) {
         const imgUrl = raw.image.startsWith('//') ? `https:${raw.image}` : raw.image;
         images.push(imgUrl);
     }
     if (raw.imageUrl) {
         const imgUrl = raw.imageUrl.startsWith('//') ? `https:${raw.imageUrl}` : raw.imageUrl;
-        images.push(imgUrl);
+        if (!images.includes(imgUrl)) images.push(imgUrl);
     }
     if (raw.images && Array.isArray(raw.images)) {
         raw.images.forEach((img: string) => {
             const imgUrl = img.startsWith('//') ? `https:${img}` : img;
-            images.push(imgUrl);
+            if (!images.includes(imgUrl)) images.push(imgUrl);
         });
     }
     // Fallback placeholder if no images
     if (images.length === 0) images.push('https://via.placeholder.com/300x300?text=No+Image');
 
-    // Get product URL and make it complete
-    let productUrl = raw.itemUrl || raw.productUrl || raw.product_url || raw.url || '';
+    // Get product URL — OTAPI uses TaobaoItemUrl, legacy uses itemUrl
+    let productUrl = raw.TaobaoItemUrl || raw.ExternalItemUrl || raw.itemUrl || raw.productUrl || raw.product_url || raw.url || '';
     if (productUrl.startsWith('//')) {
         productUrl = `https:${productUrl}`;
     }
@@ -165,8 +204,21 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
     // Extract variants (sizes, colors) from SKU data
     const variants: import('../types').ProductVariant[] = [];
 
+    // Method 0: Pre-normalized variants array (from normalizeOtapi1688 pipeline)
+    if (Array.isArray(raw.variants) && raw.variants.length > 0) {
+        raw.variants.forEach((variant: any, index: number) => {
+            variants.push({
+                id: variant.id || `var_${index}`,
+                name: variant.name || `Option ${index + 1}`,
+                image: variant.image || undefined,
+                priceAdjustment: Number(variant.priceAdjustment) || 0,
+                inStock: variant.inStock !== false,
+            });
+        });
+    }
+
     // Try to extract from various possible API structures
-    const skuData = raw.sku || raw.skuInfo || raw.variants || {};
+    const skuData = raw.sku || raw.skuInfo || {};
     const skuList = skuData.skuList || skuData.sku_list || skuData.list || [];
     const skuProps = skuData.props || skuData.properties || [];
 
@@ -282,23 +334,22 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         });
     }
 
-    // Method 3: Generate common clothing sizes if title suggests it's clothing
-    if (variants.length === 0) {
-        const titleLower = productName.toLowerCase();
-        const isClothing = ['shirt', 'top', 'dress', 'blouse', 'pants', 'jeans', 'skirt', 'jacket', 'coat', 'sweater', 'hoodie', 't-shirt', 'shorts'].some(term => titleLower.includes(term));
-
-        if (isClothing) {
-            const sizes = ['S', 'M', 'L', 'XL', 'XXL'];
-            sizes.forEach((size, index) => {
-                variants.push({
-                    id: `size_${size.toLowerCase()}`,
-                    name: `Size: ${size}`,
-                    priceAdjustment: 0,
-                    inStock: true,
-                });
+    // Method 3: OTAPI ConfiguredItems (1688 color/size SKUs)
+    if (variants.length === 0 && Array.isArray(raw.ConfiguredItems) && raw.ConfiguredItems.length > 0) {
+        raw.ConfiguredItems.forEach((cfg: any, index: number) => {
+            const cfgPrice = getUsdPrice(cfg.Price);
+            const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
+            variants.push({
+                id: cfg.Id || `cfg_${index}`,
+                name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${index + 1}`,
+                image: cfgImage || undefined,
+                priceAdjustment: cfgPrice ? cfgPrice - salePrice : 0,
+                inStock: (cfg.MasterQuantity || 0) > 0,
             });
-        }
+        });
     }
+
+    // Do not synthesize variants when source data does not provide real SKUs.
 
     return {
         // Base Product fields
@@ -313,8 +364,8 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         inStock: true, // Assume in stock if listed
         variants: variants.length > 0 ? variants : undefined,
 
-        // AliExpress-specific fields
-        aliExpressId: String(productId),
+        // Source-specific fields
+        sourceId: String(productId),
         originalPrice: originalPrice,
         salePrice: salePrice,
         shippingInfo: {
@@ -324,7 +375,7 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         },
         seller: {
             id: raw.sellerId || raw.seller_id || raw.shopId || '',
-            name: raw.shopName || raw.store_name || raw.sellerName || 'AliExpress Seller',
+            name: raw.shopName || raw.store_name || raw.sellerName || '1688 Seller',
             rating: parseFloat(raw.shopRating || raw.seller_rating || raw.store_rating || '0'),
             feedbackScore: parseInt(raw.feedbackScore || raw.feedback_score || '0', 10),
         },
@@ -381,16 +432,23 @@ export const aliexpressService = {
 
             const data = await response.json();
 
-            // The API returns data in .result.resultList format
-            const items = data.result?.resultList || data.result?.items || data.items || data.resultList || [];
+            // Support both normalized response shape (from updated proxy) and legacy shapes
+            const items = data.products || data.result?.resultList || data.result?.items || data.items || data.resultList || [];
+            const totalCount =
+                data.totalCount ??
+                data.result?.totalCount ??
+                data.result?.total_count ??
+                data.total ??
+                items.length;
+            const totalPages = data.totalPages ?? Math.ceil(totalCount / pageSize);
 
             const result: AliExpressSearchResult = {
                 products: items.map((item: any) =>
                     transformProduct(item)
                 ),
-                totalCount: data.result?.totalCount || data.result?.total_count || data.total || items.length,
-                currentPage: page,
-                totalPages: Math.ceil((data.result?.totalCount || data.result?.total_count || data.total || items.length) / pageSize),
+                totalCount,
+                currentPage: data.currentPage ?? page,
+                totalPages: data.totalPages ?? totalPages,
             };
 
             // Cache for 15 minutes
@@ -404,13 +462,13 @@ export const aliexpressService = {
     },
 
     /**
-     * Search for products from multiple sources (AliExpress, Alibaba, etc.)
-     * Returns combined results from all sources in parallel
+     * Search for products from OTAPI 1688
+     * Uses the Convex aggregated search endpoint for multi-page parallel fetching
      */
-    async searchAllSources(options: AliExpressSearchOptions & {
-        sources?: Array<'aliexpress' | 'alibaba' | 'aliexpress-true' | 'temu'>
-    }): Promise<AliExpressSearchResult & { sources?: string[], errors?: string[] }> {
-        const { query, page = 1, pageSize = 40, minPrice, maxPrice, sortBy, sources = ['aliexpress', 'alibaba'] } = options;
+    async searchAllSources(options: SourceSearchOptions & {
+        sources?: Array<'1688'>
+    }): Promise<SourceSearchResult & { sources?: string[], errors?: string[] }> {
+        const { query, page = 1, pageSize = 40, minPrice, maxPrice, sortBy, sources = ['1688'] } = options;
 
         // Check cache first
         const cacheKey = `aggregated:${JSON.stringify(options)}`;
@@ -428,6 +486,9 @@ export const aliexpressService = {
                         query,
                         page,
                         pageSize,
+                        minPrice,
+                        maxPrice,
+                        sortBy,
                         sources,
                     })
                 }
@@ -439,32 +500,35 @@ export const aliexpressService = {
 
             const data = await response.json();
 
-            // Transform normalized products to AliExpressProduct format
-            const result: AliExpressSearchResult & { sources?: string[], errors?: string[] } = {
+            // Transform normalized products to SourceProduct format
+            const result: SourceSearchResult & { sources?: string[], errors?: string[] } = {
                 products: (data.products || []).map((p: any) => ({
                     // Product base properties
                     id: p.id,
                     name: p.title, // Product uses 'name', API returns 'title'
                     price: p.price,
-                    description: '', // Not provided by API
-                    images: p.images || [p.image],
+                    description: '', // Not provided by search API
+                    images: Array.isArray(p.images) && p.images.length > 0
+                        ? p.images
+                        : (p.image ? [p.image] : []),
                     category: '',
                     collection: 'decor' as const,
-                    // AliExpressProduct extensions
-                    aliExpressId: p.id.replace(/^(ae_|ab_|aet_)/, ''),
+                    // SourceProduct extensions
+                    sourceId: p.id,
                     originalPrice: p.originalPrice || p.price,
                     salePrice: p.price,
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
                     seller: { id: '', name: '', rating: 0, feedbackScore: 0 },
                     variants: p.variants || [],
-                    reviewCount: 0,
+                    tierPricing: p.tierPricing || undefined,
+                    reviewCount: p.sales || 0,
                     averageRating: p.rating || 0,
                     productUrl: p.url || '',
-                    source: p.source,
-                } as AliExpressProduct)),
+                    source: p.source || '1688',
+                } as SourceProduct)),
                 totalCount: data.totalCount || data.products?.length || 0,
-                currentPage: page,
-                totalPages: Math.ceil((data.totalCount || data.products?.length || 1) / pageSize),
+                currentPage: data.currentPage ?? page,
+                totalPages: data.totalPages ?? Math.ceil((data.totalCount || data.products?.length || 1) / pageSize),
                 sources: data.sources,
                 errors: data.errors,
             };
