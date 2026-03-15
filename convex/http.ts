@@ -932,6 +932,10 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
     return { products, totalCount };
 }
 
+// Module-level constants for query optimization
+const FILLER_WORDS = new Set(['the', 'a', 'an', 'and', 'or', 'for', 'with', 'in', 'on', 'to', 'of', 'that', 'this', 'is', 'i', 'my', 'me', 'need', 'want', 'looking', 'find', 'search', 'good', 'best', 'cheap', 'please', 'help']);
+const SYNONYMS: Record<string, string> = { 'sofa': 'couch', 'couch': 'sofa', 'lamp': 'light', 'chair': 'seat', 'desk': 'table', 'rug': 'carpet' };
+
 // Aggregated search endpoint (now OTAPI 1688 only)
 http.route({
     path: "/products/search",
@@ -962,13 +966,11 @@ http.route({
             const { minPrice, maxPrice, sortBy } = body;
 
             // ═══ QUERY OPTIMIZATION - Remove filler words, extract key terms ═══
-            const fillerWords = new Set(['the', 'a', 'an', 'and', 'or', 'for', 'with', 'in', 'on', 'to', 'of', 'that', 'this', 'is', 'i', 'my', 'me', 'need', 'want', 'looking', 'find', 'search', 'good', 'best', 'cheap', 'please', 'help']);
-            const synonyms: Record<string, string> = { 'sofa': 'couch', 'couch': 'sofa', 'lamp': 'light', 'chair': 'seat', 'desk': 'table', 'rug': 'carpet' };
-            const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !fillerWords.has(w)).slice(0, 4);
+            const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !FILLER_WORDS.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
 
             // Optional synonym query for backfill only
-            const synQuery = words.map((w: string) => synonyms[w] || w).join(' ');
+            const synQuery = words.map((w: string) => SYNONYMS[w] || w).join(' ');
             const hasSynonym = synQuery !== query;
 
             // Each query fetches exactly 1 upstream page at the correct offset
