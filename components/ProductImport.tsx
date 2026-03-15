@@ -945,7 +945,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     reviewCount: 0,
                     averageRating: rating,
                     productUrl: importUrl,
-                    source: 'aliexpress',
+                    source: 'generic',
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: 0
