@@ -133,8 +133,14 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
     };
 
+    // Extract top-level price only if it's a primitive (not an object like { salePrice: ... })
+    const topLevelPrice =
+        (typeof raw.price === 'number' || typeof raw.price === 'string')
+            ? raw.price
+            : undefined;
+
     const salePrice = parsePrice(
-        raw.price ||
+        topLevelPrice ||
         getUsdPrice(raw.PromotionPrice) ||
         getUsdPrice(raw.Price) ||
         raw.sku?.def?.promotionPrice ||

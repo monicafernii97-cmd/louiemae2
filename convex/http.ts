@@ -623,8 +623,14 @@ http.route({
 
             // OTAPI prices are in CNY — convert USD input (configurable rate, default 7.2)
             const usdToCny = parseFloat(process.env.USD_CNY_RATE || '7.2') || 7.2;
-            if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
-            if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
+            if (minPrice) {
+                const parsed = parseFloat(minPrice);
+                if (Number.isFinite(parsed)) params.append("MinPrice", String(Math.round(parsed * usdToCny)));
+            }
+            if (maxPrice) {
+                const parsed = parseFloat(maxPrice);
+                if (Number.isFinite(parsed)) params.append("MaxPrice", String(Math.round(parsed * usdToCny)));
+            }
 
             const searchController = new AbortController();
             const searchTimeout = setTimeout(() => searchController.abort(), 15000);
@@ -707,11 +713,11 @@ http.route({
 
         try {
             const body = await request.json();
-            const { productId } = body;
+            const productId = typeof body.productId === 'string' ? body.productId.trim() : '';
 
             if (!productId) {
                 return new Response(
-                    JSON.stringify({ error: "Product ID is required" }),
+                    JSON.stringify({ error: "Product ID is required and must be a string" }),
                     { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
                 );
             }
@@ -892,7 +898,7 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
             price: price,
             originalPrice: promoPrice > 0 && regularPrice > promoPrice ? regularPrice : undefined,
             image: mainImage,
-            images: images.length > 0 ? images : [mainImage],
+            images: images.length > 0 ? images : (mainImage ? [mainImage] : []),
             url: url,
             source: '1688' as const,
             rating: rating,
@@ -980,8 +986,14 @@ http.route({
                     ItemTitle: q,
                     OrderBy: mapSortOrder(sortBy),
                 });
-                if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
-                if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
+                if (minPrice) {
+                    const parsed = parseFloat(minPrice);
+                    if (Number.isFinite(parsed)) params.append("MinPrice", String(Math.round(parsed * usdToCny)));
+                }
+                if (maxPrice) {
+                    const parsed = parseFloat(maxPrice);
+                    if (Number.isFinite(parsed)) params.append("MaxPrice", String(Math.round(parsed * usdToCny)));
+                }
                 return params;
             };
 

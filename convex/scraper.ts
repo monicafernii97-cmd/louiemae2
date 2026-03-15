@@ -59,8 +59,15 @@ export const scrapeProduct = action({
 
         try {
             // Validate URL format
-            if (!url || !url.startsWith('http')) {
-                throw new Error(`Invalid URL format: "${url}". URL must start with http:// or https://`);
+            // Validate URL format — only allow http/https
+            let parsedUrl: URL;
+            try {
+                parsedUrl = new URL(url);
+            } catch {
+                throw new Error(`Invalid URL format: "${url}". URL must be a valid http:// or https:// URL.`);
+            }
+            if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                throw new Error(`Invalid URL protocol: "${parsedUrl.protocol}". Only http:// and https:// are allowed.`);
             }
 
             // Validate against domain allowlist and SSRF blocklist
