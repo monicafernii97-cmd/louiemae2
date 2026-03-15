@@ -123,6 +123,7 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
     };
 
     const salePrice = parsePrice(
+        raw.price ||
         getUsdPrice(raw.PromotionPrice) ||
         getUsdPrice(raw.Price) ||
         raw.sku?.def?.promotionPrice ||
@@ -133,9 +134,9 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         raw.minPrice
     );
     const originalPrice = parsePrice(
+        raw.originalPrice ||
         getUsdPrice(raw.Price) ||
         raw.sku?.def?.price ||
-        raw.originalPrice ||
         raw.original_price ||
         salePrice
     );
@@ -419,14 +420,21 @@ export const aliexpressService = {
 
             // Support both normalized response shape (from updated proxy) and legacy shapes
             const items = data.products || data.result?.resultList || data.result?.items || data.items || data.resultList || [];
+            const totalCount =
+                data.totalCount ??
+                data.result?.totalCount ??
+                data.result?.total_count ??
+                data.total ??
+                items.length;
+            const totalPages = data.totalPages ?? Math.ceil(totalCount / pageSize);
 
             const result: AliExpressSearchResult = {
                 products: items.map((item: any) =>
                     transformProduct(item)
                 ),
-                totalCount: data.result?.totalCount || data.result?.total_count || data.total || items.length,
+                totalCount,
                 currentPage: page,
-                totalPages: Math.ceil((data.result?.totalCount || data.result?.total_count || data.total || items.length) / pageSize),
+                totalPages,
             };
 
             // Cache for 15 minutes

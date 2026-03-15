@@ -644,13 +644,14 @@ http.route({
 
             // Normalize through the same pipeline as aggregated search
             // so callers (searchProducts, getHotProducts) get a consistent shape
-            const normalized = normalizeOtapi1688(data);
+            const { products: normalized, totalCount: upstreamTotal } = normalizeOtapi1688(data);
 
             return new Response(
                 JSON.stringify({
                     products: normalized,
-                    totalCount: normalized.length,
+                    totalCount: upstreamTotal,
                     currentPage: page,
+                    totalPages: Math.ceil(upstreamTotal / pageSize),
                 }),
                 { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
@@ -805,9 +806,15 @@ function getUsdPrice(priceObj: any): number {
 }
 
 // Normalize OTAPI 1688 search results to NormalizedProduct[]
-function normalizeOtapi1688(data: any): NormalizedProduct[] {
+interface OtapiNormalizedResult {
+    products: NormalizedProduct[];
+    totalCount: number;
+}
+
+function normalizeOtapi1688(data: any): OtapiNormalizedResult {
     const items = data?.Result?.Items?.Items?.Content || [];
-    return items.map((item: any) => {
+    const totalCount = data?.Result?.Items?.Items?.TotalCount || data?.Result?.Items?.TotalCount || items.length;
+    const products = items.map((item: any) => {
         // Price — prefer PromotionPrice (discounted) over Price (regular)
         const promoPrice = getUsdPrice(item.PromotionPrice);
         const regularPrice = getUsdPrice(item.Price);
@@ -871,6 +878,7 @@ function normalizeOtapi1688(data: any): NormalizedProduct[] {
             variants: variants.length > 0 ? variants : undefined,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
+    return { products, totalCount };
 }
 
 // Aggregated search endpoint (now OTAPI 1688 only)
@@ -900,11 +908,13 @@ http.route({
             // Use primary + synonym query for maximum variety
             const synQuery = words.map((w: string) => synonyms[w] || w).join(' ');
             const allQueries = query !== synQuery ? [query, synQuery] : [query];
-            const pagesPerQuery = 3; // 3 pages per query variation
-            const startFrame = Math.max(0, page - 1) * pagesPerQuery;
 
-            const results: NormalizedProduct[] = [];
+            // Each query variation fetches exactly 1 upstream page at the correct offset
+            // so page 1 → offset 0, page 2 → offset pageSize, etc.
+            const frameOffset = Math.max(0, page - 1) * pageSize;
+
             const errors: string[] = [];
+            let upstreamTotalCount = 0;
 
             // Helper to fetch with timeout
             const fetchWithTimeout = async (url: string, timeoutMs = 20000) => {
@@ -928,36 +938,40 @@ http.route({
                 }
             };
 
-            // Build all fetch tasks — OTAPI 1688 multi-page with concurrency limit
-            const MAX_CONCURRENT = 3; // Avoid rate-limit bans from RapidAPI
+            // Build fetch tasks — one per query variation, each at the same page offset
+            const MAX_CONCURRENT = 3;
+            const orderedResults: (NormalizedProduct[] | null)[] = [];
             const fetchTasks: (() => Promise<void>)[] = [];
             const usdToCny = parseFloat(process.env.USD_CNY_RATE || '7.2') || 7.2;
 
-            for (const q of allQueries) {
-                for (let p = 0; p < pagesPerQuery; p++) {
-                    const framePosition = (startFrame + p) * pageSize;
-                    const params = new URLSearchParams({
-                        language: 'en',
-                        framePosition: String(framePosition),
-                        frameSize: String(pageSize),
-                        ItemTitle: q,
-                        OrderBy: mapSortOrder(sortBy),
-                    });
-                    if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
-                    if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
-                    const pageIndex = p;
-                    const queryRef = q;
-                    fetchTasks.push(() =>
-                        fetchWithTimeout(
-                            `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params}`
-                        )
-                            .then(data => { results.push(...normalizeOtapi1688(data)); })
-                            .catch(e => {
-                                console.error(`[Search] OTAPI fetch failed (query="${queryRef}", page=${pageIndex}): ${e.message}`);
-                                if (pageIndex === 0 && queryRef === allQueries[0]) errors.push(`1688: ${e.message}`);
-                            })
-                    );
-                }
+            for (let qi = 0; qi < allQueries.length; qi++) {
+                const q = allQueries[qi];
+                const taskIndex = fetchTasks.length;
+                orderedResults.push(null); // reserve slot
+                const params = new URLSearchParams({
+                    language: 'en',
+                    framePosition: String(frameOffset),
+                    frameSize: String(pageSize),
+                    ItemTitle: q,
+                    OrderBy: mapSortOrder(sortBy),
+                });
+                if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
+                if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
+                const queryRef = q;
+                fetchTasks.push(() =>
+                    fetchWithTimeout(
+                        `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params}`
+                    )
+                        .then(data => {
+                            const { products, totalCount } = normalizeOtapi1688(data);
+                            orderedResults[taskIndex] = products;
+                            if (totalCount > upstreamTotalCount) upstreamTotalCount = totalCount;
+                        })
+                        .catch(e => {
+                            console.error(`[Search] OTAPI fetch failed (query="${queryRef}"): ${e.message}`);
+                            if (qi === 0) errors.push(`1688: ${e.message}`);
+                        })
+                );
             }
 
             // Execute with concurrency limit to avoid throttling
@@ -972,7 +986,8 @@ http.route({
             }
             await Promise.all(executing);
 
-            // Deduplicate results (same product may appear in multiple query variations)
+            // Merge results in deterministic order, then deduplicate
+            const results = orderedResults.flatMap(items => items ?? []);
             const seen = new Set<string>();
             const uniqueResults = results.filter(p => {
                 if (seen.has(p.id)) return false;
@@ -984,17 +999,16 @@ http.route({
             if (sortBy === 'price_asc') uniqueResults.sort((a, b) => a.price - b.price);
             else if (sortBy === 'price_desc') uniqueResults.sort((a, b) => b.price - a.price);
 
-            // Cap results to requested pageSize to honor pagination contract
+            // Cap results to requested pageSize
             const pagedResults = uniqueResults.slice(0, pageSize);
-            const totalAvailable = uniqueResults.length;
 
             return new Response(
                 JSON.stringify({
                     products: pagedResults,
-                    totalCount: totalAvailable,
+                    totalCount: upstreamTotalCount || pagedResults.length,
                     currentPage: page,
-                    totalPages: Math.ceil(totalAvailable / pageSize),
-                    hasMore: uniqueResults.length > pageSize,
+                    totalPages: upstreamTotalCount > 0 ? Math.ceil(upstreamTotalCount / pageSize) : 1,
+                    hasMore: upstreamTotalCount > page * pageSize,
                     sources: ['1688'],
                     queriesUsed: allQueries,
                     errors: errors.length > 0 ? errors : undefined,

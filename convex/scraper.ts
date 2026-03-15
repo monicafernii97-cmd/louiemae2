@@ -2,9 +2,37 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 
-// SSRF protection: check if a hostname is private/internal
+// Domain allowlist: only scrape from known storefront domains
+const ALLOWED_DOMAINS = [
+    '1688.com',
+    'detail.1688.com',
+    'm.1688.com',
+    'aliexpress.com',
+    'aliexpress.us',
+    'amazon.com',
+    'amazon.co.uk',
+    'amazon.ca',
+    'ebay.com',
+    'etsy.com',
+    'walmart.com',
+    'target.com',
+    'shopify.com',
+    'myshopify.com',
+];
+
+// Check if a hostname matches the allowlist (supports subdomains)
+const isAllowedDomain = (hostname: string): boolean => {
+    const h = hostname.toLowerCase();
+    return ALLOWED_DOMAINS.some(domain =>
+        h === domain || h.endsWith(`.${domain}`)
+    );
+};
+
+// SSRF protection: check if a hostname is private/internal (defense-in-depth for redirects)
 const isBlockedHost = (hostname: string): boolean => {
     const h = hostname.toLowerCase();
+    // Reject IPv6 literals (e.g. [::1], [fe80::1])
+    if (h.startsWith('[') || h.includes(':')) return true;
     // Check for IP-based private ranges with proper octet parsing
     const ipv4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
     if (ipv4) {
@@ -30,19 +58,22 @@ export const scrapeProduct = action({
         console.log(`[Scraper] Starting scrape for URL: ${url}`);
 
         try {
-            // Validate URL format and protect against SSRF
+            // Validate URL format
             if (!url || !url.startsWith('http')) {
                 throw new Error(`Invalid URL format: "${url}". URL must start with http:// or https://`);
             }
 
-            // Validate original URL against SSRF blocklist
+            // Validate against domain allowlist and SSRF blocklist
             try {
                 const parsed = new URL(url);
                 if (isBlockedHost(parsed.hostname)) {
                     throw new Error(`Blocked internal/private URL: "${parsed.hostname}"`);
                 }
+                if (!isAllowedDomain(parsed.hostname)) {
+                    throw new Error(`Domain not supported for scraping: "${parsed.hostname}". Only known storefronts are allowed.`);
+                }
             } catch (parseErr: any) {
-                if (parseErr.message.startsWith('Blocked')) throw parseErr;
+                if (parseErr.message.startsWith('Blocked') || parseErr.message.startsWith('Domain')) throw parseErr;
                 throw new Error(`Invalid URL: "${url}"`);
             }
 
