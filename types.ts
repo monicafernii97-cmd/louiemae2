@@ -173,7 +173,7 @@ export interface EmailCampaign {
   type: 'newsletter' | 'promotion' | 'automation';
 }
 
-// --- AliExpress API Types ---
+// --- Product Sourcing API Types (OTAPI 1688) ---
 
 export interface ProductVariant {
   id: string;
@@ -186,8 +186,10 @@ export interface ProductVariant {
   cjSku?: string;         // CJ SKU for this variant
 }
 
-export interface AliExpressProduct extends Product {
-  aliExpressId: string;
+export type ProductSource = '1688' | 'generic';
+
+export interface SourceProduct extends Product {
+  sourceId: string;
   originalPrice: number;
   salePrice: number;
   shippingInfo: {
@@ -205,10 +207,13 @@ export interface AliExpressProduct extends Product {
   reviewCount: number;
   averageRating: number;
   productUrl: string;
-  source?: 'aliexpress' | 'alibaba' | 'aliexpress-true' | 'temu' | 'generic'; // Which API the product came from
+  source?: ProductSource;
 }
 
-export interface AliExpressSearchOptions {
+/** @deprecated Use SourceProduct instead */
+export type AliExpressProduct = SourceProduct;
+
+export interface SourceSearchOptions {
   query: string;
   page?: number;
   pageSize?: number;
@@ -219,15 +224,21 @@ export interface AliExpressSearchOptions {
   categoryId?: string;
 }
 
-export interface AliExpressSearchResult {
-  products: AliExpressProduct[];
+/** @deprecated Use SourceSearchOptions instead */
+export type AliExpressSearchOptions = SourceSearchOptions;
+
+export interface SourceSearchResult {
+  products: SourceProduct[];
   totalCount: number;
   currentPage: number;
   totalPages: number;
 }
 
+/** @deprecated Use SourceSearchResult instead */
+export type AliExpressSearchResult = SourceSearchResult;
+
 export interface ImportedProduct extends Product {
-  aliExpressId: string;
+  sourceId: string;
   originalCost: number;
   markup: number;
   importedAt: string;

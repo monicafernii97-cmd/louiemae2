@@ -1,19 +1,22 @@
 /**
- * AliExpress API Service
- * Uses RapidAPI's AliExpress Datahub for product data
- * Designed to be swappable with official AliExpress API later
+ * Product Sourcing API Service
+ * Uses OTAPI 1688 on RapidAPI for product data from 1688.com
+ * Proxied through Convex HTTP actions to keep API key secure
  */
 
 import type {
-    AliExpressProduct,
-    AliExpressSearchOptions,
-    AliExpressSearchResult,
+    SourceProduct,
+    SourceSearchOptions,
+    SourceSearchResult,
     Product,
     CollectionType
 } from '../types';
 
-// Re-export types for external use
-export type { AliExpressProduct, AliExpressSearchOptions, AliExpressSearchResult };
+// Backward-compatible re-exports
+export type AliExpressProduct = SourceProduct;
+export type AliExpressSearchOptions = SourceSearchOptions;
+export type AliExpressSearchResult = SourceSearchResult;
+export type { SourceProduct, SourceSearchOptions, SourceSearchResult };
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -23,7 +26,7 @@ export type { AliExpressProduct, AliExpressSearchOptions, AliExpressSearchResult
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || '';
 const CONVEX_SITE_URL = CONVEX_URL.replace('.convex.cloud', '.convex.site');
 
-// Collection to AliExpress category mapping
+// Collection to category mapping (kept for future use)
 const CATEGORY_MAPPING: Record<string, string> = {
     furniture: 'home-garden/furniture',
     decor: 'home-garden/home-decor',
@@ -88,7 +91,7 @@ const handleApiError = async (response: Response): Promise<never> => {
     } catch {
         errorMessage = `API Error: ${response.status}`;
     }
-    console.error('AliExpress API Error:', response.status, errorMessage);
+    console.error('Product API Error:', response.status, errorMessage);
 
     if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please try again later.');
@@ -313,8 +316,8 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         inStock: true, // Assume in stock if listed
         variants: variants.length > 0 ? variants : undefined,
 
-        // AliExpress-specific fields
-        aliExpressId: String(productId),
+        // Source-specific fields
+        sourceId: String(productId),
         originalPrice: originalPrice,
         salePrice: salePrice,
         shippingInfo: {
@@ -324,7 +327,7 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
         },
         seller: {
             id: raw.sellerId || raw.seller_id || raw.shopId || '',
-            name: raw.shopName || raw.store_name || raw.sellerName || 'AliExpress Seller',
+            name: raw.shopName || raw.store_name || raw.sellerName || '1688 Seller',
             rating: parseFloat(raw.shopRating || raw.seller_rating || raw.store_rating || '0'),
             feedbackScore: parseInt(raw.feedbackScore || raw.feedback_score || '0', 10),
         },
@@ -404,13 +407,13 @@ export const aliexpressService = {
     },
 
     /**
-     * Search for products from multiple sources (AliExpress, Alibaba, etc.)
-     * Returns combined results from all sources in parallel
+     * Search for products from OTAPI 1688
+     * Uses the Convex aggregated search endpoint for multi-page parallel fetching
      */
-    async searchAllSources(options: AliExpressSearchOptions & {
-        sources?: Array<'aliexpress' | 'alibaba' | 'aliexpress-true' | 'temu'>
-    }): Promise<AliExpressSearchResult & { sources?: string[], errors?: string[] }> {
-        const { query, page = 1, pageSize = 40, minPrice, maxPrice, sortBy, sources = ['aliexpress', 'alibaba'] } = options;
+    async searchAllSources(options: SourceSearchOptions & {
+        sources?: Array<'1688'>
+    }): Promise<SourceSearchResult & { sources?: string[], errors?: string[] }> {
+        const { query, page = 1, pageSize = 40, minPrice, maxPrice, sortBy, sources = ['1688'] } = options;
 
         // Check cache first
         const cacheKey = `aggregated:${JSON.stringify(options)}`;
@@ -439,29 +442,29 @@ export const aliexpressService = {
 
             const data = await response.json();
 
-            // Transform normalized products to AliExpressProduct format
-            const result: AliExpressSearchResult & { sources?: string[], errors?: string[] } = {
+            // Transform normalized products to SourceProduct format
+            const result: SourceSearchResult & { sources?: string[], errors?: string[] } = {
                 products: (data.products || []).map((p: any) => ({
                     // Product base properties
                     id: p.id,
                     name: p.title, // Product uses 'name', API returns 'title'
                     price: p.price,
-                    description: '', // Not provided by API
+                    description: '', // Not provided by search API
                     images: p.images || [p.image],
                     category: '',
                     collection: 'decor' as const,
-                    // AliExpressProduct extensions
-                    aliExpressId: p.id.replace(/^(ae_|ab_|aet_)/, ''),
+                    // SourceProduct extensions
+                    sourceId: p.id,
                     originalPrice: p.originalPrice || p.price,
                     salePrice: p.price,
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
                     seller: { id: '', name: '', rating: 0, feedbackScore: 0 },
                     variants: p.variants || [],
-                    reviewCount: 0,
+                    reviewCount: p.sales || 0,
                     averageRating: p.rating || 0,
                     productUrl: p.url || '',
-                    source: p.source,
-                } as AliExpressProduct)),
+                    source: p.source || '1688',
+                } as SourceProduct)),
                 totalCount: data.totalCount || data.products?.length || 0,
                 currentPage: page,
                 totalPages: Math.ceil((data.totalCount || data.products?.length || 1) / pageSize),

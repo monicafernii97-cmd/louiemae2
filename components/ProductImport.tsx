@@ -169,7 +169,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 minPrice: minPrice ? parseFloat(minPrice) : undefined,
                 maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
                 sortBy: sortBy === 'default' ? undefined : sortBy,
-                sources: ['aliexpress', 'alibaba'],
+                sources: ['1688'],
             });
 
             const filteredProducts = result.products
@@ -799,7 +799,89 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             let importableProduct: ImportableProduct;
 
-            if (result.source === 'aliexpress') {
+            if (result.source === '1688') {
+                console.log('[URL Import] Processing as 1688 product');
+
+                // OTAPI BatchGetItemFullInfo response: Result contains item data
+                const item = result.data?.Result || result.data;
+
+                // Extract basic info
+                const productName = item.Title || item.OriginalTitle || 'Unknown Product';
+                const productId = item.Id || `1688_${Date.now()}`;
+
+                // Extract USD price from OTAPI price structure
+                const getUsdPrice = (priceObj: any): number => {
+                    return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
+                };
+                const promoPrice = getUsdPrice(item.PromotionPrice);
+                const regularPrice = getUsdPrice(item.Price);
+                const salePrice = promoPrice > 0 ? promoPrice : regularPrice;
+                const origPrice = regularPrice > promoPrice && promoPrice > 0 ? regularPrice : salePrice;
+
+                // Extract images from Pictures array
+                const images: string[] = [];
+                if (Array.isArray(item.Pictures)) {
+                    item.Pictures.forEach((pic: any) => {
+                        const url = pic.Large?.Url || pic.Medium?.Url || pic.Url;
+                        if (url) images.push(url);
+                    });
+                }
+                if (images.length === 0 && item.MainPictureUrl) {
+                    images.push(item.MainPictureUrl);
+                }
+
+                // Extract rating from FeaturedValues
+                const getFeaturedValue = (name: string): string | undefined => {
+                    if (!Array.isArray(item.FeaturedValues)) return undefined;
+                    return item.FeaturedValues.find((v: any) => v.Name === name)?.Value;
+                };
+                const rating = parseFloat(getFeaturedValue('rating') || '0');
+
+                // Extract variants from ConfiguredItems
+                const variants: any[] = [];
+                if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
+                    item.ConfiguredItems.forEach((cfg: any, idx: number) => {
+                        const cfgPrice = getUsdPrice(cfg.Price);
+                        const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
+                        variants.push({
+                            id: cfg.Id || `cfg_${idx}`,
+                            name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${idx + 1}`,
+                            image: cfgImage || undefined,
+                            priceAdjustment: cfgPrice ? cfgPrice - salePrice : 0,
+                            inStock: (cfg.MasterQuantity || 0) > 0,
+                        });
+                    });
+                }
+
+                importableProduct = {
+                    id: String(productId),
+                    name: productName,
+                    price: salePrice || origPrice,
+                    description: item.Description || 'Imported from 1688.com',
+                    images: images,
+                    category: '',
+                    collection: targetCollection as CollectionType,
+                    variants: variants,
+                    sourceId: String(productId),
+                    originalPrice: origPrice,
+                    salePrice: salePrice || origPrice,
+                    shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
+                    seller: {
+                        id: item.VendorId || '',
+                        name: item.VendorDisplayName || item.VendorName || 'Unknown',
+                        rating: (item.VendorScore || 0) / 20, // VendorScore is 0-100, convert to 0-5
+                        feedbackScore: item.VendorScore || 0,
+                    },
+                    reviewCount: parseInt(getFeaturedValue('SalesInLast30Days') || '0', 10),
+                    averageRating: rating,
+                    productUrl: item.TaobaoItemUrl || item.ExternalItemUrl || importUrl,
+                    source: '1688',
+                    selected: true,
+                    targetCollection: targetCollection as CollectionType,
+                    customPrice: 0
+                };
+                importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
+            } else if (result.source === 'aliexpress') {
                 console.log('[URL Import] Processing as AliExpress product');
 
                 // Handle multiple API response structures:
@@ -855,7 +937,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    aliExpressId: String(productId),
+                    sourceId: String(productId),
                     originalPrice: origPrice,
                     salePrice: salePrice || origPrice,
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
@@ -882,7 +964,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    aliExpressId: `gen_${Date.now()}`,
+                    sourceId: `gen_${Date.now()}`,
                     originalPrice: data.price || 0,
                     salePrice: data.price || 0,
                     shippingInfo: { freeShipping: false, estimatedDays: 'Unknown', cost: 0 },

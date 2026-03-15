@@ -5,132 +5,107 @@ import { v } from "convex/values";
 export const scrapeProduct = action({
     args: { url: v.string() },
     handler: async (ctx, { url }) => {
-        // 0. Resolve shortened/redirect URLs (e.g. a.aliexpress.com/_xxx)
-        //    Mobile share links redirect to the full product URL
-        let resolvedUrl = url;
-        if (url.includes('a.aliexpress.com') || url.includes('s.click.aliexpress.com')) {
-            console.log(`[Scraper] Resolving shortened URL: ${url}`);
-            try {
-                const redirectRes = await fetch(url, {
-                    method: 'HEAD',
-                    redirect: 'follow',
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
-                    },
-                });
-                resolvedUrl = redirectRes.url || url;
-                console.log(`[Scraper] Resolved to: ${resolvedUrl}`);
-            } catch (e: any) {
-                console.log(`[Scraper] HEAD redirect failed, trying GET: ${e.message}`);
+        console.log(`[Scraper] Starting scrape for URL: ${url}`);
+
+        try {
+            // Validate URL format
+            if (!url || !url.startsWith('http')) {
+                throw new Error(`Invalid URL format: "${url}". URL must start with http:// or https://`);
+            }
+
+            let resolvedUrl = url;
+
+            // 1. Check for 1688.com product URLs
+            // Support formats:
+            // https://detail.1688.com/offer/838924089999.html
+            // https://m.1688.com/offer/838924089999.html
+            const match1688 = resolvedUrl.match(/1688\.com\/offer\/(\d+)\.html/);
+
+            if (match1688) {
+                const productId = match1688[1];
+                console.log(`[Scraper] Detected 1688 product ID: ${productId}`);
                 try {
-                    const redirectRes = await fetch(url, {
-                        redirect: 'follow',
-                        headers: {
-                            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
-                        },
-                    });
-                    resolvedUrl = redirectRes.url || url;
-                    console.log(`[Scraper] Resolved via GET to: ${resolvedUrl}`);
-                } catch (e2: any) {
-                    console.log(`[Scraper] Could not resolve shortened URL: ${e2.message}`);
+                    return await scrape1688(productId);
+                } catch (apiErr: any) {
+                    // OTAPI failed — fall back to generic HTML scraping
+                    console.log(`[Scraper] OTAPI failed for 1688 product ${productId}: ${apiErr.message}`);
+                    console.log(`[Scraper] Falling back to generic HTML scraping for: ${resolvedUrl}`);
+                    return await scrapeGeneric(resolvedUrl);
                 }
             }
+
+            // 2. Generic Scraper (handles AliExpress, Amazon, and any other URLs)
+            console.log(`[Scraper] Using generic scraper for: ${resolvedUrl}`);
+            return await scrapeGeneric(resolvedUrl);
+
+        } catch (err: any) {
+            // Top-level catch: prevents generic "Server Error" from Convex
+            // by throwing a properly formatted error with details
+            const errorMessage = err?.message || 'Unknown scraping error';
+            console.error(`[Scraper] FATAL ERROR scraping ${url}: ${errorMessage}`);
+            console.error(`[Scraper] Stack: ${err?.stack || 'no stack trace'}`);
+            throw new Error(`Scraping failed for "${url}": ${errorMessage}`);
         }
-
-        // 1. Check for AliExpress
-        // Support formats:
-        // https://www.aliexpress.com/item/10050012345678.html
-        // https://www.aliexpress.us/item/325680456789.html
-        const aliMatch = resolvedUrl.match(/\/item\/(\d+)\.html/) || resolvedUrl.match(/productId=(\d+)/);
-
-        if (aliMatch && resolvedUrl.includes("aliexpress")) {
-            const productId = aliMatch[1];
-            try {
-                return await scrapeAliExpress(productId);
-            } catch (apiErr: any) {
-                // RapidAPI failed — fall back to generic HTML scraping
-                console.log(`[Scraper] RapidAPI failed for AliExpress product ${productId}: ${apiErr.message}`);
-                console.log(`[Scraper] Falling back to generic HTML scraping for: ${resolvedUrl}`);
-                return await scrapeGeneric(resolvedUrl);
-            }
-        }
-
-        // 2. Generic Scraper
-        return await scrapeGeneric(resolvedUrl);
     },
 });
 
-async function scrapeAliExpress(productId: string) {
+// Fetch product details from 1688.com via OTAPI API
+async function scrape1688(productId: string) {
     const rapidApiKey = process.env.RAPIDAPI_KEY;
 
     if (!rapidApiKey) {
         throw new Error("RapidAPI key not configured");
     }
 
-    // Try multiple API versions/endpoints for resilience
-    const DATAHUB_HOST = "aliexpress-datahub.p.rapidapi.com";
-    const TRUE_API_HOST = "aliexpress-true-api.p.rapidapi.com";
+    const OTAPI_HOST = "otapi-1688.p.rapidapi.com";
+    const otapiId = `abb-${productId}`;
 
-    const endpoints = [
-        { url: `https://${DATAHUB_HOST}/item_detail_2?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
-        { url: `https://${DATAHUB_HOST}/item_detail_3?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
-        { url: `https://${DATAHUB_HOST}/item_detail?itemId=${productId}`, host: DATAHUB_HOST, type: 'datahub' },
-        { url: `https://${TRUE_API_HOST}/api/v3/product/${productId}`, host: TRUE_API_HOST, type: 'true-api' },
-        { url: `https://${TRUE_API_HOST}/api/product/${productId}`, host: TRUE_API_HOST, type: 'true-api' },
-    ];
+    console.log(`[Scraper] Fetching 1688 product via OTAPI: ${otapiId}`);
 
-    let lastError = null;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    for (const endpoint of endpoints) {
-        try {
-            console.log(`Trying endpoint: ${endpoint.url}`);
-
-            const response = await fetch(endpoint.url, {
+    try {
+        const response = await fetch(
+            `https://${OTAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
+            {
                 headers: {
                     "X-RapidAPI-Key": rapidApiKey,
-                    "X-RapidAPI-Host": endpoint.host,
+                    "x-rapidapi-host": OTAPI_HOST,
                 },
-            });
-
-            if (!response.ok) {
-                lastError = `API Error: ${response.status} from ${endpoint.host}`;
-                console.log(`Endpoint failed with ${response.status}, trying next...`);
-                continue;
+                signal: controller.signal,
             }
+        );
+        clearTimeout(timeoutId);
 
-            const data = await response.json();
-
-            if (endpoint.type === 'datahub' && data.result?.status?.data === "error") {
-                lastError = data.result?.status?.msg?.["internal-error"] || "API returned error";
-                console.log(`Datahub endpoint returned internal error, trying next...`);
-                continue;
-            }
-
-            if (endpoint.type === 'true-api' && (data.error || data.status === 'error')) {
-                lastError = data.error || data.message || "True API returned error";
-                console.log(`True API endpoint returned error, trying next...`);
-                continue;
-            }
-
-            console.log(`Successfully fetched from ${endpoint.host}`);
-
-            return {
-                source: 'aliexpress',
-                data: data,
-                apiType: endpoint.type,
-            };
-
-        } catch (e: any) {
-            lastError = e.message;
-            console.log(`Endpoint threw error: ${e.message}, trying next...`);
+        if (!response.ok) {
+            throw new Error(`OTAPI API Error: ${response.status}`);
         }
-    }
 
-    throw new Error(lastError || "All AliExpress API endpoints failed");
+        const data = await response.json();
+
+        if (data.ErrorCode !== 'Ok') {
+            throw new Error(`OTAPI Error: ${data.ErrorCode}`);
+        }
+
+        console.log(`[Scraper] Successfully fetched 1688 product via OTAPI`);
+
+        return {
+            source: '1688',
+            data: data,
+            apiType: 'otapi-1688',
+        };
+
+    } catch (e: any) {
+        clearTimeout(timeoutId);
+        throw new Error(`OTAPI 1688 API failed: ${e.message}`);
+    }
 }
 
 async function scrapeGeneric(url: string) {
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         const response = await fetch(url, {
             headers: {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -138,13 +113,16 @@ async function scrapeGeneric(url: string) {
                 "Accept-Language": "en-US,en;q=0.9",
             },
             redirect: 'follow',
+            signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
-            throw new Error(`Failed to load page: ${response.status}`);
+            throw new Error(`Failed to load page: HTTP ${response.status} ${response.statusText}`);
         }
 
         const html = await response.text();
+        console.log(`[Scraper] Fetched ${html.length} bytes from ${url}`);
 
         // Extract meta tags
         const getMeta = (prop: string) => {
