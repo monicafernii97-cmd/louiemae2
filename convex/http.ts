@@ -835,20 +835,8 @@ interface NormalizedProduct {
     }>;
 }
 
-// Helper: extract a named value from OTAPI FeaturedValues array
-/** Extracts a named value from an OTAPI item's FeaturedValues array. */
-function getFeaturedValue(item: any, name: string): string | undefined {
-    const fv = item.FeaturedValues;
-    if (!Array.isArray(fv)) return undefined;
-    const entry = fv.find((v: any) => v.Name === name);
-    return entry?.Value;
-}
-
-// Helper: get USD price from OTAPI price object
-/** Extracts USD price from an OTAPI ConvertedPriceList or OriginalPrice field. */
-function getUsdPrice(priceObj: any): number {
-    return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
-}
+// Shared OTAPI helpers — canonical extraction logic lives in lib/otapiHelpers.ts
+import { getOtapiUsdPrice as getUsdPrice, getOtapiFeaturedValue as getFeaturedValue } from '../lib/otapiHelpers';
 
 // Normalize OTAPI 1688 search results to NormalizedProduct[]
 /** Result shape returned by normalizeOtapi1688. */
@@ -863,12 +851,13 @@ interface OtapiNormalizedResult {
  * @returns Object containing normalized products and the upstream TotalCount.
  */
 function normalizeOtapi1688(data: any): OtapiNormalizedResult {
-    // OTAPI response nesting varies by API version — try multiple paths
-    const items =
+    // OTAPI response nesting varies by API version — try multiple paths.
+    // Coerce to array so an unexpected payload shape returns [] instead of a 500.
+    const rawItems =
         data?.Result?.Items?.Items?.Content ||
         data?.Result?.Items?.Content ||
-        data?.Result?.Content ||
-        [];
+        data?.Result?.Content;
+    const items = Array.isArray(rawItems) ? rawItems : [];
     const totalCount =
         data?.Result?.Items?.Items?.TotalCount ||
         data?.Result?.Items?.TotalCount ||
@@ -989,15 +978,20 @@ http.route({
             const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !FILLER_WORDS.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
 
-            // Always log the optimized query so we can diagnose issues from Convex logs
-            console.log(`[Search] rawQuery="${rawQuery}" → optimized="${query}" (${words.length} words kept)`);
+            // Log the optimized query; raw input is gated behind SEARCH_DEBUG
+            // to avoid leaking sensitive user input into production logs.
+            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
+            if (SEARCH_DEBUG) {
+                console.log(`[Search] rawQuery="${rawQuery}" → optimized="${query}" (${words.length} words kept)`);
+            } else {
+                console.log(`[Search] optimized="${query}" (${words.length} words kept)`);
+            }
 
             // Optional synonym query for backfill only
             const synQuery = words.map((w: string) => SYNONYMS[w] || w).join(' ');
             const hasSynonym = synQuery !== query;
 
             // Each query fetches exactly 1 upstream page at the correct offset
-            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
             const frameOffset = Math.max(0, page - 1) * pageSize;
             console.log(`[Search] page=${page}, pageSize=${pageSize}, offset=${frameOffset}, hasSynonym=${hasSynonym}`);
 

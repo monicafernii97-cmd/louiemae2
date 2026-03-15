@@ -6,6 +6,7 @@ import { FadeIn } from './FadeIn';
 import { useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { toast } from 'sonner';
+import { extractOtapiFields } from '../lib/otapiHelpers';
 
 interface ProductStudioProps {
     isOpen: boolean;
@@ -231,34 +232,16 @@ const EssenceStep: React.FC<{
             let scrapedData: any = {};
 
             if (result.source === '1688') {
-                // OTAPI 1688 product — data is the unwrapped item object
+                // OTAPI 1688 product — use shared extraction helper
                 const item = result.data;
                 if (item) {
-                    // Extract USD price from OTAPI price structure
-                    const getPrice = (priceObj: any): number =>
-                        priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
-                    const promoPrice = getPrice(item.PromotionPrice);
-                    const regularPrice = getPrice(item.Price);
-                    const price = promoPrice > 0 ? promoPrice : regularPrice;
-
-                    // Extract images from Pictures array
-                    const images: string[] = [];
-                    if (Array.isArray(item.Pictures)) {
-                        item.Pictures.forEach((pic: any) => {
-                            const picUrl = pic.Large?.Url || pic.Medium?.Url || pic.Url;
-                            if (picUrl) images.push(picUrl);
-                        });
-                    }
-                    if (images.length === 0 && item.MainPictureUrl) {
-                        images.push(item.MainPictureUrl);
-                    }
-
+                    const fields = extractOtapiFields(item, importUrl);
                     scrapedData = {
-                        name: item.Title || item.OriginalTitle || 'Unknown Product',
-                        price: price,
-                        description: item.Description || 'Imported from 1688.com',
-                        images: images,
-                        sourceUrl: item.TaobaoItemUrl || item.ExternalItemUrl || importUrl,
+                        name: fields.name,
+                        price: fields.price,
+                        description: fields.description,
+                        images: fields.images,
+                        sourceUrl: fields.sourceUrl,
                     };
                 }
             } else {
