@@ -664,7 +664,10 @@ http.route({
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error("OTAPI 1688 Search Error:", response.status, errorText);
+                console.error("OTAPI 1688 Search Error:", {
+                    status: response.status,
+                    bodyLength: errorText.length,
+                });
                 return new Response(
                     JSON.stringify({ error: `API Error: ${response.status}` }),
                     { status: response.status, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -1008,6 +1011,9 @@ http.route({
                     const data = await response.json();
                     if (SEARCH_DEBUG) {
                         console.log(`[Search Debug] Upstream JSON keys: ${Object.keys(data).join(', ')}, ErrorCode: ${data.ErrorCode || 'N/A'}`);
+                    }
+                    if (data?.ErrorCode !== 'Ok' || data?.Result?.HasError) {
+                        throw new Error(data?.Result?.ErrorCode || data?.ErrorCode || 'UPSTREAM_INVALID_PAYLOAD');
                     }
                     return data;
                 } catch (e: any) {
