@@ -230,25 +230,48 @@ const EssenceStep: React.FC<{
 
             let scrapedData: any = {};
 
-            if (result.source === 'aliexpress') {
-                const raw = result.data.result?.item;
-                if (raw) {
+            if (result.source === '1688') {
+                // OTAPI 1688 product — data is the unwrapped item object
+                const item = result.data;
+                if (item) {
+                    // Extract USD price from OTAPI price structure
+                    const getPrice = (priceObj: any): number =>
+                        priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
+                    const promoPrice = getPrice(item.PromotionPrice);
+                    const regularPrice = getPrice(item.Price);
+                    const price = promoPrice > 0 ? promoPrice : regularPrice;
+
+                    // Extract images from Pictures array
+                    const images: string[] = [];
+                    if (Array.isArray(item.Pictures)) {
+                        item.Pictures.forEach((pic: any) => {
+                            const picUrl = pic.Large?.Url || pic.Medium?.Url || pic.Url;
+                            if (picUrl) images.push(picUrl);
+                        });
+                    }
+                    if (images.length === 0 && item.MainPictureUrl) {
+                        images.push(item.MainPictureUrl);
+                    }
+
                     scrapedData = {
-                        name: raw.title,
-                        price: parseFloat(raw.sku?.def?.promotionPrice || raw.sku?.def?.price || '0'),
-                        description: raw.description || 'Imported from AliExpress',
-                        images: raw.images || [],
-                        sourceUrl: importUrl
+                        name: item.Title || item.OriginalTitle || 'Unknown Product',
+                        price: price,
+                        description: item.Description || 'Imported from 1688.com',
+                        images: images,
+                        sourceUrl: item.TaobaoItemUrl || item.ExternalItemUrl || importUrl,
                     };
                 }
             } else {
+                // Generic source (handles AliExpress, Amazon, and any other URLs)
                 const data = result.data;
                 scrapedData = {
                     name: data.title,
                     price: data.price,
                     description: data.description,
-                    images: data.image ? [data.image] : [],
-                    sourceUrl: data.url
+                    images: data.images && data.images.length > 0
+                        ? data.images
+                        : (data.image ? [data.image] : []),
+                    sourceUrl: data.url || importUrl,
                 };
             }
 

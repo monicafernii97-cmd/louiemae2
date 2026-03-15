@@ -863,8 +863,26 @@ interface OtapiNormalizedResult {
  * @returns Object containing normalized products and the upstream TotalCount.
  */
 function normalizeOtapi1688(data: any): OtapiNormalizedResult {
-    const items = data?.Result?.Items?.Items?.Content || [];
-    const totalCount = data?.Result?.Items?.Items?.TotalCount || data?.Result?.Items?.TotalCount || items.length;
+    // OTAPI response nesting varies by API version — try multiple paths
+    const items =
+        data?.Result?.Items?.Items?.Content ||
+        data?.Result?.Items?.Content ||
+        data?.Result?.Content ||
+        [];
+    const totalCount =
+        data?.Result?.Items?.Items?.TotalCount ||
+        data?.Result?.Items?.TotalCount ||
+        data?.Result?.TotalCount ||
+        items.length;
+
+    // Always log item extraction for debugging
+    console.log(`[normalizeOtapi1688] Raw items found: ${items.length}, totalCount: ${totalCount}, ErrorCode: ${data?.ErrorCode || 'N/A'}`);
+    if (items.length === 0) {
+        // Log the top-level keys to help diagnose unexpected response shapes
+        const resultKeys = data?.Result ? Object.keys(data.Result).join(', ') : '(no Result)';
+        console.warn(`[normalizeOtapi1688] 0 items extracted. Result keys: ${resultKeys}`);
+    }
+
     const products = items.map((item: any) => {
         // Price — prefer PromotionPrice (discounted) over Price (regular)
         const promoPrice = getUsdPrice(item.PromotionPrice);
@@ -929,6 +947,8 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
             variants: variants.length > 0 ? variants : undefined,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
+
+    console.log(`[normalizeOtapi1688] After filtering: ${products.length} products (from ${items.length} raw items)`);
     return { products, totalCount };
 }
 
@@ -969,6 +989,9 @@ http.route({
             const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !FILLER_WORDS.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
 
+            // Always log the optimized query so we can diagnose issues from Convex logs
+            console.log(`[Search] rawQuery="${rawQuery}" → optimized="${query}" (${words.length} words kept)`);
+
             // Optional synonym query for backfill only
             const synQuery = words.map((w: string) => SYNONYMS[w] || w).join(' ');
             const hasSynonym = synQuery !== query;
@@ -976,9 +999,7 @@ http.route({
             // Each query fetches exactly 1 upstream page at the correct offset
             const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
             const frameOffset = Math.max(0, page - 1) * pageSize;
-            if (SEARCH_DEBUG) {
-                console.log(`[Search Debug] page=${page}, pageSize=${pageSize}, offset=${frameOffset}, hasSynonym=${hasSynonym}`);
-            }
+            console.log(`[Search] page=${page}, pageSize=${pageSize}, offset=${frameOffset}, hasSynonym=${hasSynonym}`);
 
             const errors: string[] = [];
             let upstreamTotalCount = 0;
@@ -1058,11 +1079,9 @@ http.route({
                 const { products, totalCount } = normalizeOtapi1688(data);
                 primaryResults = products;
                 upstreamTotalCount = totalCount;
-                if (SEARCH_DEBUG) {
-                    console.log(`[Search Debug] Primary results: ${products.length} products, totalCount: ${totalCount}`);
-                }
+                console.log(`[Search] Primary results: ${products.length} products, totalCount: ${totalCount}`);
             } catch (e: any) {
-                console.error(`[Search Debug] OTAPI primary fetch FAILED: ${e.message}`);
+                console.error(`[Search] OTAPI primary fetch FAILED: ${e.message}`);
                 errors.push(`1688: ${e.message}`);
             }
 

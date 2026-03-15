@@ -96,12 +96,17 @@ export const scrapeProduct = action({
                 const productId = match1688[1];
                 console.log(`[Scraper] Detected 1688 product ID: ${productId}`);
                 try {
-                    return await scrape1688(productId);
+                    return await scrape1688(productId, url);
                 } catch (apiErr: any) {
-                    // OTAPI failed — fall back to generic HTML scraping
-                    console.log(`[Scraper] OTAPI failed for 1688 product ${productId}: ${apiErr.message}`);
-                    console.log(`[Scraper] Falling back to generic HTML scraping for: ${resolvedUrl}`);
-                    return await scrapeGeneric(resolvedUrl);
+                    // OTAPI failed — 1688 pages are JS-rendered so generic HTML
+                    // scraping will almost certainly also fail. Throw a clear error
+                    // instead of silently returning empty data.
+                    console.error(`[Scraper] OTAPI failed for 1688 product ${productId}: ${apiErr.message}`);
+                    throw new Error(
+                        `Could not fetch 1688 product ${productId}. ` +
+                        `OTAPI API error: ${apiErr.message}. ` +
+                        `Please verify the product URL is valid and try again.`
+                    );
                 }
             }
 
@@ -123,14 +128,22 @@ export const scrapeProduct = action({
 // Fetch product details from 1688.com via OTAPI API
 /**
  * Fetches a 1688 product via OTAPI BatchGetItemFullInfo API.
+ * Pre-unwraps the OTAPI Result envelope so callers receive the item
+ * data directly under `data` instead of needing to dig into
+ * `data.Result.Item` themselves.
+ *
  * @param productId - The 1688 product ID (numeric string from URL).
- * @returns Scraped product data with source '1688'.
+ * @param originalUrl - The original URL for logging/error context.
+ * @returns `{ source: '1688', data: <item>, apiType: 'otapi-1688' }`
  */
-async function scrape1688(productId: string) {
+async function scrape1688(productId: string, originalUrl?: string) {
     const rapidApiKey = process.env.RAPIDAPI_KEY;
 
     if (!rapidApiKey) {
-        throw new Error("RapidAPI key not configured");
+        throw new Error(
+            "RapidAPI key not configured. " +
+            "Please set RAPIDAPI_KEY in Convex dashboard → Settings → Environment Variables."
+        );
     }
 
     const OTAPI_HOST = "otapi-1688.p.rapidapi.com";
@@ -159,24 +172,41 @@ async function scrape1688(productId: string) {
         }
 
         if (!response.ok) {
-            throw new Error(`OTAPI API Error: ${response.status}`);
+            const errorBody = await response.text().catch(() => '(unreadable)');
+            console.error(`[Scraper] OTAPI HTTP ${response.status} for ${otapiId}: ${errorBody.slice(0, 500)}`);
+            throw new Error(`OTAPI API HTTP ${response.status}`);
         }
 
         const data = await response.json();
+        console.log(`[Scraper] OTAPI response ErrorCode: ${data.ErrorCode}, HasError: ${data.Result?.HasError}`);
 
         if (data.ErrorCode !== 'Ok' || data.Result?.HasError) {
-            throw new Error(`OTAPI Error: ${data.Result?.ErrorCode || data.ErrorCode}`);
+            const errCode = data.Result?.ErrorCode || data.ErrorCode || 'unknown';
+            console.error(`[Scraper] OTAPI returned error: ${errCode}`);
+            throw new Error(`OTAPI Error: ${errCode}`);
         }
 
-        console.log(`[Scraper] Successfully fetched 1688 product via OTAPI`);
+        // Unwrap the Result envelope so the consumer gets the item directly.
+        // OTAPI wraps item data under Result (or Result.Item for single-item requests).
+        const item = data.Result?.Item || data.Result || data;
+
+        if (!item || typeof item !== 'object') {
+            throw new Error('OTAPI returned empty item data');
+        }
+
+        const title = item.Title || item.OriginalTitle;
+        console.log(`[Scraper] Successfully fetched 1688 product: "${title || '(no title)'}"`);
 
         return {
-            source: '1688',
-            data: data,
+            source: '1688' as const,
+            data: item,
             apiType: 'otapi-1688',
         };
 
     } catch (e: any) {
+        if (e.name === 'AbortError') {
+            throw new Error(`OTAPI request timed out after 30s for product ${productId}`);
+        }
         throw new Error(`OTAPI 1688 API failed: ${e.message}`);
     }
 }
