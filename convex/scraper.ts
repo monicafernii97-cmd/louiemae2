@@ -8,9 +8,36 @@ export const scrapeProduct = action({
         console.log(`[Scraper] Starting scrape for URL: ${url}`);
 
         try {
-            // Validate URL format
+            // Validate URL format and protect against SSRF
             if (!url || !url.startsWith('http')) {
                 throw new Error(`Invalid URL format: "${url}". URL must start with http:// or https://`);
+            }
+
+            // SSRF protection: block private/internal IPs and localhost
+            try {
+                const parsed = new URL(url);
+                const hostname = parsed.hostname.toLowerCase();
+                if (
+                    hostname === 'localhost' ||
+                    hostname.startsWith('127.') ||
+                    hostname.startsWith('10.') ||
+                    hostname.startsWith('192.168.') ||
+                    hostname.startsWith('169.254.') ||
+                    hostname.startsWith('172.16.') ||
+                    hostname.startsWith('172.17.') ||
+                    hostname.startsWith('172.18.') ||
+                    hostname.startsWith('172.19.') ||
+                    hostname.startsWith('172.2') ||
+                    hostname.startsWith('172.3') ||
+                    hostname === '0.0.0.0' ||
+                    hostname.endsWith('.local') ||
+                    hostname.endsWith('.internal')
+                ) {
+                    throw new Error(`Blocked internal/private URL: "${hostname}"`);
+                }
+            } catch (parseErr: any) {
+                if (parseErr.message.startsWith('Blocked')) throw parseErr;
+                throw new Error(`Invalid URL: "${url}"`);
             }
 
             let resolvedUrl = url;

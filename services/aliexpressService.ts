@@ -104,8 +104,8 @@ const handleApiError = async (response: Response): Promise<never> => {
 // DATA TRANSFORMERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Transform RapidAPI AliExpress Datahub response to our AliExpressProduct format
-// API structure: resultList[].item.{itemId, title, sku.def.promotionPrice, image, averageStarRate}
+// Transform product API response to SourceProduct format
+// Supports multiple API structures: OTAPI 1688, legacy imports, etc.
 const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor'): AliExpressProduct => {
     // The API wraps each product in an "item" property
     const raw = rawWrapper.item || rawWrapper;

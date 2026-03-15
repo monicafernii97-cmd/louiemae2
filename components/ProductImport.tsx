@@ -803,7 +803,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 console.log('[URL Import] Processing as 1688 product');
 
                 // OTAPI BatchGetItemFullInfo response: Result contains item data
-                const item = result.data?.Result || result.data;
+                const item = result.data?.Result ?? result.data;
+                if (!item || typeof item !== 'object') {
+                    throw new Error('1688 payload missing item data');
+                }
 
                 // Extract basic info
                 const productName = item.Title || item.OriginalTitle || 'Unknown Product';
@@ -881,82 +884,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     customPrice: 0
                 };
                 importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
-            } else if (result.source === 'aliexpress') {
-                console.log('[URL Import] Processing as AliExpress product');
-
-                // Handle multiple API response structures:
-                // Datahub: data.result.item.{...} or data.result.resultList[0].item.{...}
-                // True API: data.{...} directly or data.result.{...}
-                const raw = result.data?.result?.item
-                    || result.data?.result?.resultList?.[0]?.item
-                    || result.data?.result
-                    || result.data?.data
-                    || result.data || {};
-
-                console.log('[URL Import] Extracted raw data keys:', Object.keys(raw));
-
-                // Robust field extraction (mirrors aliexpressService.transformProduct)
-                const parsePrice = (val: any): number => {
-                    if (!val) return 0;
-                    const str = String(val).replace(/[^0-9.]/g, '');
-                    return parseFloat(str) || 0;
-                };
-
-                const productName = raw.title || raw.subject || raw.product_title || raw.name || 'Unknown Product';
-                const productId = raw.itemId || raw.item_id || raw.product_id || raw.productId || raw.id || 'unknown';
-
-                const salePrice = parsePrice(
-                    raw.sku?.def?.promotionPrice || raw.sku?.def?.price ||
-                    raw.salePrice || raw.sale_price || raw.price?.salePrice || raw.minPrice || raw.price
-                );
-                const origPrice = parsePrice(
-                    raw.sku?.def?.price || raw.originalPrice || raw.original_price || salePrice
-                );
-
-                // Extract images from multiple possible locations, deduplicated
-                const imageSet = new Set<string>();
-                const addImage = (img: string) => {
-                    if (!img) return;
-                    const normalized = img.startsWith('//') ? `https:${img}` : img;
-                    imageSet.add(normalized);
-                };
-                if (raw.image) addImage(raw.image);
-                if (raw.imageUrl) addImage(raw.imageUrl);
-                if (Array.isArray(raw.images)) raw.images.forEach(addImage);
-                if (Array.isArray(raw.productImages)) raw.productImages.forEach(addImage);
-                const images = [...imageSet];
-
-                const rating = parseFloat(raw.evaluation?.starRating || raw.averageStarRate || raw.averageRating || raw.avgRating || '0');
-
-                importableProduct = {
-                    id: String(productId),
-                    name: productName,
-                    price: salePrice || origPrice,
-                    description: raw.description || raw.detail || 'Imported from AliExpress',
-                    images: images.length > 0 ? images : [],
-                    category: '',
-                    collection: targetCollection as CollectionType,
-                    variants: [],
-                    sourceId: String(productId),
-                    originalPrice: origPrice,
-                    salePrice: salePrice || origPrice,
-                    shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
-                    seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
-                    reviewCount: 0,
-                    averageRating: rating,
-                    productUrl: importUrl,
-                    source: 'generic',
-                    selected: true,
-                    targetCollection: targetCollection as CollectionType,
-                    customPrice: 0
-                };
-                importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
-                // Generic source
+                // Generic source (handles AliExpress, Amazon, and any other URLs)
                 console.log('[URL Import] Processing as generic product:', result.data);
                 const data = result.data;
+                const genId = `gen_${Date.now()}`;
                 importableProduct = {
-                    id: `gen_${Date.now()}`,
+                    id: genId,
                     name: data.title || 'Unknown',
                     price: data.price || 0,
                     description: data.description || '',
@@ -964,7 +898,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
-                    sourceId: `gen_${Date.now()}`,
+                    sourceId: genId,
                     originalPrice: data.price || 0,
                     salePrice: data.price || 0,
                     shippingInfo: { freeShipping: false, estimatedDays: 'Unknown', cost: 0 },

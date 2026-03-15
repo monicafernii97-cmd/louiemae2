@@ -577,6 +577,8 @@ function mapSortOrder(sortBy?: string): string {
 }
 
 // Search products on 1688 via OTAPI
+// NOTE: Route path "/aliexpress/search" is kept for backward compatibility.
+// This endpoint now proxies to OTAPI 1688, not AliExpress.
 http.route({
     path: "/aliexpress/search",
     method: "POST",
@@ -604,9 +606,10 @@ http.route({
                 OrderBy: mapSortOrder(sortBy),
             });
 
-            // OTAPI prices are in CNY — convert USD input approximate (1 USD ≈ 7.2 CNY)
-            if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * 7.2)));
-            if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * 7.2)));
+            // OTAPI prices are in CNY — convert USD input (configurable rate, default 7.2)
+            const usdToCny = parseFloat(process.env.USD_CNY_RATE || '7.2') || 7.2;
+            if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
+            if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
 
             const response = await fetch(
                 `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`,
@@ -655,6 +658,8 @@ http.route({
 });
 
 // Get product details by ID (OTAPI 1688)
+// NOTE: Route path "/aliexpress/product" is kept for backward compatibility.
+// This endpoint now proxies to OTAPI 1688, not AliExpress.
 http.route({
     path: "/aliexpress/product",
     method: "POST",
@@ -896,8 +901,9 @@ http.route({
                 }
             };
 
-            // Build all fetch promises — OTAPI 1688 multi-page parallel
-            const fetchPromises: Promise<void>[] = [];
+            // Build all fetch tasks — OTAPI 1688 multi-page with concurrency limit
+            const MAX_CONCURRENT = 3; // Avoid rate-limit bans from RapidAPI
+            const fetchTasks: (() => Promise<void>)[] = [];
 
             for (const q of allQueries) {
                 for (let p = 0; p < pagesPerQuery; p++) {
@@ -909,18 +915,33 @@ http.route({
                         ItemTitle: q,
                         OrderBy: 'Popularity:Desc',
                     });
-                    fetchPromises.push(
+                    const pageIndex = p;
+                    const queryRef = q;
+                    fetchTasks.push(() =>
                         fetchWithTimeout(
                             `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params}`
                         )
                             .then(data => { results.push(...normalizeOtapi1688(data)); })
-                            .catch(e => { if (p === 0 && q === allQueries[0]) errors.push(`1688: ${e.message}`); })
+                            .catch(e => { if (pageIndex === 0 && queryRef === allQueries[0]) errors.push(`1688: ${e.message}`); })
                     );
                 }
             }
 
-            // Wait for all to complete (with individual error handling)
-            await Promise.all(fetchPromises);
+            // Execute with concurrency limit to avoid throttling
+            const executing: Promise<void>[] = [];
+            for (const task of fetchTasks) {
+                const p = task();
+                executing.push(p);
+                if (executing.length >= MAX_CONCURRENT) {
+                    await Promise.race(executing);
+                    // Remove settled promises
+                    for (let i = executing.length - 1; i >= 0; i--) {
+                        const settled = await Promise.race([executing[i].then(() => true), Promise.resolve(false)]);
+                        if (settled) executing.splice(i, 1);
+                    }
+                }
+            }
+            await Promise.all(executing);
 
             // Deduplicate results (same product may appear in multiple query variations)
             const seen = new Set<string>();
