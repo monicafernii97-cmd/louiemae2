@@ -594,7 +594,16 @@ http.route({
 
         try {
             const body = await request.json();
-            const { query, page = 1, pageSize = 40, minPrice, maxPrice, sortBy } = body;
+            const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
+            if (!rawQuery) {
+                return new Response(
+                    JSON.stringify({ error: "Query parameter is required and must be a non-empty string" }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+            const page = Math.max(1, Math.floor(Number(body.page) || 1));
+            const pageSize = Math.min(100, Math.max(1, Math.floor(Number(body.pageSize) || 40)));
+            const { minPrice, maxPrice, sortBy } = body;
 
             // OTAPI uses framePosition (0-based offset) and frameSize
             const framePosition = (page - 1) * pageSize;
@@ -602,7 +611,7 @@ http.route({
                 language: 'en',
                 framePosition: String(framePosition),
                 frameSize: String(pageSize),
-                ItemTitle: query,
+                ItemTitle: rawQuery,
                 OrderBy: mapSortOrder(sortBy),
             });
 
@@ -897,7 +906,16 @@ http.route({
 
         try {
             const body = await request.json();
-            const { query: rawQuery, page = 1, pageSize = 60, minPrice, maxPrice, sortBy } = body;
+            const rawQuery = typeof body.query === 'string' ? body.query.trim() : '';
+            if (!rawQuery) {
+                return new Response(
+                    JSON.stringify({ error: "Query parameter is required and must be a non-empty string" }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+            const page = Math.max(1, Math.floor(Number(body.page) || 1));
+            const pageSize = Math.min(100, Math.max(1, Math.floor(Number(body.pageSize) || 60)));
+            const { minPrice, maxPrice, sortBy } = body;
 
             // ═══ QUERY OPTIMIZATION - Remove filler words, extract key terms ═══
             const fillerWords = new Set(['the', 'a', 'an', 'and', 'or', 'for', 'with', 'in', 'on', 'to', 'of', 'that', 'this', 'is', 'i', 'my', 'me', 'need', 'want', 'looking', 'find', 'search', 'good', 'best', 'cheap', 'please', 'help']);
@@ -905,12 +923,11 @@ http.route({
             const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !fillerWords.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
 
-            // Use primary + synonym query for maximum variety
+            // Optional synonym query for backfill only
             const synQuery = words.map((w: string) => synonyms[w] || w).join(' ');
-            const allQueries = query !== synQuery ? [query, synQuery] : [query];
+            const hasSynonym = synQuery !== query;
 
-            // Each query variation fetches exactly 1 upstream page at the correct offset
-            // so page 1 → offset 0, page 2 → offset pageSize, etc.
+            // Each query fetches exactly 1 upstream page at the correct offset
             const frameOffset = Math.max(0, page - 1) * pageSize;
 
             const errors: string[] = [];
@@ -938,16 +955,10 @@ http.route({
                 }
             };
 
-            // Build fetch tasks — one per query variation, each at the same page offset
-            const MAX_CONCURRENT = 3;
-            const orderedResults: (NormalizedProduct[] | null)[] = [];
-            const fetchTasks: (() => Promise<void>)[] = [];
             const usdToCny = parseFloat(process.env.USD_CNY_RATE || '7.2') || 7.2;
 
-            for (let qi = 0; qi < allQueries.length; qi++) {
-                const q = allQueries[qi];
-                const taskIndex = fetchTasks.length;
-                orderedResults.push(null); // reserve slot
+            // Build params helper
+            const buildParams = (q: string) => {
                 const params = new URLSearchParams({
                     language: 'en',
                     framePosition: String(frameOffset),
@@ -957,43 +968,50 @@ http.route({
                 });
                 if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
                 if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
-                const queryRef = q;
-                fetchTasks.push(() =>
-                    fetchWithTimeout(
-                        `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params}`
-                    )
-                        .then(data => {
-                            const { products, totalCount } = normalizeOtapi1688(data);
-                            orderedResults[taskIndex] = products;
-                            if (totalCount > upstreamTotalCount) upstreamTotalCount = totalCount;
-                        })
-                        .catch(e => {
-                            console.error(`[Search] OTAPI fetch failed (query="${queryRef}"): ${e.message}`);
-                            if (qi === 0) errors.push(`1688: ${e.message}`);
-                        })
+                return params;
+            };
+
+            // 1. Fetch primary query
+            let primaryResults: NormalizedProduct[] = [];
+            try {
+                const data = await fetchWithTimeout(
+                    `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${buildParams(query)}`
                 );
+                const { products, totalCount } = normalizeOtapi1688(data);
+                primaryResults = products;
+                upstreamTotalCount = totalCount;
+            } catch (e: any) {
+                console.error(`[Search] OTAPI primary fetch failed: ${e.message}`);
+                errors.push(`1688: ${e.message}`);
             }
 
-            // Execute with concurrency limit to avoid throttling
-            const executing = new Set<Promise<void>>();
-            for (const task of fetchTasks) {
-                const p = task();
-                executing.add(p);
-                p.finally(() => executing.delete(p));
-                if (executing.size >= MAX_CONCURRENT) {
-                    await Promise.race(executing);
-                }
-            }
-            await Promise.all(executing);
-
-            // Merge results in deterministic order, then deduplicate
-            const results = orderedResults.flatMap(items => items ?? []);
+            // 2. Deduplicate primary results
             const seen = new Set<string>();
-            const uniqueResults = results.filter(p => {
+            const uniqueResults = primaryResults.filter(p => {
                 if (seen.has(p.id)) return false;
                 seen.add(p.id);
                 return true;
             });
+
+            // 3. If primary under-fills, backfill from synonym query
+            if (hasSynonym && uniqueResults.length < pageSize) {
+                try {
+                    const synData = await fetchWithTimeout(
+                        `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${buildParams(synQuery)}`
+                    );
+                    const { products: synProducts } = normalizeOtapi1688(synData);
+                    // Only add items we haven't seen, up to pageSize
+                    for (const p of synProducts) {
+                        if (uniqueResults.length >= pageSize) break;
+                        if (!seen.has(p.id)) {
+                            seen.add(p.id);
+                            uniqueResults.push(p);
+                        }
+                    }
+                } catch (e: any) {
+                    console.error(`[Search] OTAPI synonym backfill failed: ${e.message}`);
+                }
+            }
 
             // Sort based on client preference
             if (sortBy === 'price_asc') uniqueResults.sort((a, b) => a.price - b.price);
@@ -1010,7 +1028,7 @@ http.route({
                     totalPages: upstreamTotalCount > 0 ? Math.ceil(upstreamTotalCount / pageSize) : 1,
                     hasMore: upstreamTotalCount > page * pageSize,
                     sources: ['1688'],
-                    queriesUsed: allQueries,
+                    queriesUsed: hasSynonym ? [query, synQuery] : [query],
                     errors: errors.length > 0 ? errors : undefined,
                 }),
                 { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }

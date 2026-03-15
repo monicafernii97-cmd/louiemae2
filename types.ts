@@ -204,6 +204,7 @@ export interface SourceProduct extends Product {
     feedbackScore: number;
   };
   variants: ProductVariant[];
+  tierPricing?: Array<{ minQty: number; price: number }>;
   reviewCount: number;
   averageRating: number;
   productUrl: string;

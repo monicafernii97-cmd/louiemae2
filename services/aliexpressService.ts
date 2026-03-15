@@ -187,8 +187,21 @@ const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor')
     // Extract variants (sizes, colors) from SKU data
     const variants: import('../types').ProductVariant[] = [];
 
+    // Method 0: Pre-normalized variants array (from normalizeOtapi1688 pipeline)
+    if (Array.isArray(raw.variants) && raw.variants.length > 0) {
+        raw.variants.forEach((variant: any, index: number) => {
+            variants.push({
+                id: variant.id || `var_${index}`,
+                name: variant.name || `Option ${index + 1}`,
+                image: variant.image || undefined,
+                priceAdjustment: Number(variant.priceAdjustment) || 0,
+                inStock: variant.inStock !== false,
+            });
+        });
+    }
+
     // Try to extract from various possible API structures
-    const skuData = raw.sku || raw.skuInfo || raw.variants || {};
+    const skuData = raw.sku || raw.skuInfo || {};
     const skuList = skuData.skuList || skuData.sku_list || skuData.list || [];
     const skuProps = skuData.props || skuData.properties || [];
 
@@ -506,6 +519,7 @@ export const aliexpressService = {
                     shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
                     seller: { id: '', name: '', rating: 0, feedbackScore: 0 },
                     variants: p.variants || [],
+                    tierPricing: p.tierPricing || undefined,
                     reviewCount: p.sales || 0,
                     averageRating: p.rating || 0,
                     productUrl: p.url || '',

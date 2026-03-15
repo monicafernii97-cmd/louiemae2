@@ -171,36 +171,64 @@ async function scrape1688(productId: string) {
 
 async function scrapeGeneric(url: string) {
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-
         let response: Response;
-        // Use redirect: 'follow' then revalidate final URL against SSRF blocklist
+        let currentUrl = url;
+        const MAX_REDIRECTS = 5;
+
+        // Manual redirect handling: validate each hop against allowlist + SSRF
         try {
-            response = await fetch(url, {
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    "Accept-Language": "en-US,en;q=0.9",
-                },
-                redirect: 'follow',
-                signal: controller.signal,
-            });
-        } finally {
-            clearTimeout(timeoutId);
+            for (let hops = 0; hops <= MAX_REDIRECTS; hops++) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                try {
+                    response = await fetch(currentUrl, {
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                            "Accept-Language": "en-US,en;q=0.9",
+                        },
+                        redirect: 'manual',
+                        signal: controller.signal,
+                    });
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+
+                // Check for redirect (3xx)
+                if (response.status >= 300 && response.status < 400) {
+                    const location = response.headers.get('location');
+                    if (!location) break; // No Location header — treat as final
+
+                    // Resolve relative redirects against current URL
+                    let nextUrl: string;
+                    try {
+                        nextUrl = new URL(location, currentUrl).toString();
+                    } catch {
+                        throw new Error(`Invalid redirect URL: "${location}"`);
+                    }
+
+                    // Validate redirect target
+                    const nextParsed = new URL(nextUrl);
+                    if (isBlockedHost(nextParsed.hostname)) {
+                        throw new Error(`Redirect hop landed on blocked host: "${nextParsed.hostname}"`);
+                    }
+                    if (!isAllowedDomain(nextParsed.hostname)) {
+                        throw new Error(`Redirect hop landed on unsupported domain: "${nextParsed.hostname}"`);
+                    }
+
+                    currentUrl = nextUrl;
+                    if (hops === MAX_REDIRECTS) {
+                        throw new Error(`Too many redirects (>${MAX_REDIRECTS})`);
+                    }
+                    continue;
+                }
+                break; // Not a redirect — this is the final response
+            }
+        } catch (e: any) {
+            throw e; // Re-throw SSRF/redirect errors
         }
 
-        // Revalidate final URL after redirects
-        const finalUrl = response.url || url;
-        try {
-            const finalParsed = new URL(finalUrl);
-            if (isBlockedHost(finalParsed.hostname)) {
-                throw new Error(`Redirect landed on blocked host: "${finalParsed.hostname}"`);
-            }
-        } catch (ssrfErr: any) {
-            if (ssrfErr.message.startsWith('Redirect')) throw ssrfErr;
-            // URL parse error — proceed anyway since fetch already succeeded
-        }
+        const finalUrl = currentUrl;
 
         if (!response.ok) {
             throw new Error(`Failed to load page: HTTP ${response.status} ${response.statusText}`);
