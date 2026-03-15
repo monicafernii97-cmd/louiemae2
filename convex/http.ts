@@ -590,8 +590,10 @@ http.route({
     method: "POST",
     handler: httpAction(async (ctx, request) => {
         const rapidApiKey = process.env.RAPIDAPI_KEY;
+        console.log(`[Search /aliexpress Debug] RAPIDAPI_KEY present: ${Boolean(rapidApiKey)}`);
 
         if (!rapidApiKey) {
+            console.error('[Search /aliexpress Debug] RAPIDAPI_KEY is NOT set!');
             return new Response(
                 JSON.stringify({ error: "RapidAPI key not configured. Please set RAPIDAPI_KEY in Convex dashboard." }),
                 { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -632,12 +634,20 @@ http.route({
                 if (Number.isFinite(parsed)) params.append("MaxPrice", String(Math.round(parsed * usdToCny)));
             }
 
+            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
+            const searchUrl = `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`;
+            if (SEARCH_DEBUG) {
+                console.log(`[Search /aliexpress Debug] page=${page}, pageSize=${pageSize}`);
+                console.log(`[Search /aliexpress Debug] Fetching upstream endpoint: BatchSearchItemsFrame`);
+            }
+
             const searchController = new AbortController();
             const searchTimeout = setTimeout(() => searchController.abort(), 15000);
+            const fetchStart = Date.now();
             let response: Response;
             try {
                 response = await fetch(
-                    `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`,
+                    searchUrl,
                     {
                         method: "GET",
                         headers: {
@@ -654,7 +664,10 @@ http.route({
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error("OTAPI 1688 Search Error:", response.status, errorText);
+                console.error("OTAPI 1688 Search Error:", {
+                    status: response.status,
+                    bodyLength: errorText.length,
+                });
                 return new Response(
                     JSON.stringify({ error: `API Error: ${response.status}` }),
                     { status: response.status, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -925,10 +938,12 @@ http.route({
     method: "POST",
     handler: httpAction(async (ctx, request) => {
         const rapidApiKey = process.env.RAPIDAPI_KEY;
+        console.log(`[Search Debug] RAPIDAPI_KEY present: ${Boolean(rapidApiKey)}`);
 
         if (!rapidApiKey) {
+            console.error('[Search Debug] RAPIDAPI_KEY is NOT set in Convex environment variables!');
             return new Response(
-                JSON.stringify({ error: "RapidAPI key not configured" }),
+                JSON.stringify({ error: "RapidAPI key not configured. Please set RAPIDAPI_KEY in Convex dashboard environment variables." }),
                 { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
         }
@@ -957,7 +972,11 @@ http.route({
             const hasSynonym = synQuery !== query;
 
             // Each query fetches exactly 1 upstream page at the correct offset
+            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
             const frameOffset = Math.max(0, page - 1) * pageSize;
+            if (SEARCH_DEBUG) {
+                console.log(`[Search Debug] page=${page}, pageSize=${pageSize}, offset=${frameOffset}, hasSynonym=${hasSynonym}`);
+            }
 
             const errors: string[] = [];
             let upstreamTotalCount = 0;
@@ -966,6 +985,10 @@ http.route({
             const fetchWithTimeout = async (url: string, timeoutMs = 20000) => {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), timeoutMs);
+                if (SEARCH_DEBUG) {
+                    console.log(`[Search Debug] Fetching upstream endpoint: BatchSearchItemsFrame`);
+                }
+                const fetchStart = Date.now();
                 try {
                     const response = await fetch(url, {
                         method: "GET",
@@ -976,10 +999,28 @@ http.route({
                         signal: controller.signal,
                     });
                     clearTimeout(timeout);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return await response.json();
-                } catch (e) {
+                    const elapsed = Date.now() - fetchStart;
+                    if (SEARCH_DEBUG) {
+                        console.log(`[Search Debug] Upstream response: status=${response.status}, time=${elapsed}ms`);
+                    }
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error(`[Search Debug] Upstream error: status=${response.status}, bodyLength=${errorBody.length}`);
+                        throw new Error(`UPSTREAM_HTTP_${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (SEARCH_DEBUG) {
+                        console.log(`[Search Debug] Upstream JSON keys: ${Object.keys(data).join(', ')}, ErrorCode: ${data.ErrorCode || 'N/A'}`);
+                    }
+                    if (data?.ErrorCode !== 'Ok' || data?.Result?.HasError) {
+                        throw new Error(data?.Result?.ErrorCode || data?.ErrorCode || 'UPSTREAM_INVALID_PAYLOAD');
+                    }
+                    return data;
+                } catch (e: any) {
                     clearTimeout(timeout);
+                    const elapsed = Date.now() - fetchStart;
+                    const isTimeout = e?.name === 'AbortError';
+                    console.error(`[Search Debug] Fetch failed after ${elapsed}ms: ${isTimeout ? 'TIMEOUT' : (e?.message || 'UNKNOWN_ERROR')}`);
                     throw e;
                 }
             };
@@ -1015,8 +1056,11 @@ http.route({
                 const { products, totalCount } = normalizeOtapi1688(data);
                 primaryResults = products;
                 upstreamTotalCount = totalCount;
+                if (SEARCH_DEBUG) {
+                    console.log(`[Search Debug] Primary results: ${products.length} products, totalCount: ${totalCount}`);
+                }
             } catch (e: any) {
-                console.error(`[Search] OTAPI primary fetch failed: ${e.message}`);
+                console.error(`[Search Debug] OTAPI primary fetch FAILED: ${e.message}`);
                 errors.push(`1688: ${e.message}`);
             }
 
