@@ -505,7 +505,13 @@ export const aliexpressService = {
             }
 
             const data = await response.json();
-            console.log(`[aliexpressService] Search response: ${data.products?.length || 0} products, totalCount=${data.totalCount || 0}${data.errors?.length ? ', errors: ' + data.errors.join('; ') : ''}`);
+            const errorSummary =
+                Array.isArray(data.errors) && data.errors.length > 0
+                    ? `, errors: ${data.errors.join('; ')}`
+                    : '';
+            console.log(
+                `[aliexpressService] Search response: ${data.products?.length || 0} products, totalCount=${data.totalCount || 0}${errorSummary}`
+            );
 
             // Transform normalized products to SourceProduct format
             const result: SourceSearchResult & { sources?: string[], errors?: string[] } = {

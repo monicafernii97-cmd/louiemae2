@@ -590,7 +590,7 @@ http.route({
     method: "POST",
     handler: httpAction(async (ctx, request) => {
         const rapidApiKey = process.env.RAPIDAPI_KEY;
-        console.log(`[Search /aliexpress Debug] RAPIDAPI_KEY present: ${!!rapidApiKey}`);
+        console.log(`[Search /aliexpress Debug] RAPIDAPI_KEY present: ${Boolean(rapidApiKey)}`);
 
         if (!rapidApiKey) {
             console.error('[Search /aliexpress Debug] RAPIDAPI_KEY is NOT set!');
@@ -932,7 +932,7 @@ http.route({
     method: "POST",
     handler: httpAction(async (ctx, request) => {
         const rapidApiKey = process.env.RAPIDAPI_KEY;
-        console.log(`[Search Debug] RAPIDAPI_KEY present: ${!!rapidApiKey}, length: ${rapidApiKey?.length || 0}, prefix: ${rapidApiKey?.slice(0, 4) || 'N/A'}...`);
+        console.log(`[Search Debug] RAPIDAPI_KEY present: ${Boolean(rapidApiKey)}`);
 
         if (!rapidApiKey) {
             console.error('[Search Debug] RAPIDAPI_KEY is NOT set in Convex environment variables!');
