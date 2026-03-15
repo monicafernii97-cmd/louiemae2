@@ -107,8 +107,8 @@ const handleApiError = async (response: Response): Promise<never> => {
 // Transform product API response to SourceProduct format
 // Supports multiple API structures: OTAPI 1688, legacy imports, etc.
 const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor'): AliExpressProduct => {
-    // The API wraps each product in an "item" property
-    const raw = rawWrapper.item || rawWrapper;
+    // Unwrap OTAPI Result envelope, legacy item wrapper, or use directly
+    const raw = rawWrapper?.item || rawWrapper?.Result?.item || rawWrapper?.Result || rawWrapper;
 
     // Handle price - can be in sku.def.promotionPrice or sku.def.price
     const parsePrice = (val: any): number => {
@@ -471,7 +471,9 @@ export const aliexpressService = {
                     name: p.title, // Product uses 'name', API returns 'title'
                     price: p.price,
                     description: '', // Not provided by search API
-                    images: p.images || [p.image],
+                    images: Array.isArray(p.images) && p.images.length > 0
+                        ? p.images
+                        : (p.image ? [p.image] : []),
                     category: '',
                     collection: 'decor' as const,
                     // SourceProduct extensions

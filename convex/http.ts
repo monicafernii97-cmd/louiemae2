@@ -611,17 +611,24 @@ http.route({
             if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
             if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
 
-            const response = await fetch(
-                `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`,
-                {
-                    method: "GET",
-                    headers: {
-                        "X-RapidAPI-Key": rapidApiKey,
-                        "x-rapidapi-host": RAPIDAPI_HOST,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            const searchController = new AbortController();
+            const searchTimeout = setTimeout(() => searchController.abort(), 15000);
+            try {
+                var response = await fetch(
+                    `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "X-RapidAPI-Key": rapidApiKey,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
+                            "Content-Type": "application/json",
+                        },
+                        signal: searchController.signal,
+                    }
+                );
+            } finally {
+                clearTimeout(searchTimeout);
+            }
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -687,17 +694,24 @@ http.route({
             // Ensure ID has the abb- prefix for OTAPI
             const otapiId = productId.startsWith('abb-') ? productId : `abb-${productId}`;
 
-            const response = await fetch(
-                `https://${RAPIDAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
-                {
-                    method: "GET",
-                    headers: {
-                        "X-RapidAPI-Key": rapidApiKey,
-                        "x-rapidapi-host": RAPIDAPI_HOST,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            const detailController = new AbortController();
+            const detailTimeout = setTimeout(() => detailController.abort(), 15000);
+            try {
+                var response = await fetch(
+                    `https://${RAPIDAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "X-RapidAPI-Key": rapidApiKey,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
+                            "Content-Type": "application/json",
+                        },
+                        signal: detailController.signal,
+                    }
+                );
+            } finally {
+                clearTimeout(detailTimeout);
+            }
 
             if (!response.ok) {
                 console.error("OTAPI 1688 product detail error:", response.status);
@@ -757,6 +771,7 @@ interface NormalizedProduct {
     rating?: number;
     sales?: number;
     shipping?: string;
+    tierPricing?: Array<{ minQty: number; price: number }>;
     variants?: Array<{
         id: string;
         name: string;
@@ -842,6 +857,7 @@ function normalizeOtapi1688(data: any): NormalizedProduct[] {
             source: '1688' as const,
             rating: rating,
             sales: sales,
+            tierPricing: tierPricing.length > 0 ? tierPricing : undefined,
             variants: variants.length > 0 ? variants : undefined,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
@@ -863,7 +879,7 @@ http.route({
 
         try {
             const body = await request.json();
-            const { query: rawQuery, page = 1, pageSize = 60 } = body;
+            const { query: rawQuery, page = 1, pageSize = 60, minPrice, maxPrice, sortBy } = body;
 
             // ═══ QUERY OPTIMIZATION - Remove filler words, extract key terms ═══
             const fillerWords = new Set(['the', 'a', 'an', 'and', 'or', 'for', 'with', 'in', 'on', 'to', 'of', 'that', 'this', 'is', 'i', 'my', 'me', 'need', 'want', 'looking', 'find', 'search', 'good', 'best', 'cheap', 'please', 'help']);
@@ -905,6 +921,7 @@ http.route({
             // Build all fetch tasks — OTAPI 1688 multi-page with concurrency limit
             const MAX_CONCURRENT = 3; // Avoid rate-limit bans from RapidAPI
             const fetchTasks: (() => Promise<void>)[] = [];
+            const usdToCny = parseFloat(process.env.USD_CNY_RATE || '7.2') || 7.2;
 
             for (const q of allQueries) {
                 for (let p = 0; p < pagesPerQuery; p++) {
@@ -914,8 +931,10 @@ http.route({
                         framePosition: String(framePosition),
                         frameSize: String(pageSize),
                         ItemTitle: q,
-                        OrderBy: 'Popularity:Desc',
+                        OrderBy: mapSortOrder(sortBy),
                     });
+                    if (minPrice) params.append("MinPrice", String(Math.round(parseFloat(minPrice) * usdToCny)));
+                    if (maxPrice) params.append("MaxPrice", String(Math.round(parseFloat(maxPrice) * usdToCny)));
                     const pageIndex = p;
                     const queryRef = q;
                     fetchTasks.push(() =>
@@ -948,8 +967,9 @@ http.route({
                 return true;
             });
 
-            // Sort by price
-            uniqueResults.sort((a, b) => a.price - b.price);
+            // Sort based on client preference
+            if (sortBy === 'price_asc') uniqueResults.sort((a, b) => a.price - b.price);
+            else if (sortBy === 'price_desc') uniqueResults.sort((a, b) => b.price - a.price);
 
             return new Response(
                 JSON.stringify({

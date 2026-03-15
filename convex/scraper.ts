@@ -2,22 +2,23 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 
-// SSRF protection: check if a hostname resolves to a private/internal IP
+// SSRF protection: check if a hostname is private/internal
 const isBlockedHost = (hostname: string): boolean => {
     const h = hostname.toLowerCase();
+    // Check for IP-based private ranges with proper octet parsing
+    const ipv4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4) {
+        const a = Number(ipv4[1]);
+        const b = Number(ipv4[2]);
+        if (a === 127 || a === 10 || a === 0 ||
+            (a === 192 && b === 168) ||
+            (a === 169 && b === 254) ||
+            (a === 172 && b >= 16 && b <= 31)) {
+            return true;
+        }
+    }
     return (
         h === 'localhost' ||
-        h.startsWith('127.') ||
-        h.startsWith('10.') ||
-        h.startsWith('192.168.') ||
-        h.startsWith('169.254.') ||
-        h.startsWith('172.16.') ||
-        h.startsWith('172.17.') ||
-        h.startsWith('172.18.') ||
-        h.startsWith('172.19.') ||
-        h.startsWith('172.2') ||
-        h.startsWith('172.3') ||
-        h === '0.0.0.0' ||
         h.endsWith('.local') ||
         h.endsWith('.internal')
     );
@@ -139,17 +140,21 @@ async function scrapeGeneric(url: string) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        // Use manual redirect to revalidate each hop against SSRF blocklist
-        const response = await fetch(url, {
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9",
-            },
-            redirect: 'follow',
-            signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
+        let response: Response;
+        // Use redirect: 'follow' then revalidate final URL against SSRF blocklist
+        try {
+            response = await fetch(url, {
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                },
+                redirect: 'follow',
+                signal: controller.signal,
+            });
+        } finally {
+            clearTimeout(timeoutId);
+        }
 
         // Revalidate final URL after redirects
         const finalUrl = response.url || url;
