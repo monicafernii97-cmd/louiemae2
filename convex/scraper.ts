@@ -2,7 +2,7 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 
-// Domain allowlist: only scrape from known storefront domains
+/** Domain allowlist: only scrape from known storefront domains. */
 const ALLOWED_DOMAINS = [
     '1688.com',
     'detail.1688.com',
@@ -20,7 +20,7 @@ const ALLOWED_DOMAINS = [
     'myshopify.com',
 ];
 
-// Check if a hostname matches the allowlist (supports subdomains)
+/** Checks if a hostname matches the allowed storefront domains (supports subdomains). */
 const isAllowedDomain = (hostname: string): boolean => {
     const h = hostname.toLowerCase();
     return ALLOWED_DOMAINS.some(domain =>
@@ -28,7 +28,7 @@ const isAllowedDomain = (hostname: string): boolean => {
     );
 };
 
-// SSRF protection: check if a hostname is private/internal (defense-in-depth for redirects)
+/** SSRF defense-in-depth: checks if a hostname resolves to private/internal IPs or IPv6 literals. */
 const isBlockedHost = (hostname: string): boolean => {
     const h = hostname.toLowerCase();
     // Reject IPv6 literals (e.g. [::1], [fe80::1])
@@ -114,6 +114,11 @@ export const scrapeProduct = action({
 });
 
 // Fetch product details from 1688.com via OTAPI API
+/**
+ * Fetches a 1688 product via OTAPI BatchGetItemFullInfo API.
+ * @param productId - The 1688 product ID (numeric string from URL).
+ * @returns Scraped product data with source '1688'.
+ */
 async function scrape1688(productId: string) {
     const rapidApiKey = process.env.RAPIDAPI_KEY;
 
@@ -169,6 +174,12 @@ async function scrape1688(productId: string) {
     }
 }
 
+/**
+ * Generic HTML scraper with manual redirect handling and SSRF validation per hop.
+ * Extracts title, description, images, and price from meta tags and HTML content.
+ * @param url - The URL to scrape (must be on an allowed domain).
+ * @returns Scraped product data with source 'generic'.
+ */
 async function scrapeGeneric(url: string) {
     try {
         let response: Response;

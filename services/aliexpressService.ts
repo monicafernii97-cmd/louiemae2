@@ -44,8 +44,10 @@ interface CacheEntry<T> {
     ttl: number;
 }
 
+/** In-memory TTL cache for API responses. */
 const cache = new Map<string, CacheEntry<unknown>>();
 
+/** Retrieves a cached value if it hasn't expired, otherwise returns null. */
 const getCached = <T>(key: string): T | null => {
     const entry = cache.get(key) as CacheEntry<T> | undefined;
     if (!entry) return null;
@@ -59,6 +61,7 @@ const getCached = <T>(key: string): T | null => {
     return entry.data;
 };
 
+/** Stores a value in the TTL cache with a configurable expiry (default 15 minutes). */
 const setCache = <T>(key: string, data: T, ttlMs: number = 15 * 60 * 1000): void => {
     cache.set(key, { data, timestamp: Date.now(), ttl: ttlMs });
 };
@@ -67,6 +70,7 @@ const setCache = <T>(key: string, data: T, ttlMs: number = 15 * 60 * 1000): void
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 100; // ms between requests
 
+/** Wraps fetch with rate-limiting to avoid hitting API request limits. */
 const rateLimitedFetch = async (url: string, options: RequestInit): Promise<Response> => {
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime;
@@ -83,6 +87,7 @@ const rateLimitedFetch = async (url: string, options: RequestInit): Promise<Resp
 // API HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Handles non-OK API responses by throwing descriptive errors with status codes. */
 const handleApiError = async (response: Response): Promise<never> => {
     let errorMessage = 'API Error';
     try {
@@ -106,6 +111,12 @@ const handleApiError = async (response: Response): Promise<never> => {
 
 // Transform product API response to SourceProduct format
 // Supports multiple API structures: OTAPI 1688, legacy imports, etc.
+/**
+ * Transforms raw OTAPI/legacy product data into a normalized AliExpressProduct (SourceProduct).
+ * Handles multiple API response shapes: OTAPI envelope, legacy SKU format, and normalized pipeline.
+ * @param rawWrapper - Raw product data from API response.
+ * @param collection - Product collection category (defaults to 'decor').
+ */
 const transformProduct = (rawWrapper: any, collection: CollectionType = 'decor'): AliExpressProduct => {
     // Unwrap OTAPI Result envelope, legacy item wrapper, or use directly
     const raw = rawWrapper?.item || rawWrapper?.Result?.item || rawWrapper?.Result || rawWrapper;

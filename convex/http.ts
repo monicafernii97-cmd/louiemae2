@@ -381,6 +381,7 @@ http.route({
 });
 
 // Handle CJ Order status webhook
+/** Handles CJ Dropshipping order status webhook events. */
 async function handleCjOrderWebhook(ctx: any, params: any, messageType: string) {
     const { cjOrderId, orderNumber, orderStatus, trackNumber, logisticName, trackingUrl } = params;
 
@@ -407,6 +408,7 @@ async function handleCjOrderWebhook(ctx: any, params: any, messageType: string) 
 }
 
 // Handle CJ Logistics/tracking webhook
+/** Handles CJ Dropshipping logistics/tracking webhook events. */
 async function handleCjLogisticsWebhook(ctx: any, params: any) {
     const { orderId, trackingNumber, logisticName, trackingStatus, trackingUrl } = params;
 
@@ -434,6 +436,7 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
 }
 
 // Handle CJ Product webhook (approval/rejection status)
+/** Handles CJ Dropshipping product info webhook events. */
 async function handleCjProductWebhook(ctx: any, params: any) {
     const { pid, productName, productStatus, statusReason } = params;
 
@@ -474,6 +477,7 @@ async function handleCjProductWebhook(ctx: any, params: any) {
 }
 
 // Handle CJ Variant webhook (variant IDs for fulfillment)
+/** Handles CJ Dropshipping variant/SKU webhook events. */
 async function handleCjVariantWebhook(ctx: any, params: any) {
     const {
         pid,
@@ -544,6 +548,7 @@ async function handleCjVariantWebhook(ctx: any, params: any) {
 
 
 // Map CJ order status strings to our status
+/** Maps CJ Dropshipping order status codes to internal status strings. */
 function mapCjOrderStatus(cjStatus: string): string {
     const statusMap: Record<string, string> = {
         "CREATED": "confirmed",
@@ -566,6 +571,7 @@ function mapCjOrderStatus(cjStatus: string): string {
 const RAPIDAPI_HOST = "otapi-1688.p.rapidapi.com";
 
 // Map our sort options to OTAPI OrderBy values
+/** Maps client-side sortBy value to OTAPI OrderBy parameter. */
 function mapSortOrder(sortBy?: string): string {
     switch (sortBy) {
         case 'price_asc': return 'Price:Asc';
@@ -802,6 +808,7 @@ interface NormalizedProduct {
 }
 
 // Helper: extract a named value from OTAPI FeaturedValues array
+/** Extracts a named value from an OTAPI item's FeaturedValues array. */
 function getFeaturedValue(item: any, name: string): string | undefined {
     const fv = item.FeaturedValues;
     if (!Array.isArray(fv)) return undefined;
@@ -810,16 +817,23 @@ function getFeaturedValue(item: any, name: string): string | undefined {
 }
 
 // Helper: get USD price from OTAPI price object
+/** Extracts USD price from an OTAPI ConvertedPriceList or OriginalPrice field. */
 function getUsdPrice(priceObj: any): number {
     return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
 }
 
 // Normalize OTAPI 1688 search results to NormalizedProduct[]
+/** Result shape returned by normalizeOtapi1688. */
 interface OtapiNormalizedResult {
     products: NormalizedProduct[];
     totalCount: number;
 }
 
+/**
+ * Normalizes raw OTAPI BatchSearchItemsFrame response into a flat NormalizedProduct array.
+ * Filters out items with missing title or zero price.
+ * @returns Object containing normalized products and the upstream TotalCount.
+ */
 function normalizeOtapi1688(data: any): OtapiNormalizedResult {
     const items = data?.Result?.Items?.Items?.Content || [];
     const totalCount = data?.Result?.Items?.Items?.TotalCount || data?.Result?.Items?.TotalCount || items.length;
