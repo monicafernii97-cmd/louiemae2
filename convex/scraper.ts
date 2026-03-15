@@ -99,17 +99,21 @@ async function scrape1688(productId: string) {
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
-        const response = await fetch(
-            `https://${OTAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
-            {
-                headers: {
-                    "X-RapidAPI-Key": rapidApiKey,
-                    "x-rapidapi-host": OTAPI_HOST,
-                },
-                signal: controller.signal,
-            }
-        );
-        clearTimeout(timeoutId);
+        let response: Response;
+        try {
+            response = await fetch(
+                `https://${OTAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
+                {
+                    headers: {
+                        "X-RapidAPI-Key": rapidApiKey,
+                        "x-rapidapi-host": OTAPI_HOST,
+                    },
+                    signal: controller.signal,
+                }
+            );
+        } finally {
+            clearTimeout(timeoutId);
+        }
 
         if (!response.ok) {
             throw new Error(`OTAPI API Error: ${response.status}`);
@@ -130,7 +134,6 @@ async function scrape1688(productId: string) {
         };
 
     } catch (e: any) {
-        clearTimeout(timeoutId);
         throw new Error(`OTAPI 1688 API failed: ${e.message}`);
     }
 }

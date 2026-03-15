@@ -613,8 +613,9 @@ http.route({
 
             const searchController = new AbortController();
             const searchTimeout = setTimeout(() => searchController.abort(), 15000);
+            let response: Response;
             try {
-                var response = await fetch(
+                response = await fetch(
                     `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params.toString()}`,
                     {
                         method: "GET",
@@ -696,8 +697,9 @@ http.route({
 
             const detailController = new AbortController();
             const detailTimeout = setTimeout(() => detailController.abort(), 15000);
+            let response: Response;
             try {
-                var response = await fetch(
+                response = await fetch(
                     `https://${RAPIDAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
                     {
                         method: "GET",
@@ -942,7 +944,10 @@ http.route({
                             `https://${RAPIDAPI_HOST}/BatchSearchItemsFrame?${params}`
                         )
                             .then(data => { results.push(...normalizeOtapi1688(data)); })
-                            .catch(e => { if (pageIndex === 0 && queryRef === allQueries[0]) errors.push(`1688: ${e.message}`); })
+                            .catch(e => {
+                                console.error(`[Search] OTAPI fetch failed (query="${queryRef}", page=${pageIndex}): ${e.message}`);
+                                if (pageIndex === 0 && queryRef === allQueries[0]) errors.push(`1688: ${e.message}`);
+                            })
                     );
                 }
             }
