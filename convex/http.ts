@@ -1003,7 +1003,7 @@ http.route({
                     if (!response.ok) {
                         const errorBody = await response.text();
                         console.error(`[Search Debug] Upstream error: status=${response.status}, bodyLength=${errorBody.length}`);
-                        throw new Error(`HTTP ${response.status}: ${errorBody.slice(0, 200)}`);
+                        throw new Error(`UPSTREAM_HTTP_${response.status}`);
                     }
                     const data = await response.json();
                     if (SEARCH_DEBUG) {
@@ -1014,7 +1014,7 @@ http.route({
                     clearTimeout(timeout);
                     const elapsed = Date.now() - fetchStart;
                     const isTimeout = e?.name === 'AbortError';
-                    console.error(`[Search Debug] Fetch failed after ${elapsed}ms: ${isTimeout ? 'TIMEOUT' : e.message}`);
+                    console.error(`[Search Debug] Fetch failed after ${elapsed}ms: ${isTimeout ? 'TIMEOUT' : (e?.message || 'UNKNOWN_ERROR')}`);
                     throw e;
                 }
             };
