@@ -917,10 +917,12 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
                 const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
                 variants.push({
                     id: cfg.Id || `cfg_${index}`,
-                    name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${index + 1}`,
+                    name: cfg.Title || cfg.Configurators?.map((c: any) =>
+                        `${c.PropertyName || c.Pid || '?'}: ${c.Value || c.Vid || '?'}`
+                    ).join(' / ') || `Option ${index + 1}`,
                     image: cfgImage || undefined,
                     priceAdjustment: cfgPrice ? cfgPrice - price : 0,
-                    inStock: (cfg.MasterQuantity || 0) > 0,
+                    inStock: (cfg.Quantity ?? cfg.MasterQuantity ?? 0) > 0,
                 });
             });
         }
