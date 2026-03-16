@@ -1231,23 +1231,23 @@ export const translateVariantNames = async (variantNames: string[]): Promise<Map
   
   // If none contain Chinese, return as-is
   if (chineseNames.length === 0) {
-    variantNames.forEach(n => result.set(n, n));
+    variantNames.forEach(n => { result.set(n, n); });
     return result;
   }
 
   // Set non-Chinese names to themselves
-  variantNames.filter(n => !containsChinese(n)).forEach(n => result.set(n, n));
+  variantNames.filter(n => !containsChinese(n)).forEach(n => { result.set(n, n); });
 
   if (!apiKey) {
     // No API key — return originals
-    chineseNames.forEach(n => result.set(n, n));
+    chineseNames.forEach(n => { result.set(n, n); });
     return result;
   }
 
   try {
     const ai = getAI();
     if (!ai) {
-      chineseNames.forEach(n => result.set(n, n));
+      chineseNames.forEach(n => { result.set(n, n); });
       return result;
     }
 
@@ -1282,11 +1282,11 @@ export const translateVariantNames = async (variantNames: string[]): Promise<Map
       });
     } else {
       // Fallback if response shape is wrong
-      chineseNames.forEach(n => result.set(n, n));
+      chineseNames.forEach(n => { result.set(n, n); });
     }
   } catch (error) {
     console.error('[translateVariantNames] Translation error:', error);
-    chineseNames.forEach(n => result.set(n, n));
+    chineseNames.forEach(n => { result.set(n, n); });
   }
 
   return result;
