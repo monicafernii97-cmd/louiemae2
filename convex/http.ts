@@ -881,11 +881,25 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         const regularPrice = getUsdPrice(item.Price);
         const price = promoPrice > 0 ? promoPrice : regularPrice;
 
-        // Images from Pictures array
+        // Images from Pictures array + PropertyPictures + ItemImages
         const pics = Array.isArray(item.Pictures) ? item.Pictures : [];
         const images = pics
             .map((pic: any) => pic?.Large?.Url || pic?.Medium?.Url || pic?.Url)
             .filter((url: any): url is string => typeof url === 'string' && url.length > 0);
+        // Add variant/property images (different colors, etc.)
+        if (Array.isArray(item.PropertyPictures)) {
+            item.PropertyPictures.forEach((pic: any) => {
+                const url = pic?.Large?.Url || pic?.Medium?.Url || pic?.Url || pic?.Original?.Url;
+                if (typeof url === 'string' && url.length > 0 && !images.includes(url)) images.push(url);
+            });
+        }
+        // Add additional item images if present
+        if (Array.isArray(item.ItemImages)) {
+            item.ItemImages.forEach((img: any) => {
+                const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url;
+                if (typeof url === 'string' && url.length > 0 && !images.includes(url)) images.push(url);
+            });
+        }
         const mainImage = item.MainPictureUrl || images[0] || '';
 
         // Rating and sales from FeaturedValues

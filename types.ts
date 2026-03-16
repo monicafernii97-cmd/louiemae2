@@ -18,6 +18,14 @@ export interface Product {
   cjVariantId?: string;
   cjSku?: string;
   publishedAt?: string; // ISO date string — used for 30-day auto-expire on New Arrivals
+  // Two-stage pricing metadata
+  sourcePriceCny?: number;        // Original 1688 factory price (CNY)
+  estimatedCjCost?: number;       // Estimated CJ cost (1688 × 1.6, USD)
+  estimatedShipping?: number;     // Estimated shipping (category-based)
+  confirmedCjCost?: number;       // Actual CJ cost after sourcing approval
+  pricingStage?: 'estimated' | 'confirmed';
+  // Multi-category
+  subcategory?: string;           // Specific subcategory (e.g., "Skirts")
 }
 
 export interface Category {
