@@ -259,14 +259,15 @@ const EssenceStep: React.FC<{
             }
 
             // Merge data
+            const scrapedImages = Array.isArray(scrapedData.images) ? scrapedData.images : [];
             const updatedProduct = {
                 ...product,
                 ...scrapedData,
                 // Only overwrite if scraped data exists
-                name: scrapedData.name || product.name,
-                price: scrapedData.price || product.price,
-                description: scrapedData.description || product.description,
-                images: scrapedData.images.length > 0 ? scrapedData.images : product.images
+                name: scrapedData.name ?? product.name,
+                price: typeof scrapedData.price === 'number' ? scrapedData.price : product.price,
+                description: scrapedData.description ?? product.description,
+                images: scrapedImages.length > 0 ? scrapedImages : product.images
             };
 
             // AI Enhance if enabled

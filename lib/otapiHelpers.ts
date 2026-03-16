@@ -11,7 +11,9 @@
 
 /** Extracts USD price from an OTAPI ConvertedPriceList or OriginalPrice field. */
 export function getOtapiUsdPrice(priceObj: any): number {
-    return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
+    const raw = priceObj?.ConvertedPriceList?.Internal?.Price ?? priceObj?.OriginalPrice ?? 0;
+    const numeric = Number(raw);
+    return Number.isFinite(numeric) ? numeric : 0;
 }
 
 /** Extracts a named value from an OTAPI item's FeaturedValues array. */

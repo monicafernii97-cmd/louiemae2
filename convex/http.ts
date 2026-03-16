@@ -864,10 +864,13 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         data?.Result?.TotalCount ||
         items.length;
 
-    // Always log item extraction for debugging
-    console.log(`[normalizeOtapi1688] Raw items found: ${items.length}, totalCount: ${totalCount}, ErrorCode: ${data?.ErrorCode || 'N/A'}`);
+    // Diagnostic logging — gated behind SEARCH_DEBUG to keep production log volume low
+    const debugNorm = process.env.SEARCH_DEBUG === 'true';
+    if (debugNorm) {
+        console.log(`[normalizeOtapi1688] Raw items found: ${items.length}, totalCount: ${totalCount}, ErrorCode: ${data?.ErrorCode || 'N/A'}`);
+    }
     if (items.length === 0) {
-        // Log the top-level keys to help diagnose unexpected response shapes
+        // Always warn on zero results — this is low-frequency and useful for triage
         const resultKeys = data?.Result ? Object.keys(data.Result).join(', ') : '(no Result)';
         console.warn(`[normalizeOtapi1688] 0 items extracted. Result keys: ${resultKeys}`);
     }
@@ -879,9 +882,10 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         const price = promoPrice > 0 ? promoPrice : regularPrice;
 
         // Images from Pictures array
-        const images = (item.Pictures || [])
-            .map((pic: any) => pic.Large?.Url || pic.Medium?.Url || pic.Url)
-            .filter(Boolean);
+        const pics = Array.isArray(item.Pictures) ? item.Pictures : [];
+        const images = pics
+            .map((pic: any) => pic?.Large?.Url || pic?.Medium?.Url || pic?.Url)
+            .filter((url: any): url is string => typeof url === 'string' && url.length > 0);
         const mainImage = item.MainPictureUrl || images[0] || '';
 
         // Rating and sales from FeaturedValues
@@ -937,7 +941,9 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
 
-    console.log(`[normalizeOtapi1688] After filtering: ${products.length} products (from ${items.length} raw items)`);
+    if (debugNorm) {
+        console.log(`[normalizeOtapi1688] After filtering: ${products.length} products (from ${items.length} raw items)`);
+    }
     return { products, totalCount };
 }
 
