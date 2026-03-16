@@ -6,6 +6,7 @@ import { FadeIn } from './FadeIn';
 import { useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { toast } from 'sonner';
+import { extractOtapiFields } from '../lib/otapiHelpers';
 
 interface ProductStudioProps {
     isOpen: boolean;
@@ -230,37 +231,44 @@ const EssenceStep: React.FC<{
 
             let scrapedData: any = {};
 
-            if (result.source === 'aliexpress') {
-                const raw = result.data.result?.item;
-                if (raw) {
+            if (result.source === '1688') {
+                // OTAPI 1688 product — use shared extraction helper
+                const item = result.data;
+                if (item) {
+                    const fields = extractOtapiFields(item, importUrl);
                     scrapedData = {
-                        name: raw.title,
-                        price: parseFloat(raw.sku?.def?.promotionPrice || raw.sku?.def?.price || '0'),
-                        description: raw.description || 'Imported from AliExpress',
-                        images: raw.images || [],
-                        sourceUrl: importUrl
+                        name: fields.name,
+                        price: fields.price,
+                        description: fields.description,
+                        images: fields.images,
+                        sourceUrl: fields.sourceUrl,
                     };
                 }
             } else {
+                // Generic source (handles AliExpress, Amazon, and any other URLs)
                 const data = result.data;
                 scrapedData = {
                     name: data.title,
                     price: data.price,
                     description: data.description,
-                    images: data.image ? [data.image] : [],
-                    sourceUrl: data.url
+                    images: Array.isArray(data.images) && data.images.length > 0
+                        ? data.images
+                        : (data.image ? [data.image] : []),
+                    sourceUrl: data.url || importUrl,
                 };
             }
 
             // Merge data
+            const scrapedImages = Array.isArray(scrapedData.images) ? scrapedData.images : [];
+            const parsedPrice = Number(scrapedData.price);
             const updatedProduct = {
                 ...product,
                 ...scrapedData,
                 // Only overwrite if scraped data exists
-                name: scrapedData.name || product.name,
-                price: scrapedData.price || product.price,
-                description: scrapedData.description || product.description,
-                images: scrapedData.images.length > 0 ? scrapedData.images : product.images
+                name: scrapedData.name ?? product.name,
+                price: Number.isFinite(parsedPrice) ? parsedPrice : product.price,
+                description: scrapedData.description ?? product.description,
+                images: scrapedImages.length > 0 ? scrapedImages : product.images
             };
 
             // AI Enhance if enabled

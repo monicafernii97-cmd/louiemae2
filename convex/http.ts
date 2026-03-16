@@ -835,20 +835,8 @@ interface NormalizedProduct {
     }>;
 }
 
-// Helper: extract a named value from OTAPI FeaturedValues array
-/** Extracts a named value from an OTAPI item's FeaturedValues array. */
-function getFeaturedValue(item: any, name: string): string | undefined {
-    const fv = item.FeaturedValues;
-    if (!Array.isArray(fv)) return undefined;
-    const entry = fv.find((v: any) => v.Name === name);
-    return entry?.Value;
-}
-
-// Helper: get USD price from OTAPI price object
-/** Extracts USD price from an OTAPI ConvertedPriceList or OriginalPrice field. */
-function getUsdPrice(priceObj: any): number {
-    return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
-}
+// Shared OTAPI helpers — canonical extraction logic lives in lib/otapiHelpers.ts
+import { getOtapiUsdPrice as getUsdPrice, getOtapiFeaturedValue as getFeaturedValue } from '../lib/otapiHelpers';
 
 // Normalize OTAPI 1688 search results to NormalizedProduct[]
 /** Result shape returned by normalizeOtapi1688. */
@@ -863,8 +851,30 @@ interface OtapiNormalizedResult {
  * @returns Object containing normalized products and the upstream TotalCount.
  */
 function normalizeOtapi1688(data: any): OtapiNormalizedResult {
-    const items = data?.Result?.Items?.Items?.Content || [];
-    const totalCount = data?.Result?.Items?.Items?.TotalCount || data?.Result?.Items?.TotalCount || items.length;
+    // OTAPI response nesting varies by API version — try multiple paths.
+    // Coerce to array so an unexpected payload shape returns [] instead of a 500.
+    const rawItems =
+        data?.Result?.Items?.Items?.Content ||
+        data?.Result?.Items?.Content ||
+        data?.Result?.Content;
+    const items = Array.isArray(rawItems) ? rawItems : [];
+    const totalCount =
+        data?.Result?.Items?.Items?.TotalCount ||
+        data?.Result?.Items?.TotalCount ||
+        data?.Result?.TotalCount ||
+        items.length;
+
+    // Diagnostic logging — gated behind SEARCH_DEBUG to keep production log volume low
+    const debugNorm = process.env.SEARCH_DEBUG === 'true';
+    if (debugNorm) {
+        console.log(`[normalizeOtapi1688] Raw items found: ${items.length}, totalCount: ${totalCount}, ErrorCode: ${data?.ErrorCode || 'N/A'}`);
+    }
+    if (items.length === 0) {
+        // Always warn on zero results — this is low-frequency and useful for triage
+        const resultKeys = data?.Result ? Object.keys(data.Result).join(', ') : '(no Result)';
+        console.warn(`[normalizeOtapi1688] 0 items extracted. Result keys: ${resultKeys}`);
+    }
+
     const products = items.map((item: any) => {
         // Price — prefer PromotionPrice (discounted) over Price (regular)
         const promoPrice = getUsdPrice(item.PromotionPrice);
@@ -872,9 +882,10 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         const price = promoPrice > 0 ? promoPrice : regularPrice;
 
         // Images from Pictures array
-        const images = (item.Pictures || [])
-            .map((pic: any) => pic.Large?.Url || pic.Medium?.Url || pic.Url)
-            .filter(Boolean);
+        const pics = Array.isArray(item.Pictures) ? item.Pictures : [];
+        const images = pics
+            .map((pic: any) => pic?.Large?.Url || pic?.Medium?.Url || pic?.Url)
+            .filter((url: any): url is string => typeof url === 'string' && url.length > 0);
         const mainImage = item.MainPictureUrl || images[0] || '';
 
         // Rating and sales from FeaturedValues
@@ -929,6 +940,10 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
             variants: variants.length > 0 ? variants : undefined,
         };
     }).filter((p: NormalizedProduct) => p.title && p.price > 0);
+
+    if (debugNorm) {
+        console.log(`[normalizeOtapi1688] After filtering: ${products.length} products (from ${items.length} raw items)`);
+    }
     return { products, totalCount };
 }
 
@@ -969,16 +984,22 @@ http.route({
             const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !FILLER_WORDS.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
 
+            // Log query diagnostics; all user-derived text is gated behind
+            // SEARCH_DEBUG to avoid leaking PII into production logs.
+            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
+            if (SEARCH_DEBUG) {
+                console.log(`[Search] rawQuery="${rawQuery}" → optimized="${query}" (${words.length} words kept)`);
+            } else {
+                console.log(`[Search] queryWordsKept=${words.length}`);
+            }
+
             // Optional synonym query for backfill only
             const synQuery = words.map((w: string) => SYNONYMS[w] || w).join(' ');
             const hasSynonym = synQuery !== query;
 
             // Each query fetches exactly 1 upstream page at the correct offset
-            const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
             const frameOffset = Math.max(0, page - 1) * pageSize;
-            if (SEARCH_DEBUG) {
-                console.log(`[Search Debug] page=${page}, pageSize=${pageSize}, offset=${frameOffset}, hasSynonym=${hasSynonym}`);
-            }
+            console.log(`[Search] page=${page}, pageSize=${pageSize}, offset=${frameOffset}, hasSynonym=${hasSynonym}`);
 
             const errors: string[] = [];
             let upstreamTotalCount = 0;
@@ -1058,11 +1079,9 @@ http.route({
                 const { products, totalCount } = normalizeOtapi1688(data);
                 primaryResults = products;
                 upstreamTotalCount = totalCount;
-                if (SEARCH_DEBUG) {
-                    console.log(`[Search Debug] Primary results: ${products.length} products, totalCount: ${totalCount}`);
-                }
+                console.log(`[Search] Primary results: ${products.length} products, totalCount: ${totalCount}`);
             } catch (e: any) {
-                console.error(`[Search Debug] OTAPI primary fetch FAILED: ${e.message}`);
+                console.error(`[Search] OTAPI primary fetch FAILED: ${e.message}`);
                 errors.push(`1688: ${e.message}`);
             }
 
