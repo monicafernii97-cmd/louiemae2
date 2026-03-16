@@ -76,6 +76,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         <img
                             src={product.images[0] || 'https://via.placeholder.com/160'}
                             alt={product.name}
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
                     </div>
