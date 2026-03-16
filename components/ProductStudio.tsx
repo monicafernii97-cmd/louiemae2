@@ -251,7 +251,7 @@ const EssenceStep: React.FC<{
                     name: data.title,
                     price: data.price,
                     description: data.description,
-                    images: data.images && data.images.length > 0
+                    images: Array.isArray(data.images) && data.images.length > 0
                         ? data.images
                         : (data.image ? [data.image] : []),
                     sourceUrl: data.url || importUrl,
@@ -260,12 +260,13 @@ const EssenceStep: React.FC<{
 
             // Merge data
             const scrapedImages = Array.isArray(scrapedData.images) ? scrapedData.images : [];
+            const parsedPrice = Number(scrapedData.price);
             const updatedProduct = {
                 ...product,
                 ...scrapedData,
                 // Only overwrite if scraped data exists
                 name: scrapedData.name ?? product.name,
-                price: typeof scrapedData.price === 'number' ? scrapedData.price : product.price,
+                price: Number.isFinite(parsedPrice) ? parsedPrice : product.price,
                 description: scrapedData.description ?? product.description,
                 images: scrapedImages.length > 0 ? scrapedImages : product.images
             };

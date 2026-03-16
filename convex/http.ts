@@ -984,13 +984,13 @@ http.route({
             const words = rawQuery.toLowerCase().trim().split(/\s+/).filter((w: string) => w.length > 1 && !FILLER_WORDS.has(w)).slice(0, 4);
             const query = words.length > 0 ? words.join(' ') : rawQuery;
 
-            // Log the optimized query; raw input is gated behind SEARCH_DEBUG
-            // to avoid leaking sensitive user input into production logs.
+            // Log query diagnostics; all user-derived text is gated behind
+            // SEARCH_DEBUG to avoid leaking PII into production logs.
             const SEARCH_DEBUG = process.env.SEARCH_DEBUG === "true";
             if (SEARCH_DEBUG) {
                 console.log(`[Search] rawQuery="${rawQuery}" → optimized="${query}" (${words.length} words kept)`);
             } else {
-                console.log(`[Search] optimized="${query}" (${words.length} words kept)`);
+                console.log(`[Search] queryWordsKept=${words.length}`);
             }
 
             // Optional synonym query for backfill only

@@ -29,7 +29,8 @@ export function extractOtapiImages(item: any): string[] {
     const images: string[] = [];
     if (Array.isArray(item?.Pictures)) {
         for (const pic of item.Pictures) {
-            const url = pic.Large?.Url || pic.Medium?.Url || pic.Url;
+            if (!pic) continue;
+            const url = pic?.Large?.Url || pic?.Medium?.Url || pic?.Url;
             if (url) images.push(url);
         }
     }
