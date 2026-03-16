@@ -57,8 +57,11 @@ export const configureWebhooks = action({
                 return { success: false, message: "Failed to authenticate with CJ API" };
             }
 
-            // Our webhook URL
-            const webhookUrl = "https://kindred-squid-489.convex.site/cj/webhook";
+            // Our webhook URL — configurable to avoid breakage on deployment URL changes
+            const webhookUrl = process.env.CJ_WEBHOOK_URL;
+            if (!webhookUrl) {
+                return { success: false, message: "CJ_WEBHOOK_URL is not configured. Set it in Convex dashboard → Settings → Environment Variables." };
+            }
 
             // Configure webhooks for order and logistics updates
             const response = await fetch(`${CJ_API_BASE}/webhook/set`, {
