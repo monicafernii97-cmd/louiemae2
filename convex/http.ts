@@ -915,12 +915,18 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
             item.ConfiguredItems.forEach((cfg: any, index: number) => {
                 const cfgPrice = getUsdPrice(cfg.Price);
                 const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
+                const configuratorLabel = Array.isArray(cfg.Configurators)
+                    ? cfg.Configurators
+                        .map((c: any) => `${c?.PropertyName ?? c?.Pid ?? '?'}: ${c?.Value ?? c?.Vid ?? '?'}`)
+                        .join(' / ')
+                    : '';
+
                 variants.push({
                     id: cfg.Id || `cfg_${index}`,
-                    name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${index + 1}`,
+                    name: cfg.Title || configuratorLabel || `Option ${index + 1}`,
                     image: cfgImage || undefined,
                     priceAdjustment: cfgPrice ? cfgPrice - price : 0,
-                    inStock: (cfg.MasterQuantity || 0) > 0,
+                    inStock: (cfg.Quantity ?? cfg.MasterQuantity ?? 0) > 0,
                 });
             });
         }

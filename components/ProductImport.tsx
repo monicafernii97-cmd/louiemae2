@@ -514,6 +514,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         <img
                                             src={currentProduct.images[0]}
                                             alt="Main Preview"
+                                            referrerPolicy="no-referrer"
+                                            crossOrigin="anonymous"
                                             className="w-full h-full object-contain p-4"
                                         />
                                     ) : (
@@ -559,7 +561,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 className={`aspect-square rounded-lg border-2 overflow-hidden bg-white cursor-pointer transition-all relative
                                                     ${isSelected ? 'border-bronze ring-2 ring-bronze/30' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
                                             >
-                                                <img src={img} className="w-full h-full object-cover" />
+                                                <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
                                                 {isSelected && (
                                                     <div className="absolute top-1 right-1 bg-bronze text-white rounded-full w-5 h-5 flex items-center justify-center shadow">
                                                         <Check className="w-3 h-3" />
@@ -770,6 +772,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     <img
                                                                         src={variant.image || currentProduct.images?.[0]}
                                                                         alt={variant.name}
+                                                                        referrerPolicy="no-referrer"
+                                                                        crossOrigin="anonymous"
                                                                         className="w-full h-full object-cover"
                                                                     />
                                                                 ) : (

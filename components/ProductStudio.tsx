@@ -580,7 +580,7 @@ const VisualsStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                     {/* Image Tiles */}
                     {product.images?.map((img, idx) => (
                         <div key={idx} className="relative aspect-[3/4] group rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
-                            <img src={img} alt={`Product ${idx}`} className="w-full h-full object-cover" />
+                            <img src={img} alt={`Product ${idx}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                 <button
                                     onClick={() => removeImage(idx)}
@@ -706,6 +706,8 @@ const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => vo
                                 <img
                                     src={product.images[0]}
                                     alt={product.name}
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
                                     className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                                 />
                             ) : (
