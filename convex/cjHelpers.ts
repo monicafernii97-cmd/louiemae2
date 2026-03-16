@@ -247,8 +247,17 @@ export const updateProductSourcingStatus = internalMutation({
             return;
         }
 
-        // Skip if already approved (prevents duplicate webhook processing)
-        if (args.status === "approved" && product.cjSourcingStatus === "approved") {
+        // Skip if already approved AND no new data to update (prevents duplicate webhook processing)
+        // But allow through if confirmedCjCost or other payload arrives for an already-approved product
+        const hasUpdatePayload =
+            (args.confirmedCjCost ?? 0) > 0 ||
+            !!args.sourcingId ||
+            !!args.cjProductId ||
+            !!args.cjVariantId ||
+            !!args.cjSku ||
+            !!args.error;
+
+        if (args.status === "approved" && product.cjSourcingStatus === "approved" && !hasUpdatePayload) {
             console.log(`updateProductSourcingStatus: Product ${args.productId} already approved, skipping`);
             return;
         }

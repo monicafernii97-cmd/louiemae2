@@ -879,8 +879,10 @@ const generateFallbackName = (originalName: string, collection: string): string 
     : collection === 'decor' ? 'Accent'
     : 'Chair';
 
-  // Find matching product type from our mappings
-  for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS)) {
+  // Sort by keyword length descending so specific keys (t-shirt, handbag) match before generic (shirt, bag)
+  for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS).sort(
+    ([a], [b]) => b.length - a.length
+  )) {
     if (lowerName.includes(keyword)) {
       productType = cleanName;
       break;
@@ -1134,13 +1136,16 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
       ${prompts.vocabulary}
       
       STRICT RULES:
-      1. Exactly 1-2 sentences (25-40 words)
+      1. Write 3-5 sentences arranged as a mini product listing:
+         - Line 1: Opening hook — fabric/material + silhouette/form (1 sentence)
+         - Line 2-3: Key features — "Great for [occasion]", fit details, notable design elements
+         - Line 4: Practical detail — care/sizing hint OR dimension note for furniture
       2. MUST be relevant to the actual product type (${productType})
       3. If it's clothing: focus on fabric, fit, comfort, style
       4. If it's baby/kids: focus on softness, comfort, easy-care, sweetness
       5. If it's furniture: focus on materials, craftsmanship, presence
       6. Use keywords found in the product data when applicable
-      7. NO generic phrases: "high quality", "beautiful design", "perfect for"
+      7. NO generic phrases: "high quality", "beautiful design"
       
       ${prompts.examples}
       

@@ -434,28 +434,33 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             // Normalize protocol-relative URLs (// -> https://)
             const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
 
+            // Detect if collection was changed from the default — clear stale dependent state
+            const collectionChanged = p.targetCollection && p.targetCollection !== targetCollection;
+
             return {
-                name: p.customName || p.name,
-                price: p.customPrice || calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice,
-                description: p.customDescription || p.description || '',
+                name: collectionChanged ? p.name : (p.customName || p.name),
+                price: collectionChanged
+                    ? calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice
+                    : (p.customPrice || calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice),
+                description: collectionChanged ? (p.description || '') : (p.customDescription || p.description || ''),
                 images: finalImages,
-                category: subcategoryTitle,
+                category: collectionChanged ? (subcategories[0]?.title || 'General') : subcategoryTitle,
                 collection: productCollection as CollectionType,
                 isNew: true,
                 inStock: p.inStock,
                 // Filter variants based on user selection (defaults to all if no selection made)
-                variants: p.selectedVariants && p.selectedVariants.length >= 0 && p.variants
+                variants: p.selectedVariants && p.selectedVariants.length > 0 && p.variants
                     ? p.variants.filter(v => p.selectedVariants!.includes(v.id))
                     : p.variants,
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
-                // Two-stage pricing metadata
-                sourcePriceCny: (p.salePrice || p.price) * 7.2, // Approximate USD→CNY
+                // Two-stage pricing metadata — use upstream CNY if available (from sourcePriceCny on the product)
+                sourcePriceCny: (p as any).sourcePriceCny || undefined,
                 estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
                 estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
                 pricingStage: 'estimated' as const,
-                // Subcategory
-                subcategory: productSubcategory || undefined,
+                // Subcategory — clear if collection changed
+                subcategory: collectionChanged ? undefined : (productSubcategory || undefined),
             };
         });
 
@@ -891,10 +896,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 const getUsdPrice = (priceObj: any): number => {
                     return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
                 };
+                // Extract raw CNY price (upstream, not reverse-converted)
+                const getCnyPrice = (priceObj: any): number => {
+                    return priceObj?.OriginalPrice || priceObj?.ConvertedPriceList?.Original?.Price || 0;
+                };
                 const promoPrice = getUsdPrice(item.PromotionPrice);
                 const regularPrice = getUsdPrice(item.Price);
                 const salePrice = promoPrice > 0 ? promoPrice : regularPrice;
                 const origPrice = regularPrice > promoPrice && promoPrice > 0 ? regularPrice : salePrice;
+                const rawCnyPrice = getCnyPrice(item.PromotionPrice) || getCnyPrice(item.Price);
 
                 // Extract images from Pictures array
                 const images: string[] = [];
@@ -958,6 +968,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     description: item.Description || 'Imported from 1688.com',
                     images: images,
                     category: '',
+                    sourcePriceCny: rawCnyPrice || undefined,
                     collection: targetCollection as CollectionType,
                     variants: variants,
                     sourceId: String(productId),
