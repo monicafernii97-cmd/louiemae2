@@ -1216,10 +1216,6 @@ const getStructuredFallback = (context: ProductContext): string => {
     lines.push('Care · Follow care instructions on the product label');
   }
 
-  // Guarantee at least one structured detail line in all fallback paths
-  if (lines.length < 2) {
-    lines.push('Details · Refer to source listing for product-specific attributes');
-  }
 
   return lines.join('\n');
 };
@@ -1349,8 +1345,13 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
     // Validate: must have opening + at least one "Label · Detail" line
     const lines = candidate.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const labelLineRegex = /^[\p{L}][\p{L}\p{M}0-9/&\- ]+\s[·•‧]\s\S+/u;
+    const placeholderRegex = /^(n\/?a|none|unknown|tbd|-)\.?$/i;
     const hasOpeningLine = !!lines[0] && !labelLineRegex.test(lines[0]);
-    const hasStructuredDetail = lines.slice(1).some(line => labelLineRegex.test(line));
+    const hasStructuredDetail = lines.slice(1).some(line => {
+      if (!labelLineRegex.test(line)) return false;
+      const detail = line.split(/[·•‧]/).slice(1).join(' ').trim();
+      return detail.length >= 3 && !placeholderRegex.test(detail);
+    });
     return lines.length >= 2 && hasOpeningLine && hasStructuredDetail
       ? candidate
       : getFallback();
