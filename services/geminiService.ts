@@ -1157,11 +1157,70 @@ export const generateProductNameV2 = async (context: ProductContext): Promise<st
 /**
  * Generate a sophisticated product description using full product context
  */
+/**
+ * Generate a structured fallback description in Label · Detail format.
+ * Used when AI is unavailable, quota-exceeded, or returns unstructured prose.
+ */
+const getStructuredFallback = (context: ProductContext): string => {
+  const productType = detectProductType(context);
+  const keywords = context.keywords || extractKeywords(context.originalName + ' ' + context.originalDescription);
+
+  // Build opening sentence from product type
+  const openingMap: Record<string, string[]> = {
+    kids: [
+      'Soft, cozy piece designed with little ones in mind.',
+      'Gentle fabric crafted for comfort and easy dressing.',
+      'Sweet, breathable piece for everyday adventures.',
+    ],
+    fashion: [
+      'Effortless silhouette in a refined, versatile fabric.',
+      'Flattering cut with timeless, feminine appeal.',
+      'Flowing fabric with understated elegance.',
+    ],
+    furniture: [
+      'Solid wood construction with artisan-quality finish.',
+      'Hand-crafted piece with Nordic-inspired clean lines.',
+      'Sustainably sourced materials with timeless presence.',
+    ],
+    decor: [
+      'Artisan-made piece with natural, organic texture.',
+      'Hand-crafted accent with earthy, curated appeal.',
+      'Textured piece that adds warmth to any space.',
+    ],
+  };
+  const openings = openingMap[context.collection] || openingMap.decor;
+  const opening = openings[Math.floor(Math.random() * openings.length)];
+
+  // Detect materials from keywords
+  const materialKeywords = keywords.filter(k =>
+    /cotton|linen|silk|wool|velvet|denim|muslin|bamboo|fleece|rattan|oak|walnut|wood|knit|woven|ceramic|leather/.test(k)
+  );
+  const styleKeywords = keywords.filter(k =>
+    /floral|striped|embroidered|lace|ruffle|pleated|boho|minimalist|modern|vintage|classic/.test(k)
+  );
+
+  const lines = [opening];
+  if (materialKeywords.length > 0) {
+    lines.push(`Material · ${materialKeywords.map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(', ')}`);
+  }
+  if (styleKeywords.length > 0) {
+    lines.push(`Style · ${styleKeywords.map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(', ')}`);
+  }
+  if (context.collection === 'kids') {
+    lines.push('Care · Machine wash gentle, tumble dry low');
+  } else if (context.collection === 'fashion') {
+    lines.push('Care · Machine wash cold, hang dry');
+  } else if (context.collection === 'furniture') {
+    lines.push('Care · Wipe clean with a damp cloth');
+  }
+
+  return lines.join('\n');
+};
+
 export const generateProductDescriptionV2 = async (context: ProductContext): Promise<string> => {
-  // Category-aware fallback using the enhanced helper
   const getFallback = () => {
-    console.warn('[AI Fallback V2] Using category fallback for:', context.category, 'in', context.collection);
-    return getCategoryFallback(context.collection, context.category);
+    console.warn('[AI Fallback V2] Using structured fallback for:', context.category, 'in', context.collection);
+    return getStructuredFallback(context);
   };
 
   if (!apiKey) {
@@ -1192,7 +1251,7 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
       detailLabels = `
         Material · (e.g. "Solid white oak with hand-rubbed oil finish")
         Construction · (e.g. "Mortise and tenon joinery" or "Hand-woven rattan seat")
-        Dimensions · (e.g. "W 24 × D 22 × H 32 in" — estimate from source data or product type)
+        Dimensions · (only include when explicit measurements exist in the source data)
         Style · (e.g. "Scandinavian minimalist with tapered legs")
         Details · (e.g. "Stackable design" or "Brass-finished hardware, soft-close drawers")
         Care · (e.g. "Wipe clean with damp cloth")
@@ -1202,7 +1261,7 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
         Material · (primary material or composition)
         Style · (design aesthetic or visual details)
         Details · (functional features, closures, hardware)
-        Dimensions · (size or measurements if applicable)
+        Dimensions · (only include when explicit measurements exist in the source data)
         Care · (maintenance or cleaning instructions)
       `;
     }
@@ -1276,9 +1335,12 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
     });
 
     const candidate = response.text?.trim() || '';
-    // Validate: must have at least 2 lines (opening + at least one detail)
-    const lineCount = candidate.split('\n').filter(l => l.trim().length > 0).length;
-    return candidate && lineCount >= 2
+    // Validate: must have opening + at least one "Label · Detail" line
+    const lines = candidate.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const hasStructuredDetail = lines.slice(1).some(line =>
+      /^[A-Za-z][A-Za-z ]+\s·\s\S+/.test(line)
+    );
+    return lines.length >= 2 && hasStructuredDetail
       ? candidate
       : getFallback();
   } catch (error) {

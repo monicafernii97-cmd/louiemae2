@@ -269,36 +269,55 @@ async function scrape1688(productId: string, originalUrl?: string) {
             }
         });
 
+        // ── Helpers ──
+
+        // Extract all HTML string candidates from a possibly-nested OTAPI node
+        const getHtmlCandidates = (node: any): string[] =>
+            [
+                node?.Html,
+                node?.Description,
+                node?.Content,
+                node?.Content?.Html,
+                node?.Content?.Description,
+                node?.ItemDescription,
+                node?.ItemDescription?.Html,
+                node?.ItemDescription?.Description,
+            ].filter((v): v is string => typeof v === 'string' && v.length > 50);
+
+        // Normalize + dedupe helper for image URLs
+        const pushImage = (url: string) => {
+            const normalized = url.startsWith('//') ? `https:${url}` : url;
+            if (normalized.length > 10 && !descriptionImages.includes(normalized)) {
+                descriptionImages.push(normalized);
+            }
+        };
+
         // ── Collect description/marketing images from ALL available sources ──
 
         const descriptionImages: string[] = [];
 
         // Source 1: Description block from BatchGetItemFullInfo (blockList=Description)
-        // This can appear as item.Description (object with .Html or .Images), 
-        // data.Result.Description, or data.Description
         const descBlock = item.Description || data.Result?.Description || data.Description;
         if (descBlock) {
             console.log(`[Scraper] Found Description block, type: ${typeof descBlock}`);
             if (typeof descBlock === 'string' && descBlock.length > 50) {
                 const extracted = extractImagesFromHtml(descBlock);
-                extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
+                extracted.forEach(pushImage);
                 console.log(`[Scraper] Source 1 (Description string): ${extracted.length} images`);
             } else if (typeof descBlock === 'object') {
-                // Check for Html/Content/Images sub-fields
-                const htmlContent = descBlock.Html || descBlock.Content || descBlock.Description || '';
-                if (typeof htmlContent === 'string' && htmlContent.length > 50) {
-                    const extracted = extractImagesFromHtml(htmlContent);
-                    extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
-                    console.log(`[Scraper] Source 1 (Description.Html): ${extracted.length} images`);
+                // Extract HTML from any nested shape (Html, Content.Html, ItemDescription.Html, etc.)
+                const htmlCandidates = getHtmlCandidates(descBlock);
+                for (const html of htmlCandidates) {
+                    const extracted = extractImagesFromHtml(html);
+                    extracted.forEach(pushImage);
+                    console.log(`[Scraper] Source 1 (Description nested HTML): ${extracted.length} images from ${html.length} chars`);
                 }
                 // Structured images array
                 const imgArray = descBlock.Images || descBlock.DescriptionImages || descBlock.Pictures;
                 if (Array.isArray(imgArray)) {
                     imgArray.forEach((img: any) => {
                         const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url || img?.Original?.Url;
-                        if (url && typeof url === 'string' && url.length > 10 && !descriptionImages.includes(url)) {
-                            descriptionImages.push(url.startsWith('//') ? 'https:' + url : url);
-                        }
+                        if (url && typeof url === 'string') pushImage(url);
                     });
                     console.log(`[Scraper] Source 1 (Description.Images): ${imgArray.length} items`);
                 }
@@ -311,15 +330,21 @@ async function scrape1688(productId: string, originalUrl?: string) {
             if (Array.isArray(val)) {
                 val.forEach((img: any) => {
                     const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url;
-                    if (url && typeof url === 'string' && url.length > 10 && !descriptionImages.includes(url)) {
-                        descriptionImages.push(url.startsWith('//') ? 'https:' + url : url);
-                    }
+                    if (url && typeof url === 'string') pushImage(url);
                 });
                 console.log(`[Scraper] Source 2 (item.${key}): ${val.length} items`);
             } else if (typeof val === 'string' && val.length > 50) {
                 const extracted = extractImagesFromHtml(val);
-                extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
+                extracted.forEach(pushImage);
                 console.log(`[Scraper] Source 2 (item.${key} HTML): ${extracted.length} images`);
+            } else if (val && typeof val === 'object') {
+                // Handle object-shaped values (e.g. { Html: "..." })
+                const htmlCandidates = getHtmlCandidates(val);
+                for (const html of htmlCandidates) {
+                    const extracted = extractImagesFromHtml(html);
+                    extracted.forEach(pushImage);
+                    console.log(`[Scraper] Source 2 (item.${key} nested HTML): ${extracted.length} images`);
+                }
             }
         }
 
@@ -333,26 +358,24 @@ async function scrape1688(productId: string, originalUrl?: string) {
                     console.log(`[Scraper] GetItemDescription Result keys: ${JSON.stringify(Object.keys(descData.Result))}`);
                 }
 
-                // Try multiple possible response structures
-                const candidates = [
-                    descData?.Result?.Content?.Description,
-                    descData?.Result?.ItemDescription,
-                    descData?.Result?.Description,
-                    descData?.Result?.Html,
-                    descData?.Result?.Content,
+                // Use getHtmlCandidates to find all HTML strings in the response
+                const htmlStrings = [
+                    ...getHtmlCandidates(descData?.Result),
+                    ...getHtmlCandidates(descData),
                 ];
-                // If Result itself is a string, use it directly
-                if (typeof descData?.Result === 'string') {
-                    candidates.push(descData.Result);
+                // If Result itself is a string, include it
+                if (typeof descData?.Result === 'string' && descData.Result.length > 50) {
+                    htmlStrings.push(descData.Result);
                 }
 
-                for (const candidate of candidates) {
-                    if (typeof candidate === 'string' && candidate.length > 50) {
-                        const extracted = extractImagesFromHtml(candidate);
-                        extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
-                        console.log(`[Scraper] Source 3 (GetItemDescription): ${extracted.length} images from ${candidate.length} char HTML`);
-                        break; // Use first valid candidate
-                    }
+                // Dedupe html strings and extract images from each
+                const seenHtml = new Set<string>();
+                for (const html of htmlStrings) {
+                    if (seenHtml.has(html)) continue;
+                    seenHtml.add(html);
+                    const extracted = extractImagesFromHtml(html);
+                    extracted.forEach(pushImage);
+                    console.log(`[Scraper] Source 3 (GetItemDescription): ${extracted.length} images from ${html.length} char HTML`);
                 }
 
                 // Also check for structured image arrays in the response
@@ -360,9 +383,7 @@ async function scrape1688(productId: string, originalUrl?: string) {
                 if (Array.isArray(descImages)) {
                     descImages.forEach((img: any) => {
                         const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url;
-                        if (url && typeof url === 'string' && url.length > 10 && !descriptionImages.includes(url)) {
-                            descriptionImages.push(url.startsWith('//') ? 'https:' + url : url);
-                        }
+                        if (url && typeof url === 'string') pushImage(url);
                     });
                     console.log(`[Scraper] Source 3 (GetItemDescription images array): ${descImages.length} items`);
                 }
