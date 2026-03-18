@@ -883,7 +883,9 @@ const generateFallbackName = (originalName: string, collection: string): string 
   for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS).sort(
     ([a], [b]) => b.length - a.length
   )) {
-    if (lowerName.includes(keyword)) {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const keywordRegex = new RegExp(`\\b${escaped}\\b`, 'i');
+    if (keywordRegex.test(lowerName)) {
       productType = cleanName;
       break;
     }
@@ -956,6 +958,12 @@ export const generateProductName = async (
   }
 };
 
+/** Validate that a description contains 3–5 sentences */
+const isValidDescriptionLength = (text: string): boolean => {
+  const sentenceCount = (text.match(/[.!?](\s|$)/g) || []).length;
+  return sentenceCount >= 3 && sentenceCount <= 5;
+};
+
 export const generateProductDescription = async (
   productName: string,
   category: string,
@@ -1015,7 +1023,10 @@ export const generateProductDescription = async (
       }
     });
 
-    return response.text?.trim() || getRandomFallback();
+    const candidate = response.text?.trim() || '';
+    return candidate && isValidDescriptionLength(candidate)
+      ? candidate
+      : getRandomFallback();
   } catch (error) {
     console.error("Gemini Product Description Error:", error);
     console.warn('[AI Fallback] API error - using collection fallback for:', collection);
@@ -1161,7 +1172,10 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
       }
     });
 
-    return response.text?.trim() || getFallback();
+    const candidate = response.text?.trim() || '';
+    return candidate && isValidDescriptionLength(candidate)
+      ? candidate
+      : getFallback();
   } catch (error) {
     console.error("Gemini Product Description V2 Error:", error);
     return getFallback();
@@ -1265,24 +1279,33 @@ export const translateVariantNames = async (variantNames: string[]): Promise<Map
       Example output: ["Color: Red / Size: S", "Color: Blue / Size: M"]
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: `Translate these variant labels:\n${JSON.stringify(chineseNames)}`,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        temperature: 0.1,
-      }
-    });
+    const BATCH_SIZE = 40;
+    for (let i = 0; i < chineseNames.length; i += BATCH_SIZE) {
+      const batch = chineseNames.slice(i, i + BATCH_SIZE);
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents: `Translate these variant labels:\n${JSON.stringify(batch)}`,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+          }
+        });
 
-    const translated = JSON.parse(response.text || '[]');
-    if (Array.isArray(translated) && translated.length === chineseNames.length) {
-      chineseNames.forEach((original, i) => {
-        result.set(original, String(translated[i]) || original);
-      });
-    } else {
-      // Fallback if response shape is wrong
-      chineseNames.forEach(n => { result.set(n, n); });
+        const translated = JSON.parse(response.text || '[]');
+        if (Array.isArray(translated) && translated.length === batch.length) {
+          batch.forEach((original, idx) => {
+            result.set(original, String(translated[idx]) || original);
+          });
+        } else {
+          // Fallback if response shape is wrong for this batch
+          batch.forEach(n => { result.set(n, n); });
+        }
+      } catch (batchError) {
+        console.error('[translateVariantNames] Batch translation error:', batchError);
+        batch.forEach(n => { result.set(n, n); });
+      }
     }
   } catch (error) {
     console.error('[translateVariantNames] Translation error:', error);
