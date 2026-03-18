@@ -1175,20 +1175,19 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     seller: {
                         id: item.VendorId || '',
                         name: item.VendorDisplayName || item.VendorName || 'Unknown',
-                        rating: (item.VendorScore || 0) / 20,
-                        feedbackScore: item.VendorScore || 0,
+                        rating: 0,
+                        feedbackScore: 0,
                     },
                     reviewCount: parseInt(getFeaturedValue('SalesInLast30Days') || '0', 10),
-                    averageRating: rating,
+                    averageRating: 0,
                     productUrl: item.TaobaoItemUrl || item.ExternalItemUrl || importUrl,
                     source: '1688',
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
-                    customPrice: 0,
+                    customPrice: calculateFinalPrice(salePrice || origPrice),
                     // Marketing/description images from GetItemDescription
                     descriptionImages: ('descriptionImages' in result ? (result as any).descriptionImages : []) || [],
                 };
-                importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
                 // Generic source (handles AliExpress, Amazon, and any other URLs)
                 console.log('[URL Import] Processing as generic product:', result.data);
