@@ -157,28 +157,31 @@ async function scrape1688(productId: string, originalUrl?: string) {
     };
 
     try {
-        // Fetch item details AND description in parallel for speed
+        // Fetch item details first (critical path), fire description fetch in parallel (non-blocking)
         const controller1 = new AbortController();
         const timeout1 = setTimeout(() => controller1.abort(), 30000);
-        const controller2 = new AbortController();
-        const timeout2 = setTimeout(() => controller2.abort(), 30000);
 
-        const [itemResponse, descResponse] = await Promise.allSettled([
-            fetch(
+        // Fire description fetch immediately but don't await it yet (shorter timeout since it's optional)
+        const controller2 = new AbortController();
+        const timeout2 = setTimeout(() => controller2.abort(), 15000);
+        const descPromise = fetch(
+            `https://${OTAPI_HOST}/GetItemDescription?language=en&itemId=${otapiId}`,
+            { headers, signal: controller2.signal }
+        ).finally(() => clearTimeout(timeout2)).catch((err: any) => {
+            console.warn(`[Scraper] GetItemDescription fetch failed (non-fatal): ${err.message}`);
+            return null;
+        });
+
+        // Await item fetch (critical path)
+        let response: Response;
+        try {
+            response = await fetch(
                 `https://${OTAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
                 { headers, signal: controller1.signal }
-            ).finally(() => clearTimeout(timeout1)),
-            fetch(
-                `https://${OTAPI_HOST}/GetItemDescription?language=en&itemId=${otapiId}`,
-                { headers, signal: controller2.signal }
-            ).finally(() => clearTimeout(timeout2)),
-        ]);
-
-        // Process item response (required)
-        if (itemResponse.status === 'rejected') {
-            throw new Error(`OTAPI item fetch failed: ${itemResponse.reason?.message || 'unknown'}`);
+            );
+        } finally {
+            clearTimeout(timeout1);
         }
-        const response = itemResponse.value;
 
         if (!response.ok) {
             const errorBody = await response.text().catch(() => '(unreadable)');
@@ -221,11 +224,12 @@ async function scrape1688(productId: string, originalUrl?: string) {
             }
         });
 
-        // Process description response (optional — marketing images)
+        // Now await the description fetch (already running in background)
         const descriptionImages: string[] = [];
-        if (descResponse.status === 'fulfilled' && descResponse.value.ok) {
+        const descResult = await descPromise;
+        if (descResult && descResult.ok) {
             try {
-                const descData = await descResponse.value.json();
+                const descData = await descResult.json();
                 const descHtml =
                     descData?.Result?.Description ||
                     descData?.Result?.Html ||
@@ -254,11 +258,8 @@ async function scrape1688(productId: string, originalUrl?: string) {
             } catch (descErr: any) {
                 console.warn(`[Scraper] Failed to parse description response: ${descErr.message}`);
             }
-        } else {
-            const reason = descResponse.status === 'rejected'
-                ? descResponse.reason?.message
-                : `HTTP ${(descResponse as PromiseFulfilledResult<Response>).value?.status}`;
-            console.warn(`[Scraper] GetItemDescription call failed (non-fatal): ${reason}`);
+        } else if (descResult) {
+            console.warn(`[Scraper] GetItemDescription HTTP ${descResult.status} (non-fatal)`);
         }
 
         return {

@@ -803,7 +803,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             </div>
                                                             <div className="flex justify-between text-xs font-bold text-green-700 border-t border-earth/10 pt-1 mt-1">
                                                                 <span>Profit:</span>
-                                                                <span>${(displayPrice - (currentProduct.salePrice || currentProduct.price)).toFixed(2)}</span>
+                                                                <span>${(displayPrice - (pStack.estimatedCjCost + pStack.estimatedShipping)).toFixed(2)}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -852,7 +852,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         const allIds = currentProduct.variants!.map(v => v.id);
                                                         const currentSelected = currentProduct.selectedVariants;
                                                         // Toggle: select all → undefined (all), deselect all → []
-                                                        const newSelected = currentSelected?.length === allIds.length ? [] : undefined;
+                                                        const allCurrentlySelected =
+                                                            currentSelected === undefined || currentSelected.length === allIds.length;
+                                                        const newSelected = allCurrentlySelected ? [] : undefined;
                                                         updateReviewProduct('selectedVariants', newSelected);
                                                     }}
                                                     className="text-[10px] text-bronze hover:underline font-medium"
@@ -1026,7 +1028,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                             // Restore original variant image
                                                                             const origVariant = currentProduct.originalVariants?.find(ov => ov.id === variant.id);
                                                                             const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                v.id === variant.id ? { ...v, image: (origVariant as any)?.image || undefined } : v
+                                                                                v.id === variant.id ? { ...v, image: origVariant?.image || undefined } : v
                                                                             );
                                                                             updateReviewProduct('variants', updatedVariants);
                                                                             document.getElementById(`img-picker-${variant.id}`)?.classList.add('hidden');
@@ -1185,8 +1187,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: 0,
-                    // Snapshot original variant names for revert functionality
-                    originalVariants: variants.map(v => ({ id: v.id, name: v.name })),
                     // Marketing/description images from GetItemDescription
                     descriptionImages: ('descriptionImages' in result ? (result as any).descriptionImages : []) || [],
                 };
@@ -1239,6 +1239,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 } catch (err) {
                     console.warn('[URL Import] Variant translation failed, keeping originals:', err);
                 }
+            }
+
+            // Snapshot variant state AFTER translation so revert restores translated names + images
+            if (importableProduct.variants && importableProduct.variants.length > 0) {
+                importableProduct.originalVariants = importableProduct.variants.map((v: any) => ({
+                    id: v.id,
+                    name: v.name,
+                    image: v.image,
+                }));
             }
 
             // Auto-AI Enhancement (optional - preserves original data if fails)
