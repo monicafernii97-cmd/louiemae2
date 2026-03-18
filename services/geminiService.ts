@@ -707,20 +707,35 @@ const CATEGORY_FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
 
 
 // Helper to get fallback description - category-aware with collection fallback
+// Ensures the returned description always meets the 3–5 sentence requirement
 const getCategoryFallback = (collection: string, category?: string): string => {
-  // Try category-specific first
+  // Build the candidate pool — prefer category-specific, then collection-level
+  let pool: string[] = [];
   if (category) {
     const categoryDescriptions = CATEGORY_FALLBACK_DESCRIPTIONS[category];
     if (categoryDescriptions && categoryDescriptions.length > 0) {
       console.log('[Fallback] Using category-specific description for:', category);
-      return categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)];
+      pool = categoryDescriptions;
     }
   }
+  if (pool.length === 0) {
+    console.log('[Fallback] Using collection-level description for:', collection);
+    pool = FALLBACK_DESCRIPTIONS[collection] || FALLBACK_DESCRIPTIONS.default;
+  }
 
-  // Fall back to collection-level
-  console.log('[Fallback] Using collection-level description for:', collection);
-  const descriptions = FALLBACK_DESCRIPTIONS[collection] || FALLBACK_DESCRIPTIONS.default;
-  return descriptions[Math.floor(Math.random() * descriptions.length)];
+  // Pick a random entry
+  let result = pool[Math.floor(Math.random() * pool.length)];
+
+  // If the chosen entry is < 3 sentences, concatenate additional entries to reach 3
+  const countSentences = (t: string) => (t.match(/[.!?](\s|$)/g) || []).length;
+  let attempts = 0;
+  while (countSentences(result) < 3 && attempts < 3) {
+    const extra = pool[Math.floor(Math.random() * pool.length)];
+    result = result + ' ' + extra;
+    attempts++;
+  }
+
+  return result;
 };
 
 // Keep the old function name for backward compatibility
@@ -873,11 +888,12 @@ const generateFallbackName = (originalName: string, collection: string): string 
 
   // Try to extract a clean product type from the original name
   const lowerName = originalName.toLowerCase();
-  // Default product type based on collection (not hardcoded 'Chair')
+  // Default product type based on collection — neutral defaults avoid misleading labels
   let productType = collection === 'fashion' ? 'Piece'
-    : collection === 'kids' ? 'Outfit'
+    : collection === 'kids' ? 'Item'
     : collection === 'decor' ? 'Accent'
-    : 'Chair';
+    : collection === 'furniture' ? 'Piece'
+    : 'Item';
 
   // Sort by keyword length descending so specific keys (t-shirt, handbag) match before generic (shirt, bag)
   for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS).sort(
@@ -1296,7 +1312,11 @@ export const translateVariantNames = async (variantNames: string[]): Promise<Map
         const translated = JSON.parse(response.text || '[]');
         if (Array.isArray(translated) && translated.length === batch.length) {
           batch.forEach((original, idx) => {
-            result.set(original, String(translated[idx]) || original);
+            const value = translated[idx];
+            result.set(
+              original,
+              typeof value === 'string' && value.trim() ? value.trim() : original
+            );
           });
         } else {
           // Fallback if response shape is wrong for this batch
