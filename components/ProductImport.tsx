@@ -433,9 +433,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const subcategories = getSubcategoriesForCollection(productCollection);
             const subcategoryTitle = subcategories.find(s => s.id === productSubcategory)?.title || productSubcategory || p.category || 'General';
 
-            // Filter images based on user selection (defaults to all if no selection made)
+            // Filter images based on user selection (defaults to all main images if no selection made)
+            // Use combined array so marketing image indices (globalIdx) resolve correctly
+            const combinedImages = [...p.images, ...(p.descriptionImages || [])];
             const rawImages = p.selectedImages && p.selectedImages.length > 0
-                ? p.selectedImages.map(idx => p.images[idx]).filter(Boolean)
+                ? p.selectedImages.map(idx => combinedImages[idx]).filter(Boolean)
                 : p.images;
             // Normalize protocol-relative URLs (// -> https://)
             const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
@@ -454,10 +456,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 collection: productCollection as CollectionType,
                 isNew: true,
                 inStock: p.inStock,
-                // Filter variants based on user selection (defaults to all if no selection made)
-                variants: p.selectedVariants && p.selectedVariants.length > 0 && p.variants
-                    ? p.variants.filter(v => p.selectedVariants!.includes(v.id))
-                    : p.variants,
+                // Filter variants: undefined = all, [] = none, [...ids] = only those
+                variants: p.selectedVariants === undefined
+                    ? p.variants
+                    : p.variants?.filter(v => p.selectedVariants!.includes(v.id)),
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
                 // Two-stage pricing metadata — use upstream CNY if available (from sourcePriceCny on the product)
@@ -849,7 +851,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     onClick={() => {
                                                         const allIds = currentProduct.variants!.map(v => v.id);
                                                         const currentSelected = currentProduct.selectedVariants;
-                                                        const newSelected = currentSelected?.length === allIds.length ? [] : allIds;
+                                                        // Toggle: select all → undefined (all), deselect all → []
+                                                        const newSelected = currentSelected?.length === allIds.length ? [] : undefined;
                                                         updateReviewProduct('selectedVariants', newSelected);
                                                     }}
                                                     className="text-[10px] text-bronze hover:underline font-medium"
