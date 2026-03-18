@@ -241,15 +241,26 @@ async function scrape1688(productId: string, originalUrl?: string) {
 
                 if (htmlStr) {
                     console.log(`[Scraper] Description HTML: ${htmlStr.length} chars`);
-                    // Extract all <img> src URLs from description HTML
-                    const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+                    // Extract image URLs from description HTML
+                    // 1688 uses lazy-load attrs: data-lazyload-src, data-src, data-original, alongside src
+                    const imgAttrRegex = /<img[^>]+(?:data-lazyload-src|data-src|data-original|src)\s*=\s*["']([^"']+)["']/gi;
                     let match;
-                    while ((match = imgRegex.exec(htmlStr)) !== null) {
+                    while ((match = imgAttrRegex.exec(htmlStr)) !== null) {
                         let imgUrl = match[1];
                         if (!imgUrl || imgUrl.length < 10) continue;
                         // Skip tiny icons, data URIs
                         if (imgUrl.startsWith('data:') || imgUrl.includes('icon') || imgUrl.includes('logo')) continue;
                         // Normalize protocol-relative URLs
+                        if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+                        if (!descriptionImages.includes(imgUrl)) {
+                            descriptionImages.push(imgUrl);
+                        }
+                    }
+                    // Also extract from background-image: url(...) patterns
+                    const bgRegex = /background-image\s*:\s*url\(["']?([^"')]+)["']?\)/gi;
+                    while ((match = bgRegex.exec(htmlStr)) !== null) {
+                        let imgUrl = match[1];
+                        if (!imgUrl || imgUrl.length < 10 || imgUrl.startsWith('data:')) continue;
                         if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
                         if (!descriptionImages.includes(imgUrl)) {
                             descriptionImages.push(imgUrl);
