@@ -929,7 +929,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:ring-2 hover:ring-bronze/30"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        setOpenImagePicker(prev => prev === variant.id ? null : variant.id);
+                                                                        const pickerKey = `${currentProduct.id}:${variant.id}`;
+                                                                        setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
                                                                     }}
                                                                     title="Click to assign image to this variant"
                                                                 >
@@ -1013,7 +1014,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 </div>
                                                             </div>
                                                             {/* Image picker dropdown for variant-image allocation */}
-                                                            {openImagePicker === variant.id && (
+                                                            {openImagePicker === `${currentProduct.id}:${variant.id}` && (
                                                             <div className="border-t border-earth/10 p-2 bg-white/80">
                                                                 <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold mb-1">Assign image to this variant</p>
                                                                 <div className="grid grid-cols-5 gap-1 max-h-24 overflow-y-auto">
