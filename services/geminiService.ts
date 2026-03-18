@@ -1338,7 +1338,7 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
     // Validate: must have opening + at least one "Label · Detail" line
     const lines = candidate.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const hasStructuredDetail = lines.slice(1).some(line =>
-      /^[A-Za-z][A-Za-z ]+\s·\s\S+/.test(line)
+      /^[A-Za-z][A-Za-z ]+\s[·•‧]\s\S+/.test(line)
     );
     return lines.length >= 2 && hasStructuredDetail
       ? candidate
