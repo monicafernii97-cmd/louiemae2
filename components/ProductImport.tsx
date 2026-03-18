@@ -1158,12 +1158,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     images.push(item.MainPictureUrl);
                 }
 
-                // Extract rating from FeaturedValues
+                // Extract featured values (e.g. sales count)
                 const getFeaturedValue = (name: string): string | undefined => {
                     if (!Array.isArray(item.FeaturedValues)) return undefined;
                     return item.FeaturedValues.find((v: any) => v.Name === name)?.Value;
                 };
-                const rating = parseFloat(getFeaturedValue('rating') || '0');
 
                 // Extract variants from ConfiguredItems
                 const variants: any[] = [];
