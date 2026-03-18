@@ -14,6 +14,9 @@ export interface ImportableProduct extends AliExpressProduct {
     isEnhancing?: boolean;
     selectedImages?: number[]; // Indices of selected images for import
     selectedVariants?: string[]; // IDs of selected variants for import
+    originalVariants?: Array<{ id: string; name: string }>; // Snapshot of original variant names for revert
+    variantImageMap?: Record<string, number>; // Maps variant ID → image index for variant-specific images
+    descriptionImages?: string[]; // Marketing/description images from 1688 GetItemDescription
 }
 
 interface ProductCardProps {

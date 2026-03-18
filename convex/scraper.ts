@@ -151,25 +151,34 @@ async function scrape1688(productId: string, originalUrl?: string) {
 
     console.log(`[Scraper] Fetching 1688 product via OTAPI: ${otapiId}`);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const headers = {
+        "X-RapidAPI-Key": rapidApiKey,
+        "x-rapidapi-host": OTAPI_HOST,
+    };
 
     try {
-        let response: Response;
-        try {
-            response = await fetch(
+        // Fetch item details AND description in parallel for speed
+        const controller1 = new AbortController();
+        const timeout1 = setTimeout(() => controller1.abort(), 30000);
+        const controller2 = new AbortController();
+        const timeout2 = setTimeout(() => controller2.abort(), 30000);
+
+        const [itemResponse, descResponse] = await Promise.allSettled([
+            fetch(
                 `https://${OTAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
-                {
-                    headers: {
-                        "X-RapidAPI-Key": rapidApiKey,
-                        "x-rapidapi-host": OTAPI_HOST,
-                    },
-                    signal: controller.signal,
-                }
-            );
-        } finally {
-            clearTimeout(timeoutId);
+                { headers, signal: controller1.signal }
+            ).finally(() => clearTimeout(timeout1)),
+            fetch(
+                `https://${OTAPI_HOST}/GetItemDescription?language=en&itemId=${otapiId}`,
+                { headers, signal: controller2.signal }
+            ).finally(() => clearTimeout(timeout2)),
+        ]);
+
+        // Process item response (required)
+        if (itemResponse.status === 'rejected') {
+            throw new Error(`OTAPI item fetch failed: ${itemResponse.reason?.message || 'unknown'}`);
         }
+        const response = itemResponse.value;
 
         if (!response.ok) {
             const errorBody = await response.text().catch(() => '(unreadable)');
@@ -187,7 +196,6 @@ async function scrape1688(productId: string, originalUrl?: string) {
         }
 
         // Unwrap the Result envelope so the consumer gets the item directly.
-        // OTAPI wraps item data under Result (or Result.Item for single-item requests).
         const item = data.Result?.Item || data.Result || data;
 
         if (!item || typeof item !== 'object') {
@@ -197,9 +205,66 @@ async function scrape1688(productId: string, originalUrl?: string) {
         const title = item.Title || item.OriginalTitle;
         console.log(`[Scraper] Successfully fetched 1688 product: "${title || '(no title)'}"`);
 
+        // Log all image/picture-related keys for discovery
+        const imageKeys = Object.keys(item).filter(k =>
+            /image|picture|photo|desc|external/i.test(k)
+        );
+        console.log(`[Scraper] Item image-related keys: ${JSON.stringify(imageKeys)}`);
+        imageKeys.forEach(k => {
+            const val = item[k];
+            if (Array.isArray(val)) {
+                console.log(`[Scraper]   ${k}: Array[${val.length}]`);
+            } else if (typeof val === 'string') {
+                console.log(`[Scraper]   ${k}: string (${val.length} chars)`);
+            } else {
+                console.log(`[Scraper]   ${k}: ${typeof val}`);
+            }
+        });
+
+        // Process description response (optional — marketing images)
+        const descriptionImages: string[] = [];
+        if (descResponse.status === 'fulfilled' && descResponse.value.ok) {
+            try {
+                const descData = await descResponse.value.json();
+                const descHtml =
+                    descData?.Result?.Description ||
+                    descData?.Result?.Html ||
+                    descData?.Result ||
+                    '';
+                const htmlStr = typeof descHtml === 'string' ? descHtml : '';
+
+                if (htmlStr) {
+                    console.log(`[Scraper] Description HTML: ${htmlStr.length} chars`);
+                    // Extract all <img> src URLs from description HTML
+                    const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+                    let match;
+                    while ((match = imgRegex.exec(htmlStr)) !== null) {
+                        let imgUrl = match[1];
+                        if (!imgUrl || imgUrl.length < 10) continue;
+                        // Skip tiny icons, data URIs
+                        if (imgUrl.startsWith('data:') || imgUrl.includes('icon') || imgUrl.includes('logo')) continue;
+                        // Normalize protocol-relative URLs
+                        if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+                        if (!descriptionImages.includes(imgUrl)) {
+                            descriptionImages.push(imgUrl);
+                        }
+                    }
+                    console.log(`[Scraper] Extracted ${descriptionImages.length} description/marketing images`);
+                }
+            } catch (descErr: any) {
+                console.warn(`[Scraper] Failed to parse description response: ${descErr.message}`);
+            }
+        } else {
+            const reason = descResponse.status === 'rejected'
+                ? descResponse.reason?.message
+                : `HTTP ${(descResponse as PromiseFulfilledResult<Response>).value?.status}`;
+            console.warn(`[Scraper] GetItemDescription call failed (non-fatal): ${reason}`);
+        }
+
         return {
             source: '1688' as const,
             data: item,
+            descriptionImages,
             apiType: 'otapi-1688',
         };
 
@@ -210,6 +275,7 @@ async function scrape1688(productId: string, originalUrl?: string) {
         throw new Error(`OTAPI 1688 API failed: ${e.message}`);
     }
 }
+
 
 /**
  * Generic HTML scraper with manual redirect handling and SSRF validation per hop.
