@@ -237,6 +237,7 @@ export const updateProductSourcingStatus = internalMutation({
         cjVariantId: v.optional(v.string()),
         cjSku: v.optional(v.string()),
         error: v.optional(v.string()),
+        confirmedCjCost: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
         // Idempotency check: if product is already in the desired status, skip update
@@ -246,8 +247,17 @@ export const updateProductSourcingStatus = internalMutation({
             return;
         }
 
-        // Skip if already approved (prevents duplicate webhook processing)
-        if (args.status === "approved" && product.cjSourcingStatus === "approved") {
+        // Skip if already approved AND no new data to update (prevents duplicate webhook processing)
+        // But allow through if confirmedCjCost or other payload arrives for an already-approved product
+        const hasUpdatePayload =
+            (args.confirmedCjCost ?? 0) > 0 ||
+            !!args.sourcingId ||
+            !!args.cjProductId ||
+            !!args.cjVariantId ||
+            !!args.cjSku ||
+            !!args.error;
+
+        if (args.status === "approved" && product.cjSourcingStatus === "approved" && !hasUpdatePayload) {
             console.log(`updateProductSourcingStatus: Product ${args.productId} already approved, skipping`);
             return;
         }
@@ -273,6 +283,17 @@ export const updateProductSourcingStatus = internalMutation({
         }
         if (args.status === "approved") {
             updateData.cjApprovedAt = new Date().toISOString();
+        }
+
+        // Stage 2 pricing: recalculate selling price from confirmed CJ cost
+        if (args.confirmedCjCost && args.confirmedCjCost > 0) {
+            updateData.confirmedCjCost = args.confirmedCjCost;
+            updateData.pricingStage = "confirmed";
+            // selling_price = (confirmed_cj_cost + estimated_shipping) × 3
+            const shipping = product.estimatedShipping ?? 10;
+            const confirmedSellingPrice = (args.confirmedCjCost + shipping) * 3;
+            updateData.price = Math.round(confirmedSellingPrice * 100) / 100;
+            console.log(`Stage 2 pricing for ${product.name}: CJ cost $${args.confirmedCjCost} + shipping $${shipping} → selling $${updateData.price}`);
         }
 
         await ctx.db.patch(args.productId, updateData);

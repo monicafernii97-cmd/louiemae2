@@ -3,7 +3,7 @@ import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plu
 import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
-import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext } from '../services/geminiService';
+import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames } from '../services/geminiService';
 import { FadeIn } from './FadeIn';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
 import { useQuery, useMutation, useAction } from 'convex/react';
@@ -62,7 +62,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Filters
     const [minPrice, setMinPrice] = useState<string>('');
     const [maxPrice, setMaxPrice] = useState<string>('');
-    const [minRating, setMinRating] = useState<number>(4.0);
+
     const [sortBy, setSortBy] = useState<'default' | 'price_asc' | 'price_desc' | 'orders'>('default');
 
     // Import settings
@@ -137,21 +137,41 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Selection state
     const [selectAll, setSelectAll] = useState(false);
 
-    // Calculate marked-up price
-    const calculateFinalPrice = (basePrice: number): number => {
-        let finalPrice: number;
-        if (pricingRule.type === 'percentage') {
-            finalPrice = basePrice * (1 + pricingRule.value / 100);
-        } else {
-            finalPrice = basePrice + pricingRule.value;
+    // Two-stage pricing: cost-stack formula
+    // Stage 1 (Pre-Sourcing): estimated_cj = 1688_price × 1.6, selling = (cj + shipping) × 3
+    const getShippingEstimate = (collection: string): number => {
+        switch (collection) {
+            case 'fashion': return 8;
+            case 'kids': return 8;
+            case 'decor': return 12;
+            case 'furniture': return 22;
+            default: return 10;
         }
+    };
+
+    const calculateCostStackPrice = (basePriceUsd: number, collection: string): {
+        estimatedCjCost: number;
+        estimatedShipping: number;
+        sellingPrice: number;
+    } => {
+        const estimatedCjCost = basePriceUsd * 1.6;
+        const estimatedShipping = getShippingEstimate(collection);
+        let sellingPrice = (estimatedCjCost + estimatedShipping) * 3;
 
         if (pricingRule.roundUp) {
-            // Round to nearest .99
-            finalPrice = Math.ceil(finalPrice) - 0.01;
+            sellingPrice = Math.ceil(sellingPrice) - 0.01;
         }
 
-        return Math.max(finalPrice, 0);
+        return {
+            estimatedCjCost: Math.round(estimatedCjCost * 100) / 100,
+            estimatedShipping,
+            sellingPrice: Math.max(sellingPrice, 0),
+        };
+    };
+
+    // Legacy wrapper for search results display
+    const calculateFinalPrice = (basePrice: number): number => {
+        return calculateCostStackPrice(basePrice, targetCollection).sellingPrice;
     };
 
     // Search handler
@@ -180,7 +200,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             }
 
             const filteredProducts = result.products
-                .filter(p => minRating === 0 || (p.averageRating || 0) >= minRating)
                 .map(p => ({
                     ...p,
                     selected: false,
@@ -415,21 +434,33 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             // Normalize protocol-relative URLs (// -> https://)
             const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
 
+            // Detect if collection was changed from the default — clear stale dependent state
+            const collectionChanged = p.targetCollection && p.targetCollection !== targetCollection;
+
             return {
-                name: p.customName || p.name,
-                price: p.customPrice || calculateFinalPrice(p.salePrice || p.price),
-                description: p.customDescription || p.description || '',
+                name: collectionChanged ? p.name : (p.customName || p.name),
+                price: collectionChanged
+                    ? calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice
+                    : (p.customPrice || calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice),
+                description: collectionChanged ? (p.description || '') : (p.customDescription || p.description || ''),
                 images: finalImages,
-                category: subcategoryTitle,
+                category: collectionChanged ? (subcategories[0]?.title || 'General') : subcategoryTitle,
                 collection: productCollection as CollectionType,
                 isNew: true,
                 inStock: p.inStock,
                 // Filter variants based on user selection (defaults to all if no selection made)
-                variants: p.selectedVariants && p.selectedVariants.length >= 0 && p.variants
+                variants: p.selectedVariants && p.selectedVariants.length > 0 && p.variants
                     ? p.variants.filter(v => p.selectedVariants!.includes(v.id))
                     : p.variants,
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
+                // Two-stage pricing metadata — use upstream CNY if available (from sourcePriceCny on the product)
+                sourcePriceCny: (p as any).sourcePriceCny || undefined,
+                estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
+                estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
+                pricingStage: 'estimated' as const,
+                // Subcategory — clear if collection changed
+                subcategory: collectionChanged ? undefined : (productSubcategory || undefined),
             };
         });
 
@@ -781,7 +812,19 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 )}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="truncate font-medium text-earth text-xs">{variant.name}</div>
+                                                                <input
+                                                                    type="text"
+                                                                    value={variant.name}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    onChange={(e) => {
+                                                                        const updatedVariants = currentProduct.variants!.map(v =>
+                                                                            v.id === variant.id ? { ...v, name: e.target.value } : v
+                                                                        );
+                                                                        updateReviewProduct('variants', updatedVariants);
+                                                                    }}
+                                                                    className="w-full bg-transparent font-medium text-earth text-xs border-b border-transparent hover:border-earth/20 focus:border-bronze focus:outline-none truncate px-0 py-0.5 transition-colors"
+                                                                    title="Click to edit variant name"
+                                                                />
                                                                 <div className="flex items-center gap-2 text-[10px]">
                                                                     <span className={variant.inStock ? 'text-green-600' : 'text-red-500'}>
                                                                         {variant.inStock ? '● In Stock' : '○ Out of Stock'}
@@ -853,17 +896,36 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 const getUsdPrice = (priceObj: any): number => {
                     return priceObj?.ConvertedPriceList?.Internal?.Price || priceObj?.OriginalPrice || 0;
                 };
+                // Extract raw CNY price (upstream, not reverse-converted)
+                const getCnyPrice = (priceObj: any): number => {
+                    return priceObj?.OriginalPrice || priceObj?.ConvertedPriceList?.Original?.Price || 0;
+                };
                 const promoPrice = getUsdPrice(item.PromotionPrice);
                 const regularPrice = getUsdPrice(item.Price);
                 const salePrice = promoPrice > 0 ? promoPrice : regularPrice;
                 const origPrice = regularPrice > promoPrice && promoPrice > 0 ? regularPrice : salePrice;
+                const rawCnyPrice = getCnyPrice(item.PromotionPrice) || getCnyPrice(item.Price);
 
                 // Extract images from Pictures array
                 const images: string[] = [];
                 if (Array.isArray(item.Pictures)) {
                     item.Pictures.forEach((pic: any) => {
-                        const url = pic.Large?.Url || pic.Medium?.Url || pic.Url;
-                        if (url) images.push(url);
+                        const url = pic?.Large?.Url || pic?.Medium?.Url || pic?.Url;
+                        if (url && typeof url === 'string') images.push(url);
+                    });
+                }
+                // Also extract variant/property images (PropertyPictures)
+                if (Array.isArray(item.PropertyPictures)) {
+                    item.PropertyPictures.forEach((pic: any) => {
+                        const url = pic?.Large?.Url || pic?.Medium?.Url || pic?.Url || pic?.Original?.Url;
+                        if (url && typeof url === 'string' && !images.includes(url)) images.push(url);
+                    });
+                }
+                // Also extract from ItemImages if present
+                if (Array.isArray(item.ItemImages)) {
+                    item.ItemImages.forEach((img: any) => {
+                        const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url;
+                        if (url && typeof url === 'string' && !images.includes(url)) images.push(url);
                     });
                 }
                 if (images.length === 0 && item.MainPictureUrl) {
@@ -882,13 +944,19 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
                     item.ConfiguredItems.forEach((cfg: any, idx: number) => {
                         const cfgPrice = getUsdPrice(cfg.Price);
-                        const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Url;
+                        const cfgImage = cfg.Pictures?.[0]?.Large?.Url || cfg.Pictures?.[0]?.Medium?.Url || cfg.Pictures?.[0]?.Url;
+                        // Build variant name from Configurators with Pid/Vid fallback
+                        const configuratorLabel = Array.isArray(cfg.Configurators)
+                            ? cfg.Configurators
+                                .map((c: any) => `${c?.PropertyName ?? c?.Pid ?? '?'}: ${c?.Value ?? c?.Vid ?? '?'}`)
+                                .join(' / ')
+                            : '';
                         variants.push({
                             id: cfg.Id || `cfg_${idx}`,
-                            name: cfg.Title || cfg.Configurators?.map((c: any) => `${c.PropertyName}: ${c.Value}`).join(' / ') || `Option ${idx + 1}`,
+                            name: cfg.Title || configuratorLabel || `Option ${idx + 1}`,
                             image: cfgImage || undefined,
                             priceAdjustment: cfgPrice ? cfgPrice - salePrice : 0,
-                            inStock: (cfg.MasterQuantity || 0) > 0,
+                            inStock: (cfg.Quantity ?? cfg.MasterQuantity ?? 0) > 0,
                         });
                     });
                 }
@@ -900,6 +968,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     description: item.Description || 'Imported from 1688.com',
                     images: images,
                     category: '',
+                    sourcePriceCny: rawCnyPrice || undefined,
                     collection: targetCollection as CollectionType,
                     variants: variants,
                     sourceId: String(productId),
@@ -954,7 +1023,22 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 };
             }
 
-            console.log('[URL Import] Created importable product:', importableProduct.name, 'images:', importableProduct.images?.length);
+            console.log('[URL Import] Created importable product:', importableProduct.name, 'images:', importableProduct.images?.length, 'variants:', importableProduct.variants?.length);
+
+            // Auto-translate Chinese variant names to English
+            if (importableProduct.variants && importableProduct.variants.length > 0) {
+                try {
+                    const variantNames = importableProduct.variants.map((v: any) => v.name);
+                    const translations = await translateVariantNames(variantNames);
+                    importableProduct.variants = importableProduct.variants.map((v: any) => ({
+                        ...v,
+                        name: translations.get(v.name) || v.name,
+                    }));
+                    console.log('[URL Import] Translated variant names');
+                } catch (err) {
+                    console.warn('[URL Import] Variant translation failed, keeping originals:', err);
+                }
+            }
 
             // Auto-AI Enhancement (optional - preserves original data if fails)
             if (autoEnhanceAi) {
@@ -1206,19 +1290,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 />
                             </div>
 
-                            {/* Rating */}
-                            <div className="relative group/rating">
-                                <select
-                                    value={minRating}
-                                    onChange={(e) => setMinRating(parseFloat(e.target.value))}
-                                    className="appearance-none pl-4 pr-10 py-3 bg-white hover:bg-cream rounded-full border border-earth/10 hover:border-bronze/50 text-xs font-medium text-earth cursor-pointer focus:outline-none transition-all shadow-sm"
-                                >
-                                    <option value={0}>Any Rating</option>
-                                    <option value={4.0}>4.0+ Stars</option>
-                                    <option value={4.5}>4.5+ Stars</option>
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 text-earth/50 pointer-events-none group-hover/rating:text-bronze transition-colors" />
-                            </div>
 
                             {/* Sort */}
                             <div className="relative group/sort">

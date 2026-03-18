@@ -341,14 +341,38 @@ const PRODUCT_TYPE_MAPPINGS: Record<string, string> = {
   'dress': 'Dress',
   'top': 'Top',
   'blouse': 'Blouse',
+  'shirt': 'Shirt',
+  'tee': 'Tee',
+  't-shirt': 'Tee',
   'skirt': 'Skirt',
   'pants': 'Trousers',
+  'jeans': 'Jeans',
+  'denim': 'Jeans',
+  'shorts': 'Shorts',
   'romper': 'Romper',
   'jumpsuit': 'Jumpsuit',
+  'bodysuit': 'Bodysuit',
+  'onesie': 'Onesie',
   'cardigan': 'Cardigan',
   'sweater': 'Sweater',
+  'hoodie': 'Hoodie',
   'jacket': 'Jacket',
   'coat': 'Coat',
+  'blazer': 'Blazer',
+  'vest': 'Vest',
+  'scarf': 'Scarf',
+  'hat': 'Hat',
+  'bag': 'Bag',
+  'purse': 'Handbag',
+  'handbag': 'Handbag',
+  'shoe': 'Shoes',
+  'sneaker': 'Sneakers',
+  'sandal': 'Sandals',
+  'boot': 'Boots',
+  'jogger': 'Joggers',
+  'legging': 'Leggings',
+  'bikini': 'Swimwear',
+  'swimsuit': 'Swimwear',
 };
 
 // Collection-specific fallback descriptions - used when API key missing or fails
@@ -683,20 +707,63 @@ const CATEGORY_FALLBACK_DESCRIPTIONS: Record<string, string[]> = {
 
 
 // Helper to get fallback description - category-aware with collection fallback
+// Ensures the returned description always meets the 3–5 sentence requirement
 const getCategoryFallback = (collection: string, category?: string): string => {
-  // Try category-specific first
+  // Build the candidate pool — prefer category-specific, then collection-level
+  let pool: string[] = [];
   if (category) {
     const categoryDescriptions = CATEGORY_FALLBACK_DESCRIPTIONS[category];
     if (categoryDescriptions && categoryDescriptions.length > 0) {
       console.log('[Fallback] Using category-specific description for:', category);
-      return categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)];
+      pool = categoryDescriptions;
     }
   }
+  if (pool.length === 0) {
+    console.log('[Fallback] Using collection-level description for:', collection);
+    pool = FALLBACK_DESCRIPTIONS[collection] || FALLBACK_DESCRIPTIONS.default;
+  }
 
-  // Fall back to collection-level
-  console.log('[Fallback] Using collection-level description for:', collection);
-  const descriptions = FALLBACK_DESCRIPTIONS[collection] || FALLBACK_DESCRIPTIONS.default;
-  return descriptions[Math.floor(Math.random() * descriptions.length)];
+  // Pick a random entry
+  let result = pool[Math.floor(Math.random() * pool.length)];
+
+  // If the chosen entry is < 3 sentences, pad with collection-safe generic closers
+  // (never append another full template — that can contradict material/style claims)
+  const GENERIC_CLOSERS: Record<string, string[]> = {
+    kids: [
+      'Gentle enough for everyday wear.',
+      'Easy to care for and built to last.',
+      'A thoughtful addition to any little wardrobe.',
+    ],
+    fashion: [
+      'A versatile addition to any wardrobe.',
+      'Pairs beautifully with your favorite accessories.',
+      'Designed to transition effortlessly from day to evening.',
+    ],
+    furniture: [
+      'A timeless addition to any curated space.',
+      'Built with care to last for years.',
+      'Complements a wide range of interior styles.',
+    ],
+    decor: [
+      'A finishing touch for thoughtfully designed spaces.',
+      'Adds warmth and character to any room.',
+      'Crafted with an eye for lasting beauty.',
+    ],
+    default: [
+      'A thoughtful choice for intentional living.',
+      'Designed with quality and longevity in mind.',
+      'A beautiful addition to any collection.',
+    ],
+  };
+  const countSentences = (t: string) => (t.match(/[.!?](\s|$)/g) || []).length;
+  const closers = GENERIC_CLOSERS[collection] || GENERIC_CLOSERS.default;
+  let closerIdx = 0;
+  while (countSentences(result) < 3 && closerIdx < closers.length) {
+    result = result + ' ' + closers[closerIdx];
+    closerIdx++;
+  }
+
+  return result;
 };
 
 // Keep the old function name for backward compatibility
@@ -849,11 +916,21 @@ const generateFallbackName = (originalName: string, collection: string): string 
 
   // Try to extract a clean product type from the original name
   const lowerName = originalName.toLowerCase();
-  let productType = 'Chair';
+  // Default product type based on collection — neutral defaults avoid misleading labels
+  let productType = collection === 'fashion' ? 'Piece'
+    : collection === 'kids' ? 'Item'
+    : collection === 'decor' ? 'Accent'
+    : collection === 'furniture' ? 'Piece'
+    : 'Item';
 
-  // Find matching product type from our mappings
-  for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS)) {
-    if (lowerName.includes(keyword)) {
+  // Sort by keyword length descending so specific keys (t-shirt, handbag) match before generic (shirt, bag)
+  // Allow optional trailing 's' so plurals like "chairs", "dresses", "boots" match singular keywords
+  for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS).sort(
+    ([a], [b]) => b.length - a.length
+  )) {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const keywordRegex = new RegExp(`\\b${escaped}(?:e?s)?\\b`, 'i');
+    if (keywordRegex.test(lowerName)) {
       productType = cleanName;
       break;
     }
@@ -926,13 +1003,19 @@ export const generateProductName = async (
   }
 };
 
+/** Validate that a description contains 3–5 sentences */
+const isValidDescriptionLength = (text: string): boolean => {
+  const sentenceCount = (text.match(/[.!?](\s|$)/g) || []).length;
+  return sentenceCount >= 3 && sentenceCount <= 5;
+};
+
 export const generateProductDescription = async (
   productName: string,
   category: string,
   collection: string
 ): Promise<string> => {
   // Collection-aware fallback
-  const getRandomFallback = () => getCollectionFallback(collection);
+  const getRandomFallback = () => getCategoryFallback(collection, category);
 
   if (!apiKey) {
     console.warn('[AI Fallback] No API key configured - using collection fallback for:', collection);
@@ -944,47 +1027,51 @@ export const generateProductDescription = async (
     const ai = getAI();
     if (!ai) return getRandomFallback();
 
+    // Use collection-specific prompts instead of hardcoded furniture
+    const prompts = COLLECTION_PROMPTS[collection] || COLLECTION_PROMPTS.furniture;
+
     const systemInstruction = `
-      You are the copywriter for "Louie Mae", a sophisticated, Nordic-inspired luxury home brand.
+      You are the copywriter for "Louie Mae", a sophisticated lifestyle brand selling furniture, home decor, fashion, and kids items.
       
-      HIGH-END MATERIALS TO MENTION (pick 1-2):
-      - Solid oak, walnut, ash, beechwood, teak
-      - Natural rattan, handwoven fibers
-      - Premium linen, organic cotton, bouclé
-      - Sustainable hardwood, FSC-certified wood
+      COLLECTION: ${collection}
+      CATEGORY: ${category || 'general'}
       
-      SOPHISTICATED VOCABULARY:
-      - Nordic, Scandinavian, minimalist, curated, intentional
-      - Artisan-crafted, hand-finished, sustainably sourced
-      - Timeless, refined, grounding, serene, effortless
+      ${prompts.materials}
+      ${prompts.vocabulary}
       
       STRICT RULES:
-      1. Exactly 1-2 sentences (25-40 words)
-      2. MUST mention a specific high-end material (oak, walnut, linen, etc.)
-      3. MUST include one sophisticated descriptor (Nordic, minimalist, artisan)
-      4. Focus on craftsmanship and the feeling it creates
-      5. NO generic phrases: "high quality", "beautiful design", "perfect for"
-      6. Each description should feel UNIQUE - vary sentence structure and word choice
+      1. Write 3-5 sentences arranged as a mini product listing:
+         - Line 1: Opening hook — fabric/material + silhouette/form (1 sentence)
+         - Line 2-3: Key features — "Great for [occasion]", fit details, notable design elements
+         - Line 4: Practical detail — care/sizing hint OR dimension note for furniture
+      2. MUST be relevant to the actual product ("${productName}")
+      3. If it's clothing: focus on fabric, fit, style, occasions
+      4. If it's furniture: focus on materials, dimensions feel, craftsmanship
+      5. If it's kids: focus on softness, safety, easy-care, sweetness
+      6. NO generic phrases: "high quality", "beautiful design"
+      7. Each description should feel UNIQUE
       
-      VARIETY EXAMPLES:
-      - "Solid walnut with hand-rubbed finish. Nordic restraint meets lasting craftsmanship."
-      - "Artisan-woven rattan on a sustainably sourced ash frame. A grounding presence for curated spaces."
-      - "Premium bouclé over solid oak construction. Scandinavian elegance, effortlessly refined."
-      - "Hand-finished beechwood with organic curves. Minimalist form that speaks to intentional living."
+      GOOD EXAMPLES:
+      - Fashion: "Flowing linen blend with a relaxed silhouette that moves with you. Perfect for weekend brunches or effortless weekday style. Features a flattering waist detail and side pockets. Available in sizes XS-XL."
+      - Furniture: "Solid oak frame with hand-rubbed walnut finish. Nordic-inspired lines bring a grounding presence to any room. Seat height 18in, perfect for dining. Sustainably sourced hardwood built to last."
+      - Kids: "Buttery-soft organic cotton with snap closures for easy changes. Sweet floral print perfect for spring outings. Gentle on sensitive skin with OEKO-TEX certified fabric. Machine washable for busy parents."
       
-      Return ONLY the description, no quotes.
+      Return ONLY the description, no quotes or labels.
     `;
 
     const response = await ai.models.generateContent({
       model,
-      contents: `"${productName}" | ${category} | ${collection} collection. Write unique, sophisticated description.`,
+      contents: `Write a product description for "${productName}" in the ${collection} collection, category: ${category || 'general'}.`,
       config: {
         systemInstruction,
-        temperature: 0.85, // Higher for more variety
+        temperature: 0.85,
       }
     });
 
-    return response.text?.trim() || getRandomFallback();
+    const candidate = response.text?.trim() || '';
+    return candidate && isValidDescriptionLength(candidate)
+      ? candidate
+      : getRandomFallback();
   } catch (error) {
     console.error("Gemini Product Description Error:", error);
     console.warn('[AI Fallback] API error - using collection fallback for:', collection);
@@ -1105,13 +1192,16 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
       ${prompts.vocabulary}
       
       STRICT RULES:
-      1. Exactly 1-2 sentences (25-40 words)
+      1. Write 3-5 sentences arranged as a mini product listing:
+         - Line 1: Opening hook — fabric/material + silhouette/form (1 sentence)
+         - Line 2-3: Key features — "Great for [occasion]", fit details, notable design elements
+         - Line 4: Practical detail — care/sizing hint OR dimension note for furniture
       2. MUST be relevant to the actual product type (${productType})
       3. If it's clothing: focus on fabric, fit, comfort, style
       4. If it's baby/kids: focus on softness, comfort, easy-care, sweetness
       5. If it's furniture: focus on materials, craftsmanship, presence
       6. Use keywords found in the product data when applicable
-      7. NO generic phrases: "high quality", "beautiful design", "perfect for"
+      7. NO generic phrases: "high quality", "beautiful design"
       
       ${prompts.examples}
       
@@ -1127,7 +1217,10 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
       }
     });
 
-    return response.text?.trim() || getFallback();
+    const candidate = response.text?.trim() || '';
+    return candidate && isValidDescriptionLength(candidate)
+      ? candidate
+      : getFallback();
   } catch (error) {
     console.error("Gemini Product Description V2 Error:", error);
     return getFallback();
@@ -1173,6 +1266,102 @@ const detectProductType = (context: ProductContext): string => {
   if (context.collection === 'fashion') return 'fashion item';
   if (context.collection === 'furniture') return 'furniture piece';
   return 'home item';
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VARIANT NAME TRANSLATION (Chinese → English)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Detect if a string contains Chinese characters
+ */
+const containsChinese = (text: string): boolean => /[\u4e00-\u9fff]/.test(text);
+
+/**
+ * Batch-translate variant names from Chinese to English using Gemini.
+ * Returns a map of original → translated names.
+ * Falls back to originals if API unavailable or no Chinese detected.
+ */
+export const translateVariantNames = async (variantNames: string[]): Promise<Map<string, string>> => {
+  const result = new Map<string, string>();
+
+  // Filter to only names that actually contain Chinese
+  const chineseNames = variantNames.filter(containsChinese);
+  
+  // If none contain Chinese, return as-is
+  if (chineseNames.length === 0) {
+    variantNames.forEach(n => { result.set(n, n); });
+    return result;
+  }
+
+  // Set non-Chinese names to themselves
+  variantNames.filter(n => !containsChinese(n)).forEach(n => { result.set(n, n); });
+
+  if (!apiKey) {
+    // No API key — return originals
+    chineseNames.forEach(n => { result.set(n, n); });
+    return result;
+  }
+
+  try {
+    const ai = getAI();
+    if (!ai) {
+      chineseNames.forEach(n => { result.set(n, n); });
+      return result;
+    }
+
+    const systemInstruction = `
+      You are a product variant label translator. Translate Chinese product variant labels to English.
+      
+      RULES:
+      1. Translate ONLY the Chinese text, keep numbers and symbols as-is
+      2. Common translations: 颜色=Color, 尺码/尺寸=Size, 款式=Style, 材质=Material
+      3. Return a JSON array of translated strings in the SAME ORDER as input
+      4. Keep the "PropertyName: Value" format (e.g., "Color: Red / Size: S")
+      5. If a value is already in English or is a number, keep it unchanged
+      
+      Example input: ["颜色: 红色 / 尺码: S", "颜色: 蓝色 / 尺码: M"]
+      Example output: ["Color: Red / Size: S", "Color: Blue / Size: M"]
+    `;
+
+    const BATCH_SIZE = 40;
+    for (let i = 0; i < chineseNames.length; i += BATCH_SIZE) {
+      const batch = chineseNames.slice(i, i + BATCH_SIZE);
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents: `Translate these variant labels:\n${JSON.stringify(batch)}`,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+          }
+        });
+
+        const translated = JSON.parse(response.text || '[]');
+        if (Array.isArray(translated) && translated.length === batch.length) {
+          batch.forEach((original, idx) => {
+            const value = translated[idx];
+            result.set(
+              original,
+              typeof value === 'string' && value.trim() ? value.trim() : original
+            );
+          });
+        } else {
+          // Fallback if response shape is wrong for this batch
+          batch.forEach(n => { result.set(n, n); });
+        }
+      } catch (batchError) {
+        console.error('[translateVariantNames] Batch translation error:', batchError);
+        batch.forEach(n => { result.set(n, n); });
+      }
+    }
+  } catch (error) {
+    console.error('[translateVariantNames] Translation error:', error);
+    chineseNames.forEach(n => { result.set(n, n); });
+  }
+
+  return result;
 };
 
 // --- Newsletter AI Functions ---

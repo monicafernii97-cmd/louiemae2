@@ -52,6 +52,17 @@ export default defineSchema({
             price: v.optional(v.number()),         // CJ price
             image: v.optional(v.string()),         // CJ variant image
         }))),
+        // Two-stage pricing fields
+        sourcePriceCny: v.optional(v.number()),      // Original 1688 factory price (CNY)
+        estimatedCjCost: v.optional(v.number()),     // Estimated CJ cost (1688 × 1.6, in USD)
+        estimatedShipping: v.optional(v.number()),   // Estimated shipping (category-based)
+        confirmedCjCost: v.optional(v.number()),     // Actual CJ cost after sourcing approval
+        pricingStage: v.optional(v.union(
+            v.literal("estimated"),    // Pre-sourcing price based on 1688 + formula
+            v.literal("confirmed")     // Post-sourcing price with real CJ cost
+        )),
+        // Multi-category support
+        subcategory: v.optional(v.string()),         // e.g., "Skirts" (parent category auto-derived)
     }).index("by_cj_sourcing_status", ["cjSourcingStatus"]),
 
     // Blog posts table
