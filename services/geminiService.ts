@@ -726,13 +726,41 @@ const getCategoryFallback = (collection: string, category?: string): string => {
   // Pick a random entry
   let result = pool[Math.floor(Math.random() * pool.length)];
 
-  // If the chosen entry is < 3 sentences, concatenate additional entries to reach 3
+  // If the chosen entry is < 3 sentences, pad with collection-safe generic closers
+  // (never append another full template — that can contradict material/style claims)
+  const GENERIC_CLOSERS: Record<string, string[]> = {
+    kids: [
+      'Gentle enough for everyday wear.',
+      'Easy to care for and built to last.',
+      'A thoughtful addition to any little wardrobe.',
+    ],
+    fashion: [
+      'A versatile addition to any wardrobe.',
+      'Pairs beautifully with your favorite accessories.',
+      'Designed to transition effortlessly from day to evening.',
+    ],
+    furniture: [
+      'A timeless addition to any curated space.',
+      'Built with care to last for years.',
+      'Complements a wide range of interior styles.',
+    ],
+    decor: [
+      'A finishing touch for thoughtfully designed spaces.',
+      'Adds warmth and character to any room.',
+      'Crafted with an eye for lasting beauty.',
+    ],
+    default: [
+      'A thoughtful choice for intentional living.',
+      'Designed with quality and longevity in mind.',
+      'A beautiful addition to any collection.',
+    ],
+  };
   const countSentences = (t: string) => (t.match(/[.!?](\s|$)/g) || []).length;
-  let attempts = 0;
-  while (countSentences(result) < 3 && attempts < 3) {
-    const extra = pool[Math.floor(Math.random() * pool.length)];
-    result = result + ' ' + extra;
-    attempts++;
+  const closers = GENERIC_CLOSERS[collection] || GENERIC_CLOSERS.default;
+  let closerIdx = 0;
+  while (countSentences(result) < 3 && closerIdx < closers.length) {
+    result = result + ' ' + closers[closerIdx];
+    closerIdx++;
   }
 
   return result;
@@ -896,11 +924,12 @@ const generateFallbackName = (originalName: string, collection: string): string 
     : 'Item';
 
   // Sort by keyword length descending so specific keys (t-shirt, handbag) match before generic (shirt, bag)
+  // Allow optional trailing 's' so plurals like "chairs", "dresses", "boots" match singular keywords
   for (const [keyword, cleanName] of Object.entries(PRODUCT_TYPE_MAPPINGS).sort(
     ([a], [b]) => b.length - a.length
   )) {
     const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const keywordRegex = new RegExp(`\\b${escaped}\\b`, 'i');
+    const keywordRegex = new RegExp(`\\b${escaped}(?:e?s)?\\b`, 'i');
     if (keywordRegex.test(lowerName)) {
       productType = cleanName;
       break;
