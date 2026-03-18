@@ -104,13 +104,30 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 // Add the uploaded image to the current review product
                 const currentProduct = searchResults.filter(p => p.selected)[reviewIndex];
                 if (currentProduct) {
+                    const prevMainCount = currentProduct.images.length;
                     const newImages = [...currentProduct.images, result.url];
                     updateProductField(currentProduct.id, 'images', newImages);
-                    // Auto-select the new image
-                    const newSelectedImages = currentProduct.selectedImages
-                        ? [...currentProduct.selectedImages, newImages.length - 1]
-                        : newImages.map((_, idx) => idx);
+
+                    // Rebase indices: new main image shifts description-image offsets by 1
+                    const rebaseIdx = (idx: number) => (idx >= prevMainCount ? idx + 1 : idx);
+
+                    const baselineSelected =
+                        currentProduct.selectedImages ?? Array.from({ length: prevMainCount }, (_, i) => i);
+                    const rebasedSelected = baselineSelected.map(rebaseIdx);
+                    // Include the newly uploaded image as selected
+                    const newSelectedImages = [...new Set([...rebasedSelected, prevMainCount])].sort((a, b) => a - b);
                     updateProductField(currentProduct.id, 'selectedImages', newSelectedImages);
+
+                    // Rebase variant-image map
+                    if (currentProduct.variantImageMap) {
+                        const rebasedMap = Object.fromEntries(
+                            Object.entries(currentProduct.variantImageMap).map(([variantId, idx]) => [
+                                variantId,
+                                rebaseIdx(idx as number),
+                            ])
+                        );
+                        updateProductField(currentProduct.id, 'variantImageMap', rebasedMap);
+                    }
                     toast.success('Image uploaded!');
                 }
             }
@@ -450,7 +467,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 name: collectionChanged ? p.name : (p.customName || p.name),
                 price: collectionChanged
                     ? calculateProductPrice(p)
-                    : (p.customPrice || calculateProductPrice(p)),
+                    : (typeof p.customPrice === 'number' && Number.isFinite(p.customPrice)
+                        ? p.customPrice
+                        : calculateProductPrice(p)),
                 description: collectionChanged ? (p.description || '') : (p.customDescription || p.description || ''),
                 images: finalImages,
                 category: collectionChanged ? (subcategories[0]?.title || 'General') : subcategoryTitle,
@@ -772,7 +791,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         {(() => {
                                             const pCollection = currentProduct.targetCollection || targetCollection;
                                             const pStack = calculateCostStackPrice(currentProduct.salePrice || currentProduct.price, pCollection);
-                                            const displayPrice = currentProduct.customPrice || pStack.sellingPrice;
+                                            const hasCustomPrice =
+                                                typeof currentProduct.customPrice === 'number' && Number.isFinite(currentProduct.customPrice);
+                                            const displayPrice = hasCustomPrice ? currentProduct.customPrice! : pStack.sellingPrice;
                                             return (
                                                 <div className="bg-cream/30 p-4 md:p-6 rounded-2xl border border-earth/5 space-y-3">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -781,7 +802,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             <input
                                                                 type="number"
                                                                 value={displayPrice}
-                                                                onChange={(e) => updateReviewProduct('customPrice', parseFloat(e.target.value))}
+                                                                onChange={(e) => {
+                                                                    const value = Number(e.target.value);
+                                                                    updateReviewProduct('customPrice', Number.isFinite(value) ? value : undefined);
+                                                                }}
                                                                 className="w-full p-3 bg-white border border-earth/10 rounded-xl font-serif text-xl text-bronze font-bold focus:ring-2 ring-bronze/20 shadow-sm"
                                                             />
                                                         </div>
@@ -808,7 +832,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    {currentProduct.customPrice && currentProduct.customPrice !== pStack.sellingPrice && (
+                                                    {hasCustomPrice && currentProduct.customPrice !== pStack.sellingPrice && (
                                                         <button
                                                             onClick={() => updateReviewProduct('customPrice', pStack.sellingPrice)}
                                                             className="text-[10px] text-bronze hover:underline flex items-center gap-1"
