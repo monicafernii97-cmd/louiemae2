@@ -765,7 +765,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 <div className="relative">
                                                     <select
                                                         value={currentProduct.targetCollection || targetCollection}
-                                                        onChange={(e) => updateReviewProduct('targetCollection', e.target.value)}
+                                                        onChange={(e) => {
+                                                            const newCollection = e.target.value;
+                                                            updateReviewProduct('targetCollection', newCollection);
+                                                            updateReviewProduct('targetSubcategory', '');
+                                                            // Recalculate price for the new collection's shipping cost
+                                                            const newPrice = calculateCostStackPrice(
+                                                                currentProduct.salePrice || currentProduct.price,
+                                                                newCollection
+                                                            ).sellingPrice;
+                                                            updateReviewProduct('customPrice', newPrice);
+                                                        }}
                                                         className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth appearance-none focus:ring-2 ring-bronze/20 shadow-sm font-medium"
                                                     >
                                                         {collections.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}

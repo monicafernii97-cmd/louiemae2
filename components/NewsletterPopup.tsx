@@ -59,14 +59,14 @@ export const NewsletterPopup: React.FC = () => {
 
         {/* Image Side */}
         <div className="w-full md:w-1/2 h-48 md:h-full relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/10 z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent z-10"></div>
           <img 
-            src="https://images.unsplash.com/photo-1533090368676-1fd25485db88?q=80&w=800&auto=format&fit=crop" 
-            alt="Interior" 
+            src="/images/brand/mae-collective-home.png" 
+            alt="LouieMae — Curated living, designed with intention" 
             className="w-full h-full object-cover"
           />
           <div className="absolute bottom-6 left-6 z-20 text-white">
-             <p className="font-serif italic text-2xl">"Beauty in the everyday."</p>
+             <p className="font-serif italic text-2xl">"Where home meets heritage."</p>
           </div>
         </div>
 
@@ -77,17 +77,17 @@ export const NewsletterPopup: React.FC = () => {
                 <div className="w-16 h-16 rounded-full bg-earth text-cream flex items-center justify-center mb-6">
                    <Check className="w-8 h-8" />
                 </div>
-                <h3 className="font-serif text-3xl text-earth mb-2">Welcome.</h3>
-                <p className="font-sans text-earth/60 text-sm">Please check your inbox for a special welcome.</p>
+                <h3 className="font-serif text-3xl text-earth mb-2">You're In.</h3>
+                <p className="font-sans text-earth/60 text-sm">Welcome to the collective — check your inbox for something special.</p>
              </div>
            ) : (
              <>
                <span className="text-bronze text-xs uppercase tracking-[0.3em] mb-4 block">The Mae Letter</span>
                <h2 className="font-serif text-4xl md:text-5xl text-earth mb-4 leading-tight">
-                 Join the Collective
+                 Be First to Know
                </h2>
                <p className="font-sans text-earth/70 text-sm leading-relaxed mb-8">
-                 Subscribe to receive early access to new collections, exclusive event invites, and our weekly curated edit.
+                 New drops, restocks, and behind-the-scenes stories — delivered before anyone else sees them. No spam, just thoughtfully curated finds for your home and closet.
                </p>
 
                <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,7 +107,7 @@ export const NewsletterPopup: React.FC = () => {
                    disabled={status === 'loading'}
                    className="w-full bg-earth text-cream px-8 py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors disabled:opacity-70 mt-4"
                  >
-                   {status === 'loading' ? 'Joining...' : 'Subscribe'}
+                   {status === 'loading' ? 'Joining...' : 'Join the List'}
                  </button>
                </form>
                <p className="text-[9px] text-earth/30 mt-6 text-center md:text-left">
