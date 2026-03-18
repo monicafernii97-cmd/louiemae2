@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon } from 'lucide-react';
+import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
@@ -79,6 +79,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const saveFile = useMutation(api.files.saveFile);
     const imageUploadRef = useRef<HTMLInputElement>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,13 +104,30 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 // Add the uploaded image to the current review product
                 const currentProduct = searchResults.filter(p => p.selected)[reviewIndex];
                 if (currentProduct) {
+                    const prevMainCount = currentProduct.images.length;
                     const newImages = [...currentProduct.images, result.url];
                     updateProductField(currentProduct.id, 'images', newImages);
-                    // Auto-select the new image
-                    const newSelectedImages = currentProduct.selectedImages
-                        ? [...currentProduct.selectedImages, newImages.length - 1]
-                        : newImages.map((_, idx) => idx);
+
+                    // Rebase indices: new main image shifts description-image offsets by 1
+                    const rebaseIdx = (idx: number) => (idx >= prevMainCount ? idx + 1 : idx);
+
+                    const baselineSelected =
+                        currentProduct.selectedImages ?? Array.from({ length: prevMainCount }, (_, i) => i);
+                    const rebasedSelected = baselineSelected.map(rebaseIdx);
+                    // Include the newly uploaded image as selected
+                    const newSelectedImages = [...new Set([...rebasedSelected, prevMainCount])].sort((a, b) => a - b);
                     updateProductField(currentProduct.id, 'selectedImages', newSelectedImages);
+
+                    // Rebase variant-image map
+                    if (currentProduct.variantImageMap) {
+                        const rebasedMap = Object.fromEntries(
+                            Object.entries(currentProduct.variantImageMap).map(([variantId, idx]) => [
+                                variantId,
+                                rebaseIdx(idx as number),
+                            ])
+                        );
+                        updateProductField(currentProduct.id, 'variantImageMap', rebasedMap);
+                    }
                     toast.success('Image uploaded!');
                 }
             }
@@ -169,6 +187,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         };
     };
 
+    // Per-product price calculation using the product's own collection (not global default)
+    const calculateProductPrice = (product: ImportableProduct): number => {
+        const collection = product.targetCollection || targetCollection;
+        return calculateCostStackPrice(product.salePrice || product.price, collection).sellingPrice;
+    };
+
     // Legacy wrapper for search results display
     const calculateFinalPrice = (basePrice: number): number => {
         return calculateCostStackPrice(basePrice, targetCollection).sellingPrice;
@@ -204,7 +228,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     ...p,
                     selected: false,
                     targetCollection: targetCollection as CollectionType,
-                    customPrice: calculateFinalPrice(p.salePrice || p.price)
+                    customPrice: calculateFinalPrice(p.salePrice || p.price),
+                    originalVariants: p.variants?.map(v => ({
+                        id: v.id,
+                        name: v.name,
+                        image: v.image,
+                    })),
                 }));
 
             setSearchResults(filteredProducts);
@@ -427,31 +456,34 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const subcategories = getSubcategoriesForCollection(productCollection);
             const subcategoryTitle = subcategories.find(s => s.id === productSubcategory)?.title || productSubcategory || p.category || 'General';
 
-            // Filter images based on user selection (defaults to all if no selection made)
+            // Filter images based on user selection (defaults to all main images if no selection made)
+            // Use combined array so marketing image indices (globalIdx) resolve correctly
+            const combinedImages = [...p.images, ...(p.descriptionImages || [])];
             const rawImages = p.selectedImages && p.selectedImages.length > 0
-                ? p.selectedImages.map(idx => p.images[idx]).filter(Boolean)
+                ? p.selectedImages.map(idx => combinedImages[idx]).filter(Boolean)
                 : p.images;
             // Normalize protocol-relative URLs (// -> https://)
             const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
 
-            // Detect if collection was changed from the default — clear stale dependent state
+            // Detect if collection was changed from the default
             const collectionChanged = p.targetCollection && p.targetCollection !== targetCollection;
 
             return {
-                name: collectionChanged ? p.name : (p.customName || p.name),
-                price: collectionChanged
-                    ? calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice
-                    : (p.customPrice || calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice),
-                description: collectionChanged ? (p.description || '') : (p.customDescription || p.description || ''),
+                // Always prefer user edits over originals
+                name: p.customName || p.name,
+                price: (typeof p.customPrice === 'number' && Number.isFinite(p.customPrice))
+                    ? p.customPrice
+                    : calculateProductPrice(p),
+                description: p.customDescription || p.description || '',
                 images: finalImages,
-                category: collectionChanged ? (subcategories[0]?.title || 'General') : subcategoryTitle,
+                category: subcategoryTitle,
                 collection: productCollection as CollectionType,
                 isNew: true,
                 inStock: p.inStock,
-                // Filter variants based on user selection (defaults to all if no selection made)
-                variants: p.selectedVariants && p.selectedVariants.length > 0 && p.variants
-                    ? p.variants.filter(v => p.selectedVariants!.includes(v.id))
-                    : p.variants,
+                // Filter variants: undefined = all, [] = none, [...ids] = only those
+                variants: p.selectedVariants === undefined
+                    ? p.variants
+                    : p.variants?.filter(v => p.selectedVariants!.includes(v.id)),
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
                 // Two-stage pricing metadata — use upstream CNY if available (from sourcePriceCny on the product)
@@ -459,7 +491,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
                 estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
                 pricingStage: 'estimated' as const,
-                // Subcategory — clear if collection changed
+                // Subcategory — clear if collection changed to avoid stale category
                 subcategory: collectionChanged ? undefined : (productSubcategory || undefined),
             };
         });
@@ -561,7 +593,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     )}
                                     {currentProduct.images.length > 0 && (
                                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
-                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length} Selected
+                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length + (currentProduct.descriptionImages?.length || 0)} Selected
                                         </div>
                                     )}
                                 </div>
@@ -636,6 +668,52 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         >
                                             <Upload className="w-3 h-3 inline mr-1" /> Upload Images
                                         </button>
+                                    </div>
+                                )}
+                                {/* Description/Marketing Images from 1688 */}
+                                {currentProduct.descriptionImages && currentProduct.descriptionImages.length > 0 && (
+                                    <div className="mt-4">
+                                        <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">
+                                            Marketing Images ({currentProduct.descriptionImages.length})
+                                        </h4>
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                                            {currentProduct.descriptionImages.map((img, idx) => {
+                                                // Marketing images are offset by main images count for selection indices
+                                                const globalIdx = (currentProduct.images?.length || 0) + idx;
+                                                const isSelected = currentProduct.selectedImages
+                                                    ? currentProduct.selectedImages.includes(globalIdx)
+                                                    : false; // Marketing images not selected by default
+                                                return (
+                                                    <div
+                                                        key={`mktg-${idx}`}
+                                                        className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group transition-all border-2
+                                                            ${isSelected ? 'border-bronze ring-2 ring-bronze/30 scale-[1.02]' : 'border-transparent hover:border-earth/20'}`}
+                                                        onClick={() => {
+                                                            const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
+                                                            const newSelected = isSelected
+                                                                ? current.filter(i => i !== globalIdx)
+                                                                : [...current, globalIdx];
+                                                            updateReviewProduct('selectedImages', newSelected);
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={img}
+                                                            alt={`Marketing ${idx + 1}`}
+                                                            referrerPolicy="no-referrer"
+                                                            crossOrigin="anonymous"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        {isSelected && (
+                                                            <div className="absolute top-1 right-1 bg-bronze text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow">
+                                                                <Check className="w-3 h-3" />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="text-[9px] text-earth/30 mt-1 italic">Click to select marketing images for import</p>
                                     </div>
                                 )}
 
@@ -714,27 +792,61 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </div>
 
                                         {/* Pricing */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-cream/30 p-4 md:p-6 rounded-2xl border border-earth/5">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Your Price ($)</label>
-                                                <input
-                                                    type="number"
-                                                    value={currentProduct.customPrice || calculateFinalPrice(currentProduct.salePrice || currentProduct.price)}
-                                                    onChange={(e) => updateReviewProduct('customPrice', parseFloat(e.target.value))}
-                                                    className="w-full p-3 bg-white border border-earth/10 rounded-xl font-serif text-xl text-bronze font-bold focus:ring-2 ring-bronze/20 shadow-sm"
-                                                />
-                                            </div>
-                                            <div className="space-y-1 flex flex-col justify-center">
-                                                <div className="flex justify-between text-xs text-earth/60">
-                                                    <span>Cost:</span>
-                                                    <span>${(currentProduct.salePrice || currentProduct.price).toFixed(2)}</span>
+                                        {(() => {
+                                            const pCollection = currentProduct.targetCollection || targetCollection;
+                                            const pStack = calculateCostStackPrice(currentProduct.salePrice || currentProduct.price, pCollection);
+                                            const hasCustomPrice =
+                                                typeof currentProduct.customPrice === 'number' && Number.isFinite(currentProduct.customPrice);
+                                            const displayPrice = hasCustomPrice ? currentProduct.customPrice! : pStack.sellingPrice;
+                                            return (
+                                                <div className="bg-cream/30 p-4 md:p-6 rounded-2xl border border-earth/5 space-y-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Your Price ($)</label>
+                                                            <input
+                                                                type="number"
+                                                                value={displayPrice}
+                                                                onChange={(e) => {
+                                                                    const value = Number(e.target.value);
+                                                                    updateReviewProduct('customPrice', Number.isFinite(value) ? value : undefined);
+                                                                }}
+                                                                className="w-full p-3 bg-white border border-earth/10 rounded-xl font-serif text-xl text-bronze font-bold focus:ring-2 ring-bronze/20 shadow-sm"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1 flex flex-col justify-center">
+                                                            <div className="flex justify-between text-xs text-earth/60">
+                                                                <span>1688 Cost (USD):</span>
+                                                                <span>${(currentProduct.salePrice || currentProduct.price).toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs text-earth/60">
+                                                                <span>Est. CJ Cost (×1.6):</span>
+                                                                <span>${pStack.estimatedCjCost.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs text-earth/60">
+                                                                <span>Shipping ({pCollection}):</span>
+                                                                <span>${pStack.estimatedShipping.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs text-earth/60 border-t border-earth/10 pt-1 mt-1">
+                                                                <span>Selling (×3):</span>
+                                                                <span className="font-bold">${pStack.sellingPrice.toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs font-bold text-green-700 border-t border-earth/10 pt-1 mt-1">
+                                                                <span>Profit:</span>
+                                                                <span>${(displayPrice - (pStack.estimatedCjCost + pStack.estimatedShipping)).toFixed(2)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {hasCustomPrice && currentProduct.customPrice !== pStack.sellingPrice && (
+                                                        <button
+                                                            onClick={() => updateReviewProduct('customPrice', pStack.sellingPrice)}
+                                                            className="text-[10px] text-bronze hover:underline flex items-center gap-1"
+                                                        >
+                                                            <RotateCcw className="w-3 h-3" /> Reset to formula price (${pStack.sellingPrice.toFixed(2)})
+                                                        </button>
+                                                    )}
                                                 </div>
-                                                <div className="flex justify-between text-xs font-bold text-green-700">
-                                                    <span>Profit:</span>
-                                                    <span>${((currentProduct.customPrice || calculateFinalPrice(currentProduct.salePrice || currentProduct.price)) - (currentProduct.salePrice || currentProduct.price)).toFixed(2)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                            );
+                                        })()}
 
                                         {/* Description */}
                                         <div className="space-y-2 flex-1">
@@ -757,9 +869,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </div>
                                     </div>
 
-                                    {/* Variants Sidebar (if any) - CLICKABLE SELECTION */}
+                                    {/* Variants Sidebar (if any) - CLICKABLE SELECTION + IMAGE ALLOCATION */}
                                     {currentProduct.variants && currentProduct.variants.length > 0 && (
-                                        <div className="w-full lg:w-72 bg-white p-4 md:p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
+                                        <div className="w-full lg:w-80 bg-white p-4 md:p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">
                                                     Select Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
@@ -768,8 +880,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     onClick={() => {
                                                         const allIds = currentProduct.variants!.map(v => v.id);
                                                         const currentSelected = currentProduct.selectedVariants;
-                                                        // Toggle: if all selected, deselect all; otherwise select all
-                                                        const newSelected = currentSelected?.length === allIds.length ? [] : allIds;
+                                                        // Toggle: select all → undefined (all), deselect all → []
+                                                        const allCurrentlySelected =
+                                                            currentSelected === undefined || currentSelected.length === allIds.length;
+                                                        const newSelected = allCurrentlySelected ? [] : undefined;
                                                         updateReviewProduct('selectedVariants', newSelected);
                                                     }}
                                                     className="text-[10px] text-bronze hover:underline font-medium"
@@ -777,75 +891,187 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     {(currentProduct.selectedVariants?.length ?? currentProduct.variants.length) === currentProduct.variants.length ? 'Deselect All' : 'Select All'}
                                                 </button>
                                             </div>
-                                            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                                 {currentProduct.variants.map((variant) => {
                                                     const isSelected = currentProduct.selectedVariants
                                                         ? currentProduct.selectedVariants.includes(variant.id)
-                                                        : true; // By default all are selected
+                                                        : true;
+                                                    // Find original name for revert
+                                                    const originalName = currentProduct.originalVariants?.find(ov => ov.id === variant.id)?.name;
+                                                    const nameWasEdited = originalName && variant.name !== originalName;
+                                                    // All available images (main + description/marketing)
+                                                    const allImages = [
+                                                        ...(currentProduct.images || []),
+                                                        ...(currentProduct.descriptionImages || []),
+                                                    ];
+                                                    // Allocated image for this variant
+                                                    const allocatedIdx = currentProduct.variantImageMap?.[variant.id];
+                                                    const allocatedImage = allocatedIdx !== undefined ? allImages[allocatedIdx] : undefined;
+                                                    const displayImage = allocatedImage || variant.image || currentProduct.images?.[0];
                                                     return (
                                                         <div
                                                             key={variant.id}
-                                                            onClick={() => {
-                                                                const allIds = currentProduct.variants!.map(v => v.id);
-                                                                const currentSelected = currentProduct.selectedVariants || allIds;
-                                                                const newSelected = isSelected
-                                                                    ? currentSelected.filter(id => id !== variant.id)
-                                                                    : [...currentSelected, variant.id];
-                                                                updateReviewProduct('selectedVariants', newSelected);
-                                                            }}
-                                                            className={`flex items-center gap-3 text-sm p-2 rounded-lg cursor-pointer transition-all border-2
+                                                            className={`rounded-lg transition-all border-2 overflow-hidden
                                                                 ${isSelected
-                                                                    ? 'bg-bronze/5 border-bronze/30 hover:bg-bronze/10'
+                                                                    ? 'bg-bronze/5 border-bronze/30'
                                                                     : 'bg-gray-50 border-transparent opacity-50 hover:opacity-75'}`}
                                                         >
-                                                            <div className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
-                                                                {(variant.image || currentProduct.images?.[0]) ? (
-                                                                    <img
-                                                                        src={variant.image || currentProduct.images?.[0]}
-                                                                        alt={variant.name}
-                                                                        referrerPolicy="no-referrer"
-                                                                        crossOrigin="anonymous"
-                                                                        className="w-full h-full object-cover"
-                                                                    />
-                                                                ) : (
-                                                                    <Package className="w-4 h-4 text-gray-300" />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <input
-                                                                    type="text"
-                                                                    value={variant.name}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    onChange={(e) => {
-                                                                        const updatedVariants = currentProduct.variants!.map(v =>
-                                                                            v.id === variant.id ? { ...v, name: e.target.value } : v
-                                                                        );
-                                                                        updateReviewProduct('variants', updatedVariants);
+                                                            {/* Main variant row — click to select/deselect */}
+                                                            <div
+                                                                onClick={() => {
+                                                                    const allIds = currentProduct.variants!.map(v => v.id);
+                                                                    const currentSelected = currentProduct.selectedVariants || allIds;
+                                                                    const newSelected = isSelected
+                                                                        ? currentSelected.filter(id => id !== variant.id)
+                                                                        : [...currentSelected, variant.id];
+                                                                    updateReviewProduct('selectedVariants', newSelected);
+                                                                }}
+                                                                className="flex items-center gap-3 text-sm p-2 cursor-pointer"
+                                                            >
+                                                                {/* Variant image — click to open image picker */}
+                                                                <div
+                                                                    className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:ring-2 hover:ring-bronze/30"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const pickerKey = `${currentProduct.id}:${variant.id}`;
+                                                                        setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
                                                                     }}
-                                                                    className="w-full bg-transparent font-medium text-earth text-xs border-b border-transparent hover:border-earth/20 focus:border-bronze focus:outline-none truncate px-0 py-0.5 transition-colors"
-                                                                    title="Click to edit variant name"
-                                                                />
-                                                                <div className="flex items-center gap-2 text-[10px]">
-                                                                    <span className={variant.inStock ? 'text-green-600' : 'text-red-500'}>
-                                                                        {variant.inStock ? '● In Stock' : '○ Out of Stock'}
-                                                                    </span>
-                                                                    {variant.priceAdjustment !== 0 && (
-                                                                        <span className={variant.priceAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}>
-                                                                            {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
-                                                                        </span>
+                                                                    title="Click to assign image to this variant"
+                                                                >
+                                                                    {displayImage ? (
+                                                                        <img
+                                                                            src={displayImage}
+                                                                            alt={variant.name}
+                                                                            referrerPolicy="no-referrer"
+                                                                            crossOrigin="anonymous"
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <Package className="w-4 h-4 text-gray-300" />
                                                                     )}
+                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                                        <ImageIcon className="w-4 h-4 text-white" />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={variant.name}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            onChange={(e) => {
+                                                                                const updatedVariants = currentProduct.variants!.map(v =>
+                                                                                    v.id === variant.id ? { ...v, name: e.target.value } : v
+                                                                                );
+                                                                                updateReviewProduct('variants', updatedVariants);
+                                                                            }}
+                                                                            onBlur={(e) => {
+                                                                                // Auto-revert to original name if cleared
+                                                                                if (!e.target.value.trim() && originalName) {
+                                                                                    const updatedVariants = currentProduct.variants!.map(v =>
+                                                                                        v.id === variant.id ? { ...v, name: originalName } : v
+                                                                                    );
+                                                                                    updateReviewProduct('variants', updatedVariants);
+                                                                                }
+                                                                            }}
+                                                                            className="w-full bg-transparent font-medium text-earth text-xs border-b border-transparent hover:border-earth/20 focus:border-bronze focus:outline-none truncate px-0 py-0.5 transition-colors"
+                                                                            title="Click to edit variant name"
+                                                                            placeholder={originalName || 'Variant name'}
+                                                                        />
+                                                                        {/* Reset button — only show if name was edited */}
+                                                                        {nameWasEdited && (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    const updatedVariants = currentProduct.variants!.map(v =>
+                                                                                        v.id === variant.id ? { ...v, name: originalName! } : v
+                                                                                    );
+                                                                                    updateReviewProduct('variants', updatedVariants);
+                                                                                }}
+                                                                                className="flex-shrink-0 text-earth/40 hover:text-bronze transition-colors"
+                                                                                title={`Reset to: ${originalName}`}
+                                                                            >
+                                                                                <RotateCcw className="w-3 h-3" />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    {/* Show original name as reference */}
+                                                                    {originalName && nameWasEdited && (
+                                                                        <p className="text-[9px] text-earth/30 truncate" title={originalName}>
+                                                                            Original: {originalName}
+                                                                        </p>
+                                                                    )}
+                                                                    <div className="flex items-center gap-2 text-[10px]">
+                                                                        <span className={variant.inStock ? 'text-green-600' : 'text-red-500'}>
+                                                                            {variant.inStock ? '● In Stock' : '○ Out of Stock'}
+                                                                        </span>
+                                                                        {variant.priceAdjustment !== 0 && (
+                                                                            <span className={variant.priceAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}>
+                                                                                {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
+                                                                    ${isSelected ? 'bg-bronze text-white' : 'bg-gray-200'}`}>
+                                                                    {isSelected && <Check className="w-3 h-3" />}
                                                                 </div>
                                                             </div>
-                                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
-                                                                ${isSelected ? 'bg-bronze text-white' : 'bg-gray-200'}`}>
-                                                                {isSelected && <Check className="w-3 h-3" />}
+                                                            {/* Image picker dropdown for variant-image allocation */}
+                                                            {openImagePicker === `${currentProduct.id}:${variant.id}` && (
+                                                            <div className="border-t border-earth/10 p-2 bg-white/80">
+                                                                <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold mb-1">Assign image to this variant</p>
+                                                                <div className="grid grid-cols-5 gap-1 max-h-24 overflow-y-auto">
+                                                                    {allImages.map((img, imgIdx) => (
+                                                                        <div
+                                                                            key={imgIdx}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                const newMap = { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx };
+                                                                                updateReviewProduct('variantImageMap', newMap);
+                                                                                // Also update the variant's image field directly
+                                                                                const updatedVariants = currentProduct.variants!.map(v =>
+                                                                                    v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v
+                                                                                );
+                                                                                updateReviewProduct('variants', updatedVariants);
+                                                                                // Close picker
+                                                                                setOpenImagePicker(null);
+                                                                            }}
+                                                                            className={`aspect-square rounded border cursor-pointer overflow-hidden hover:ring-2 hover:ring-bronze/40 transition-all
+                                                                                ${allocatedIdx === imgIdx ? 'ring-2 ring-bronze border-bronze' : 'border-earth/10'}`}
+                                                                        >
+                                                                            <img src={img} alt={`Option ${imgIdx + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                                {allocatedIdx !== undefined && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const newMap = { ...(currentProduct.variantImageMap || {}) };
+                                                                            delete newMap[variant.id];
+                                                                            updateReviewProduct('variantImageMap', newMap);
+                                                                            // Restore original variant image
+                                                                            const origVariant = currentProduct.originalVariants?.find(ov => ov.id === variant.id);
+                                                                            const updatedVariants = currentProduct.variants!.map(v =>
+                                                                                v.id === variant.id ? { ...v, image: origVariant?.image || undefined } : v
+                                                                            );
+                                                                            updateReviewProduct('variants', updatedVariants);
+                                                                            setOpenImagePicker(null);
+                                                                        }}
+                                                                        className="text-[9px] text-red-400 hover:text-red-600 mt-1 flex items-center gap-1"
+                                                                    >
+                                                                        <X className="w-2.5 h-2.5" /> Clear assignment
+                                                                    </button>
+                                                                )}
                                                             </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
                                             </div>
                                             <p className="text-[10px] text-earth/40 mt-3 italic">
-                                                Click variants to include/exclude from import
+                                                Click variants to include/exclude · Click image thumbnails to assign specific images
                                             </p>
                                         </div>
                                     )}
@@ -932,12 +1158,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     images.push(item.MainPictureUrl);
                 }
 
-                // Extract rating from FeaturedValues
+                // Extract featured values (e.g. sales count)
                 const getFeaturedValue = (name: string): string | undefined => {
                     if (!Array.isArray(item.FeaturedValues)) return undefined;
                     return item.FeaturedValues.find((v: any) => v.Name === name)?.Value;
                 };
-                const rating = parseFloat(getFeaturedValue('rating') || '0');
 
                 // Extract variants from ConfiguredItems
                 const variants: any[] = [];
@@ -978,18 +1203,19 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     seller: {
                         id: item.VendorId || '',
                         name: item.VendorDisplayName || item.VendorName || 'Unknown',
-                        rating: (item.VendorScore || 0) / 20, // VendorScore is 0-100, convert to 0-5
-                        feedbackScore: item.VendorScore || 0,
+                        rating: 0,
+                        feedbackScore: 0,
                     },
                     reviewCount: parseInt(getFeaturedValue('SalesInLast30Days') || '0', 10),
-                    averageRating: rating,
+                    averageRating: 0,
                     productUrl: item.TaobaoItemUrl || item.ExternalItemUrl || importUrl,
                     source: '1688',
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
-                    customPrice: 0
+                    customPrice: calculateFinalPrice(salePrice || origPrice),
+                    // Marketing/description images from GetItemDescription
+                    descriptionImages: ('descriptionImages' in result ? (result as any).descriptionImages : []) || [],
                 };
-                importableProduct.customPrice = calculateFinalPrice(importableProduct.price);
             } else {
                 // Generic source (handles AliExpress, Amazon, and any other URLs)
                 console.log('[URL Import] Processing as generic product:', result.data);
@@ -1038,6 +1264,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 } catch (err) {
                     console.warn('[URL Import] Variant translation failed, keeping originals:', err);
                 }
+            }
+
+            // Snapshot variant state AFTER translation so revert restores translated names + images
+            if (importableProduct.variants && importableProduct.variants.length > 0) {
+                importableProduct.originalVariants = importableProduct.variants.map((v: any) => ({
+                    id: v.id,
+                    name: v.name,
+                    image: v.image,
+                }));
             }
 
             // Auto-AI Enhancement (optional - preserves original data if fails)
