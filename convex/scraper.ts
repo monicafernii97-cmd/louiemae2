@@ -242,11 +242,24 @@ async function scrape1688(productId: string, originalUrl?: string) {
                 if (htmlStr) {
                     console.log(`[Scraper] Description HTML: ${htmlStr.length} chars`);
                     // Extract image URLs from description HTML
-                    // 1688 uses lazy-load attrs: data-lazyload-src, data-src, data-original, alongside src
-                    const imgAttrRegex = /<img[^>]+(?:data-lazyload-src|data-src|data-original|src)\s*=\s*["']([^"']+)["']/gi;
+                    // Two-pass: find each <img> tag, then pick the best attr in priority order
+                    // (1688 uses lazy-load attrs and may have placeholder src alongside)
+                    const imgTagRegex = /<img\b[^>]*>/gi;
+                    const attrRegex = /\b(data-lazyload-src|data-src|data-original|src)\s*=\s*["']([^"']+)["']/gi;
                     let match;
-                    while ((match = imgAttrRegex.exec(htmlStr)) !== null) {
-                        let imgUrl = match[1];
+                    while ((match = imgTagRegex.exec(htmlStr)) !== null) {
+                        const tag = match[0];
+                        const attrs: Record<string, string> = {};
+                        attrRegex.lastIndex = 0;
+                        let attrMatch;
+                        while ((attrMatch = attrRegex.exec(tag)) !== null) {
+                            attrs[attrMatch[1].toLowerCase()] = attrMatch[2];
+                        }
+                        let imgUrl =
+                            attrs['data-lazyload-src'] ||
+                            attrs['data-src'] ||
+                            attrs['data-original'] ||
+                            attrs['src'];
                         if (!imgUrl || imgUrl.length < 10) continue;
                         // Skip tiny icons, data URIs
                         if (imgUrl.startsWith('data:') || imgUrl.includes('icon') || imgUrl.includes('logo')) continue;

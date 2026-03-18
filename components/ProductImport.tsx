@@ -768,6 +768,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         onChange={(e) => {
                                                             const newCollection = e.target.value;
                                                             updateReviewProduct('targetCollection', newCollection);
+                                                            updateReviewProduct('targetSubcategory', '');
                                                             // Recalculate price for the new collection's shipping cost
                                                             const newPrice = calculateCostStackPrice(
                                                                 currentProduct.salePrice || currentProduct.price,
