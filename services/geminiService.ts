@@ -1175,50 +1175,110 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
     if (!ai) return getFallback();
 
     const keywords = context.keywords || extractKeywords(context.originalName + ' ' + context.originalDescription);
-    const prompts = COLLECTION_PROMPTS[context.collection] || COLLECTION_PROMPTS.furniture;
     const productType = detectProductType(context);
 
+    // Determine which detail labels to request based on product type
+    let detailLabels: string;
+    if (['kids', 'fashion'].includes(context.collection) || /dress|romper|top|blouse|pants|skirt|jacket|cardigan|sweater|jumpsuit|bodysuit|onesie|clothing|fashion/i.test(productType)) {
+      detailLabels = `
+        Material · (e.g. "100% organic cotton" or "Linen-cotton blend")
+        Fit · (e.g. "Relaxed fit" or "Slim through the body, flared hem")
+        Style · (e.g. "Flutter sleeves with smocked bodice" or "Bohemian-inspired with ruffle trim")
+        Details · (e.g. "Coconut shell buttons, side pockets" or "Snap closures for easy dressing")
+        Care · (e.g. "Machine wash cold, tumble dry low")
+        Sizing · (e.g. "Runs true to size, available XS–XL" or "Fits 6–12 months")
+      `;
+    } else if (context.collection === 'furniture' || /chair|table|sofa|bed|cabinet|desk|stool|bench|shelf|nightstand|dresser|buffet|sideboard|storage/i.test(productType)) {
+      detailLabels = `
+        Material · (e.g. "Solid white oak with hand-rubbed oil finish")
+        Construction · (e.g. "Mortise and tenon joinery" or "Hand-woven rattan seat")
+        Dimensions · (e.g. "W 24 × D 22 × H 32 in" — estimate from source data or product type)
+        Style · (e.g. "Scandinavian minimalist with tapered legs")
+        Details · (e.g. "Stackable design" or "Brass-finished hardware, soft-close drawers")
+        Care · (e.g. "Wipe clean with damp cloth")
+      `;
+    } else {
+      detailLabels = `
+        Material · (primary material or composition)
+        Style · (design aesthetic or visual details)
+        Details · (functional features, closures, hardware)
+        Dimensions · (size or measurements if applicable)
+        Care · (maintenance or cleaning instructions)
+      `;
+    }
+
     const systemInstruction = `
-      You are the copywriter for "Louie Mae", a sophisticated lifestyle brand.
-      
-      PRODUCT TO DESCRIBE:
-      - Name: "${context.originalName}"
-      - Type: ${productType}
+      You are a product data writer for "Louie Mae", a modern boutique brand.
+
+      YOUR TASK: Extract real product details from the source data below and present them
+      as a clean, structured product listing. DO NOT invent information — only enhance
+      what can be inferred from the product name, keywords, and source description.
+
+      SOURCE DATA:
+      - Product name: "${context.originalName}"
+      - Product type: ${productType}
       - Collection: ${context.collection}
-      - Keywords from source: ${keywords.join(', ') || 'none'}
-      - Original description hints: "${context.originalDescription?.slice(0, 200) || 'none'}"
-      
-      ${prompts.materials}
-      ${prompts.vocabulary}
-      
-      STRICT RULES:
-      1. Write 3-5 sentences arranged as a mini product listing:
-         - Line 1: Opening hook — fabric/material + silhouette/form (1 sentence)
-         - Line 2-3: Key features — "Great for [occasion]", fit details, notable design elements
-         - Line 4: Practical detail — care/sizing hint OR dimension note for furniture
-      2. MUST be relevant to the actual product type (${productType})
-      3. If it's clothing: focus on fabric, fit, comfort, style
-      4. If it's baby/kids: focus on softness, comfort, easy-care, sweetness
-      5. If it's furniture: focus on materials, craftsmanship, presence
-      6. Use keywords found in the product data when applicable
-      7. NO generic phrases: "high quality", "beautiful design"
-      
-      ${prompts.examples}
-      
-      Return ONLY the description, no quotes.
+      - Extracted keywords: ${keywords.join(', ') || 'none detected'}
+      - Source description: "${context.originalDescription?.slice(0, 500) || 'none provided'}"
+
+      OUTPUT FORMAT — use this exact structure:
+      Line 1: A single elegant opening sentence (10-20 words max) describing what the product IS.
+      Then list each detail on its own line, using "Label · Detail" format:
+
+      ${detailLabels}
+
+      RULES:
+      1. ONLY include lines where you have data or can confidently infer from the source. Skip lines you'd have to fabricate.
+      2. Keep each line SHORT — max 15 words per line after the label.
+      3. The opening sentence should be polished but grounded in data (mention the actual material or product type).
+      4. Use clean, modern language — no generic marketing ("high quality", "beautiful design", "perfect for any occasion").
+      5. For ${context.collection} products, prefer vocabulary like: ${
+        context.collection === 'kids' ? 'soft, gentle, cozy, sweet, breathable, easy-care'
+        : context.collection === 'fashion' ? 'effortless, flattering, flowing, refined, versatile'
+        : context.collection === 'furniture' ? 'solid, artisan, Nordic, sustainably sourced, hand-finished'
+        : 'textured, organic, artisan, handcrafted, curated'
+      }
+      6. Return ONLY the formatted description — no quotes, no headings, no markdown symbols.
+
+      GOOD EXAMPLE (fashion):
+      Flowing linen midi dress with a softly gathered waist.
+      Material · 100% European linen
+      Fit · Relaxed through the body, A-line skirt
+      Style · Puff sleeves with elastic cuffs, V-neckline
+      Details · Side pockets, coconut shell buttons
+      Care · Machine wash cold, hang dry
+
+      GOOD EXAMPLE (furniture):
+      Solid oak dining chair with hand-woven paper cord seat.
+      Material · FSC-certified white oak, natural paper cord
+      Construction · Traditional mortise and tenon joinery
+      Dimensions · W 20 × D 18 × H 31 in, seat height 18 in
+      Style · Danish mid-century with tapered legs
+      Care · Wipe with damp cloth, oil annually
+
+      GOOD EXAMPLE (kids):
+      Soft organic cotton romper with snap closures for easy changes.
+      Material · 100% GOTS-certified organic cotton
+      Fit · Relaxed with gentle stretch
+      Style · Sweet floral print, flutter sleeves
+      Details · Nickel-free snaps at inseam and back
+      Care · Machine wash gentle, tumble dry low
+      Sizing · Fits 3–6 months
     `;
 
     const response = await ai.models.generateContent({
       model,
-      contents: `Write a boutique description for this ${productType}.`,
+      contents: `Create a structured product listing for this ${productType}.`,
       config: {
         systemInstruction,
-        temperature: 0.85,
+        temperature: 0.6, // Lower temp for more data-driven, less creative output
       }
     });
 
     const candidate = response.text?.trim() || '';
-    return candidate && isValidDescriptionLength(candidate)
+    // Validate: must have at least 2 lines (opening + at least one detail)
+    const lineCount = candidate.split('\n').filter(l => l.trim().length > 0).length;
+    return candidate && lineCount >= 2
       ? candidate
       : getFallback();
   } catch (error) {

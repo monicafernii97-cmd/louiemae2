@@ -156,14 +156,57 @@ async function scrape1688(productId: string, originalUrl?: string) {
         "x-rapidapi-host": OTAPI_HOST,
     };
 
+    // Helper: extract image URLs from HTML string using multi-pass approach
+    function extractImagesFromHtml(htmlStr: string): string[] {
+        const images: string[] = [];
+        // Two-pass: find each <img> tag, then pick the best attr in priority order
+        const imgTagRegex = /<img\b[^>]*>/gi;
+        const attrRegex = /\b(data-lazyload-src|data-src|data-original|src)\s*=\s*["']([^"']+)["']/gi;
+        let match;
+        while ((match = imgTagRegex.exec(htmlStr)) !== null) {
+            const tag = match[0];
+            const attrs: Record<string, string> = {};
+            attrRegex.lastIndex = 0;
+            let attrMatch;
+            while ((attrMatch = attrRegex.exec(tag)) !== null) {
+                attrs[attrMatch[1].toLowerCase()] = attrMatch[2];
+            }
+            let imgUrl =
+                attrs['data-lazyload-src'] ||
+                attrs['data-src'] ||
+                attrs['data-original'] ||
+                attrs['src'];
+            if (!imgUrl || imgUrl.length < 10) continue;
+            if (imgUrl.startsWith('data:') || imgUrl.includes('icon') || imgUrl.includes('logo')) continue;
+            if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+            if (!images.includes(imgUrl)) images.push(imgUrl);
+        }
+        // background-image: url(...)
+        const bgRegex = /background-image\s*:\s*url\(["']?([^"')]+)["']?\)/gi;
+        while ((match = bgRegex.exec(htmlStr)) !== null) {
+            let imgUrl = match[1];
+            if (!imgUrl || imgUrl.length < 10 || imgUrl.startsWith('data:')) continue;
+            if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+            if (!images.includes(imgUrl)) images.push(imgUrl);
+        }
+        // Raw URLs that look like images (common in 1688 descriptions)
+        const rawUrlRegex = /(https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s"'<>]*)?)/gi;
+        while ((match = rawUrlRegex.exec(htmlStr)) !== null) {
+            let imgUrl = match[1];
+            if (imgUrl.includes('icon') || imgUrl.includes('logo')) continue;
+            if (!images.includes(imgUrl)) images.push(imgUrl);
+        }
+        return images;
+    }
+
     try {
-        // Fetch item details first (critical path), fire description fetch in parallel (non-blocking)
+        // Fetch item details with Description block included
         const controller1 = new AbortController();
         const timeout1 = setTimeout(() => controller1.abort(), 30000);
 
-        // Fire description fetch immediately but don't await it yet (shorter timeout since it's optional)
+        // Fire description fetch in parallel (longer timeout — 25s — since this is critical)
         const controller2 = new AbortController();
-        const timeout2 = setTimeout(() => controller2.abort(), 15000);
+        const timeout2 = setTimeout(() => controller2.abort(), 25000);
         const descPromise = fetch(
             `https://${OTAPI_HOST}/GetItemDescription?language=en&itemId=${otapiId}`,
             { headers, signal: controller2.signal }
@@ -172,11 +215,11 @@ async function scrape1688(productId: string, originalUrl?: string) {
             return null;
         });
 
-        // Await item fetch (critical path)
+        // Request Description block via blockList parameter
         let response: Response;
         try {
             response = await fetch(
-                `https://${OTAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}`,
+                `https://${OTAPI_HOST}/BatchGetItemFullInfo?language=en&itemId=${otapiId}&blockList=Description`,
                 { headers, signal: controller1.signal }
             );
         } finally {
@@ -208,85 +251,131 @@ async function scrape1688(productId: string, originalUrl?: string) {
         const title = item.Title || item.OriginalTitle;
         console.log(`[Scraper] Successfully fetched 1688 product: "${title || '(no title)'}"`);
 
-        // Log image-related keys only when debug mode is enabled
-        if (process.env.DEBUG_SCRAPER) {
-            const imageKeys = Object.keys(item).filter(k =>
-                /image|picture|photo|desc|external/i.test(k)
-            );
-            console.log(`[Scraper] Item image-related keys: ${JSON.stringify(imageKeys)}`);
-            imageKeys.forEach(k => {
-                const val = item[k];
-                if (Array.isArray(val)) {
-                    console.log(`[Scraper]   ${k}: Array[${val.length}]`);
-                } else if (typeof val === 'string') {
-                    console.log(`[Scraper]   ${k}: string (${val.length} chars)`);
-                } else {
-                    console.log(`[Scraper]   ${k}: ${typeof val}`);
+        // Always log image/description-related keys for debugging
+        const imageKeys = Object.keys(item).filter(k =>
+            /image|picture|photo|desc|external/i.test(k)
+        );
+        console.log(`[Scraper] Item image-related keys: ${JSON.stringify(imageKeys)}`);
+        imageKeys.forEach(k => {
+            const val = item[k];
+            if (Array.isArray(val)) {
+                console.log(`[Scraper]   ${k}: Array[${val.length}]`);
+            } else if (typeof val === 'string') {
+                console.log(`[Scraper]   ${k}: string (${val.length} chars)`);
+            } else if (val && typeof val === 'object') {
+                console.log(`[Scraper]   ${k}: object { ${Object.keys(val).join(', ')} }`);
+            } else {
+                console.log(`[Scraper]   ${k}: ${typeof val}`);
+            }
+        });
+
+        // ── Collect description/marketing images from ALL available sources ──
+
+        const descriptionImages: string[] = [];
+
+        // Source 1: Description block from BatchGetItemFullInfo (blockList=Description)
+        // This can appear as item.Description (object with .Html or .Images), 
+        // data.Result.Description, or data.Description
+        const descBlock = item.Description || data.Result?.Description || data.Description;
+        if (descBlock) {
+            console.log(`[Scraper] Found Description block, type: ${typeof descBlock}`);
+            if (typeof descBlock === 'string' && descBlock.length > 50) {
+                const extracted = extractImagesFromHtml(descBlock);
+                extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
+                console.log(`[Scraper] Source 1 (Description string): ${extracted.length} images`);
+            } else if (typeof descBlock === 'object') {
+                // Check for Html/Content/Images sub-fields
+                const htmlContent = descBlock.Html || descBlock.Content || descBlock.Description || '';
+                if (typeof htmlContent === 'string' && htmlContent.length > 50) {
+                    const extracted = extractImagesFromHtml(htmlContent);
+                    extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
+                    console.log(`[Scraper] Source 1 (Description.Html): ${extracted.length} images`);
                 }
-            });
+                // Structured images array
+                const imgArray = descBlock.Images || descBlock.DescriptionImages || descBlock.Pictures;
+                if (Array.isArray(imgArray)) {
+                    imgArray.forEach((img: any) => {
+                        const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url || img?.Original?.Url;
+                        if (url && typeof url === 'string' && url.length > 10 && !descriptionImages.includes(url)) {
+                            descriptionImages.push(url.startsWith('//') ? 'https:' + url : url);
+                        }
+                    });
+                    console.log(`[Scraper] Source 1 (Description.Images): ${imgArray.length} items`);
+                }
+            }
         }
 
-        // Now await the description fetch (already running in background)
-        const descriptionImages: string[] = [];
+        // Source 2: Standalone DescriptionImages / ExternalDescription on item
+        for (const key of ['DescriptionImages', 'ExternalDescription', 'ItemDescription']) {
+            const val = item[key];
+            if (Array.isArray(val)) {
+                val.forEach((img: any) => {
+                    const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url;
+                    if (url && typeof url === 'string' && url.length > 10 && !descriptionImages.includes(url)) {
+                        descriptionImages.push(url.startsWith('//') ? 'https:' + url : url);
+                    }
+                });
+                console.log(`[Scraper] Source 2 (item.${key}): ${val.length} items`);
+            } else if (typeof val === 'string' && val.length > 50) {
+                const extracted = extractImagesFromHtml(val);
+                extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
+                console.log(`[Scraper] Source 2 (item.${key} HTML): ${extracted.length} images`);
+            }
+        }
+
+        // Source 3: GetItemDescription API response (fallback)
         const descResult = await descPromise;
         if (descResult && descResult.ok) {
             try {
                 const descData = await descResult.json();
-                const descHtml =
-                    descData?.Result?.Description ||
-                    descData?.Result?.Html ||
-                    descData?.Result ||
-                    '';
-                const htmlStr = typeof descHtml === 'string' ? descHtml : '';
+                console.log(`[Scraper] GetItemDescription response keys: ${JSON.stringify(Object.keys(descData || {}))}`);
+                if (descData?.Result) {
+                    console.log(`[Scraper] GetItemDescription Result keys: ${JSON.stringify(Object.keys(descData.Result))}`);
+                }
 
-                if (htmlStr) {
-                    console.log(`[Scraper] Description HTML: ${htmlStr.length} chars`);
-                    // Extract image URLs from description HTML
-                    // Two-pass: find each <img> tag, then pick the best attr in priority order
-                    // (1688 uses lazy-load attrs and may have placeholder src alongside)
-                    const imgTagRegex = /<img\b[^>]*>/gi;
-                    const attrRegex = /\b(data-lazyload-src|data-src|data-original|src)\s*=\s*["']([^"']+)["']/gi;
-                    let match;
-                    while ((match = imgTagRegex.exec(htmlStr)) !== null) {
-                        const tag = match[0];
-                        const attrs: Record<string, string> = {};
-                        attrRegex.lastIndex = 0;
-                        let attrMatch;
-                        while ((attrMatch = attrRegex.exec(tag)) !== null) {
-                            attrs[attrMatch[1].toLowerCase()] = attrMatch[2];
-                        }
-                        let imgUrl =
-                            attrs['data-lazyload-src'] ||
-                            attrs['data-src'] ||
-                            attrs['data-original'] ||
-                            attrs['src'];
-                        if (!imgUrl || imgUrl.length < 10) continue;
-                        // Skip tiny icons, data URIs
-                        if (imgUrl.startsWith('data:') || imgUrl.includes('icon') || imgUrl.includes('logo')) continue;
-                        // Normalize protocol-relative URLs
-                        if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
-                        if (!descriptionImages.includes(imgUrl)) {
-                            descriptionImages.push(imgUrl);
-                        }
+                // Try multiple possible response structures
+                const candidates = [
+                    descData?.Result?.Content?.Description,
+                    descData?.Result?.ItemDescription,
+                    descData?.Result?.Description,
+                    descData?.Result?.Html,
+                    descData?.Result?.Content,
+                ];
+                // If Result itself is a string, use it directly
+                if (typeof descData?.Result === 'string') {
+                    candidates.push(descData.Result);
+                }
+
+                for (const candidate of candidates) {
+                    if (typeof candidate === 'string' && candidate.length > 50) {
+                        const extracted = extractImagesFromHtml(candidate);
+                        extracted.forEach(url => { if (!descriptionImages.includes(url)) descriptionImages.push(url); });
+                        console.log(`[Scraper] Source 3 (GetItemDescription): ${extracted.length} images from ${candidate.length} char HTML`);
+                        break; // Use first valid candidate
                     }
-                    // Also extract from background-image: url(...) patterns
-                    const bgRegex = /background-image\s*:\s*url\(["']?([^"')]+)["']?\)/gi;
-                    while ((match = bgRegex.exec(htmlStr)) !== null) {
-                        let imgUrl = match[1];
-                        if (!imgUrl || imgUrl.length < 10 || imgUrl.startsWith('data:')) continue;
-                        if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
-                        if (!descriptionImages.includes(imgUrl)) {
-                            descriptionImages.push(imgUrl);
+                }
+
+                // Also check for structured image arrays in the response
+                const descImages = descData?.Result?.Images || descData?.Result?.DescriptionImages;
+                if (Array.isArray(descImages)) {
+                    descImages.forEach((img: any) => {
+                        const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url;
+                        if (url && typeof url === 'string' && url.length > 10 && !descriptionImages.includes(url)) {
+                            descriptionImages.push(url.startsWith('//') ? 'https:' + url : url);
                         }
-                    }
-                    console.log(`[Scraper] Extracted ${descriptionImages.length} description/marketing images`);
+                    });
+                    console.log(`[Scraper] Source 3 (GetItemDescription images array): ${descImages.length} items`);
                 }
             } catch (descErr: any) {
                 console.warn(`[Scraper] Failed to parse description response: ${descErr.message}`);
             }
         } else if (descResult) {
             console.warn(`[Scraper] GetItemDescription HTTP ${descResult.status} (non-fatal)`);
+        } else {
+            console.warn(`[Scraper] GetItemDescription returned null (timeout or network error)`);
         }
+
+        console.log(`[Scraper] Total description/marketing images collected: ${descriptionImages.length}`);
 
         return {
             source: '1688' as const,
