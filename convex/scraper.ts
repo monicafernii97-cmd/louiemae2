@@ -208,21 +208,23 @@ async function scrape1688(productId: string, originalUrl?: string) {
         const title = item.Title || item.OriginalTitle;
         console.log(`[Scraper] Successfully fetched 1688 product: "${title || '(no title)'}"`);
 
-        // Log all image/picture-related keys for discovery
-        const imageKeys = Object.keys(item).filter(k =>
-            /image|picture|photo|desc|external/i.test(k)
-        );
-        console.log(`[Scraper] Item image-related keys: ${JSON.stringify(imageKeys)}`);
-        imageKeys.forEach(k => {
-            const val = item[k];
-            if (Array.isArray(val)) {
-                console.log(`[Scraper]   ${k}: Array[${val.length}]`);
-            } else if (typeof val === 'string') {
-                console.log(`[Scraper]   ${k}: string (${val.length} chars)`);
-            } else {
-                console.log(`[Scraper]   ${k}: ${typeof val}`);
-            }
-        });
+        // Log image-related keys only when debug mode is enabled
+        if (process.env.DEBUG_SCRAPER) {
+            const imageKeys = Object.keys(item).filter(k =>
+                /image|picture|photo|desc|external/i.test(k)
+            );
+            console.log(`[Scraper] Item image-related keys: ${JSON.stringify(imageKeys)}`);
+            imageKeys.forEach(k => {
+                const val = item[k];
+                if (Array.isArray(val)) {
+                    console.log(`[Scraper]   ${k}: Array[${val.length}]`);
+                } else if (typeof val === 'string') {
+                    console.log(`[Scraper]   ${k}: string (${val.length} chars)`);
+                } else {
+                    console.log(`[Scraper]   ${k}: ${typeof val}`);
+                }
+            });
+        }
 
         // Now await the description fetch (already running in background)
         const descriptionImages: string[] = [];

@@ -79,6 +79,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const saveFile = useMutation(api.files.saveFile);
     const imageUploadRef = useRef<HTMLInputElement>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -448,8 +449,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             return {
                 name: collectionChanged ? p.name : (p.customName || p.name),
                 price: collectionChanged
-                    ? calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice
-                    : (p.customPrice || calculateCostStackPrice(p.salePrice || p.price, productCollection).sellingPrice),
+                    ? calculateProductPrice(p)
+                    : (p.customPrice || calculateProductPrice(p)),
                 description: collectionChanged ? (p.description || '') : (p.customDescription || p.description || ''),
                 images: finalImages,
                 category: collectionChanged ? (subcategories[0]?.title || 'General') : subcategoryTitle,
@@ -569,7 +570,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     )}
                                     {currentProduct.images.length > 0 && (
                                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
-                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length} Selected
+                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length + (currentProduct.descriptionImages?.length || 0)} Selected
                                         </div>
                                     )}
                                 </div>
@@ -904,9 +905,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:ring-2 hover:ring-bronze/30"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        // Toggle image picker for this variant
-                                                                        const picker = document.getElementById(`img-picker-${variant.id}`);
-                                                                        if (picker) picker.classList.toggle('hidden');
+                                                                        setOpenImagePicker(prev => prev === variant.id ? null : variant.id);
                                                                     }}
                                                                     title="Click to assign image to this variant"
                                                                 >
@@ -990,10 +989,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 </div>
                                                             </div>
                                                             {/* Image picker dropdown for variant-image allocation */}
-                                                            <div
-                                                                id={`img-picker-${variant.id}`}
-                                                                className="hidden border-t border-earth/10 p-2 bg-white/80"
-                                                            >
+                                                            {openImagePicker === variant.id && (
+                                                            <div className="border-t border-earth/10 p-2 bg-white/80">
                                                                 <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold mb-1">Assign image to this variant</p>
                                                                 <div className="grid grid-cols-5 gap-1 max-h-24 overflow-y-auto">
                                                                     {allImages.map((img, imgIdx) => (
@@ -1009,7 +1006,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                 );
                                                                                 updateReviewProduct('variants', updatedVariants);
                                                                                 // Close picker
-                                                                                document.getElementById(`img-picker-${variant.id}`)?.classList.add('hidden');
+                                                                                setOpenImagePicker(null);
                                                                             }}
                                                                             className={`aspect-square rounded border cursor-pointer overflow-hidden hover:ring-2 hover:ring-bronze/40 transition-all
                                                                                 ${allocatedIdx === imgIdx ? 'ring-2 ring-bronze border-bronze' : 'border-earth/10'}`}
@@ -1031,7 +1028,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                 v.id === variant.id ? { ...v, image: origVariant?.image || undefined } : v
                                                                             );
                                                                             updateReviewProduct('variants', updatedVariants);
-                                                                            document.getElementById(`img-picker-${variant.id}`)?.classList.add('hidden');
+                                                                            setOpenImagePicker(null);
                                                                         }}
                                                                         className="text-[9px] text-red-400 hover:text-red-600 mt-1 flex items-center gap-1"
                                                                     >
@@ -1039,6 +1036,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     </button>
                                                                 )}
                                                             </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
