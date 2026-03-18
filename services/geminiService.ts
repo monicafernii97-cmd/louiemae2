@@ -1348,10 +1348,10 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
     const candidate = response.text?.trim() || '';
     // Validate: must have opening + at least one "Label · Detail" line
     const lines = candidate.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    const hasStructuredDetail = lines.slice(1).some(line =>
-      /^[\p{L}][\p{L}\p{M}0-9/&\- ]+\s[·•‧]\s\S+/u.test(line)
-    );
-    return lines.length >= 2 && hasStructuredDetail
+    const labelLineRegex = /^[\p{L}][\p{L}\p{M}0-9/&\- ]+\s[·•‧]\s\S+/u;
+    const hasOpeningLine = !!lines[0] && !labelLineRegex.test(lines[0]);
+    const hasStructuredDetail = lines.slice(1).some(line => labelLineRegex.test(line));
+    return lines.length >= 2 && hasOpeningLine && hasStructuredDetail
       ? candidate
       : getFallback();
   } catch (error) {
