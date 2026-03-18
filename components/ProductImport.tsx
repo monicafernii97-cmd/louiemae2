@@ -228,7 +228,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     ...p,
                     selected: false,
                     targetCollection: targetCollection as CollectionType,
-                    customPrice: calculateFinalPrice(p.salePrice || p.price)
+                    customPrice: calculateFinalPrice(p.salePrice || p.price),
+                    originalVariants: p.variants?.map(v => ({
+                        id: v.id,
+                        name: v.name,
+                        image: v.image,
+                    })),
                 }));
 
             setSearchResults(filteredProducts);
@@ -460,19 +465,18 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             // Normalize protocol-relative URLs (// -> https://)
             const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
 
-            // Detect if collection was changed from the default — clear stale dependent state
+            // Detect if collection was changed from the default
             const collectionChanged = p.targetCollection && p.targetCollection !== targetCollection;
 
             return {
-                name: collectionChanged ? p.name : (p.customName || p.name),
-                price: collectionChanged
-                    ? calculateProductPrice(p)
-                    : (typeof p.customPrice === 'number' && Number.isFinite(p.customPrice)
-                        ? p.customPrice
-                        : calculateProductPrice(p)),
-                description: collectionChanged ? (p.description || '') : (p.customDescription || p.description || ''),
+                // Always prefer user edits over originals
+                name: p.customName || p.name,
+                price: (typeof p.customPrice === 'number' && Number.isFinite(p.customPrice))
+                    ? p.customPrice
+                    : calculateProductPrice(p),
+                description: p.customDescription || p.description || '',
                 images: finalImages,
-                category: collectionChanged ? (subcategories[0]?.title || 'General') : subcategoryTitle,
+                category: subcategoryTitle,
                 collection: productCollection as CollectionType,
                 isNew: true,
                 inStock: p.inStock,
@@ -487,7 +491,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
                 estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
                 pricingStage: 'estimated' as const,
-                // Subcategory — clear if collection changed
+                // Subcategory — clear if collection changed to avoid stale category
                 subcategory: collectionChanged ? undefined : (productSubcategory || undefined),
             };
         });
