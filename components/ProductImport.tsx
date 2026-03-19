@@ -601,6 +601,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 const prev = currentIdx <= 0 ? allImages.length - 1 : currentIdx - 1;
                                                                 setPreviewImage(allImages[prev]);
                                                             }}
+                                                            aria-label="Previous image"
                                                             className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             ‹
@@ -611,6 +612,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 const next = currentIdx >= allImages.length - 1 ? 0 : currentIdx + 1;
                                                                 setPreviewImage(allImages[next]);
                                                             }}
+                                                            aria-label="Next image"
                                                             className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             ›
