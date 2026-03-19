@@ -583,8 +583,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         <>
                                             {(() => {
                                                 const allImages = [...currentProduct.images, ...(currentProduct.descriptionImages || [])];
+                                                if (allImages.length === 0) return null;
                                                 const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length ? previewImageIdx : 0;
-                                                const displayUrl = allImages[currentIdx] || currentProduct.images[0];
+                                                const displayUrl = allImages[currentIdx];
                                                 return (
                                                     <>
                                                         <img
