@@ -544,7 +544,7 @@ const AppContent = () => {
       {activePage.startsWith('#support') ? (
         <SupportPage section={activePage.match(/#support\/(.+)/)?.[1]} />
       ) : (
-        {currentView}
+        <>{currentView}</>
       )}
 
       {/* Footer (Hidden on Admin) */}
