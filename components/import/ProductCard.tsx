@@ -13,6 +13,7 @@ export interface ImportableProduct extends AliExpressProduct {
     targetSubcategory?: string;
     isEnhancing?: boolean;
     selectedImages?: number[]; // Indices of selected images for import
+    imageOrder?: number[]; // Custom ordering of selectedImages — position 0 = main listing image
     selectedVariants?: string[]; // IDs of selected variants for import
     originalVariants?: Array<{ id: string; name: string; image?: string }>; // Snapshot of variant state (post-translation) for revert
     variantImageMap?: Record<string, number>; // Maps variant ID → image index for variant-specific images

@@ -54,7 +54,7 @@ export default defineSchema({
         }))),
         // Two-stage pricing fields
         sourcePriceCny: v.optional(v.number()),      // Original 1688 factory price (CNY)
-        estimatedCjCost: v.optional(v.number()),     // Estimated CJ cost (1688 × 1.6, in USD)
+        estimatedCjCost: v.optional(v.number()),     // Estimated CJ cost (1688 × 1.4, in USD)
         estimatedShipping: v.optional(v.number()),   // Estimated shipping (category-based)
         confirmedCjCost: v.optional(v.number()),     // Actual CJ cost after sourcing approval
         pricingStage: v.optional(v.union(
