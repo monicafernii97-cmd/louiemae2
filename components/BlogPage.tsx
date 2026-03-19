@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { FadeIn } from './FadeIn';
 import { useSite } from '../contexts/BlogContext';
 import { useNewsletter } from '../contexts/NewsletterContext';
-import { ArrowRight, Clock, Calendar, Check } from 'lucide-react';
+import { ArrowRight, Calendar, Check } from 'lucide-react';
 
 export const BlogPage: React.FC = () => {
    // Use the hook to get dynamic posts
