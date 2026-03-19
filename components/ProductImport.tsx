@@ -83,6 +83,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
     const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,9 +112,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     // Use a single functional updater so all rebases use latest state
                     setSearchResults(prev => prev.map(p => {
                         if (p.id !== productId) return p;
-                        const prevCount = p.images.length;
+                        const prevCount = (p.images || []).length;
                         const rebase = (idx: number) => (idx >= prevCount ? idx + 1 : idx);
-                        const updatedImages = [...p.images, result.url];
+                        const updatedImages = [...(p.images || []), result.url];
                         const baseline = p.selectedImages ?? Array.from({ length: prevCount }, (_, i) => i);
                         const rebasedSelected = baseline.map(rebase);
                         const newSelected = [...new Set([...rebasedSelected, prevCount])].sort((a, b) => a - b);
@@ -465,6 +466,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
     // Final Import Action
     const confirmImport = () => {
+        if (isImporting) return;
+        setIsImporting(true);
         const selectedProducts = searchResults.filter(p => p.selected);
 
         const productsToImport: Omit<Product, 'id'>[] = selectedProducts.map(p => {
@@ -1374,7 +1377,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </div>
                             <button
                                 onClick={confirmImport}
-                                className="px-8 py-3 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20 flex items-center gap-2"
+                                disabled={isImporting}
+                                className="px-8 py-3 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20 flex items-center gap-2 disabled:opacity-50"
                             >
                                 <Check className="w-4 h-4" /> Confirm & Import ({selectedProducts.length})
                             </button>
@@ -1512,10 +1516,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                         className="w-24 px-2 py-1 text-right text-sm border border-earth/10 rounded-lg focus:ring-2 ring-bronze/20 bg-white"
                                                                                         onChange={(e) => {
                                                                                             // Clear override when input is empty, otherwise set it
+                                                                                            const parsed = parseFloat(e.target.value);
                                                                                             const newOverride = e.target.value === ''
                                                                                                 ? undefined
-                                                                                                : (Number.isFinite(parseFloat(e.target.value)) && parseFloat(e.target.value) > 0
-                                                                                                    ? parseFloat(e.target.value) : undefined);
+                                                                                                : (Number.isFinite(parsed) && parsed > 0 ? parsed : undefined);
                                                                                             const updatedVariants = (product.variants || []).map(v =>
                                                                                                 v.id === variant.id ? { ...v, sellingPriceOverride: newOverride } : v
                                                                                             );
@@ -1554,7 +1558,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </button>
                             <button
                                 onClick={confirmImport}
-                                className="px-10 py-3 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20 flex items-center gap-2"
+                                disabled={isImporting}
+                                className="px-10 py-3 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20 flex items-center gap-2 disabled:opacity-50"
                             >
                                 <Check className="w-4 h-4" /> Confirm & Import All ({selectedProducts.length})
                             </button>
