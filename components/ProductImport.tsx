@@ -1478,13 +1478,16 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                         type="number"
                                                                                         step="0.01"
                                                                                         placeholder={variantSelling.toFixed(2)}
+                                                                                        value={variant.sellingPriceOverride ?? ''}
                                                                                         className="w-24 px-2 py-1 text-right text-sm border border-earth/10 rounded-lg focus:ring-2 ring-bronze/20 bg-white"
                                                                                         onChange={(e) => {
-                                                                                            const val = parseFloat(e.target.value);
-                                                                                            if (!Number.isFinite(val) || val <= 0) return;
-                                                                                            // Store explicit selling-price override (bypasses rounding)
+                                                                                            // Clear override when input is empty, otherwise set it
+                                                                                            const newOverride = e.target.value === ''
+                                                                                                ? undefined
+                                                                                                : (Number.isFinite(parseFloat(e.target.value)) && parseFloat(e.target.value) > 0
+                                                                                                    ? parseFloat(e.target.value) : undefined);
                                                                                             const updatedVariants = (product.variants || []).map(v =>
-                                                                                                v.id === variant.id ? { ...v, sellingPriceOverride: val } : v
+                                                                                                v.id === variant.id ? { ...v, sellingPriceOverride: newOverride } : v
                                                                                             );
                                                                                             updateProductField(product.id, 'variants', updatedVariants);
                                                                                         }}
