@@ -622,7 +622,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         return { ...p, ...updates };
                                                     }));
                                                     toast.success('Translation complete');
-                                                } catch {
+                                                } catch (err) {
+                                                    console.error('Translation failed:', err);
                                                     toast.error('Translation failed');
                                                 } finally {
                                                     setIsTranslating(false);
@@ -727,9 +728,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             <p className="text-xs text-earth/20 mt-1">Tap to upload</p>
                                         </div>
                                     )}
-                                    {currentProduct.images.length > 0 && (
+                                    {(currentProduct.images?.length ?? 0) > 0 && (
                                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
-                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length + (currentProduct.descriptionImages?.length || 0)} Selected
+                                            {(currentProduct.selectedImages?.length || currentProduct.images?.length || 0)} / {(currentProduct.images?.length || 0) + (currentProduct.descriptionImages?.length || 0)} Selected
                                         </div>
                                     )}
                                 </div>
@@ -739,7 +740,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Click to Select Images</p>
                                 </div>
                                 <div className="grid grid-cols-4 gap-2 max-h-52 overflow-y-auto">
-                                    {currentProduct.images.map((img, i) => {
+                                    {(currentProduct.images || []).map((img, i) => {
                                         const isSelected = currentProduct.selectedImages
                                             ? currentProduct.selectedImages.includes(i)
                                             : true; // By default all are selected
@@ -893,7 +894,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 })()}
 
                                 {/* Empty state when no images */}
-                                {currentProduct.images.length === 0 && (
+                                {(currentProduct.images?.length ?? 0) === 0 && (
                                     <div className="flex flex-col items-center justify-center py-6 text-center">
                                         <ImageIcon className="w-10 h-10 text-earth/15 mb-3" />
                                         <p className="text-xs text-earth/40 mb-3">No images available</p>
