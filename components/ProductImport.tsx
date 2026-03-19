@@ -555,14 +555,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         return (
             <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 md:p-8 relative z-20">
-                <style>{`
-                    .glass-panel {
-                        background: rgba(255, 255, 255, 0.95);
-                        backdrop-filter: blur(40px);
-                        border: 1px solid rgba(255, 255, 255, 0.5);
-                        box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
-                    }
-                `}</style>
+
 
                 <FadeIn className="w-full max-w-6xl" mobileFast>
                     <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
@@ -1369,14 +1362,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         return (
             <div className="min-h-[80vh] flex flex-col items-center p-4 md:p-8 relative z-20">
-                <style>{`
-                    .glass-panel {
-                        background: rgba(255, 255, 255, 0.95);
-                        backdrop-filter: blur(40px);
-                        border: 1px solid rgba(255, 255, 255, 0.5);
-                        box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
-                    }
-                `}</style>
+
 
                 <FadeIn className="w-full max-w-6xl" mobileFast>
                     <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
@@ -1849,6 +1835,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             {/* Custom Styles for Float/Glow Animations */}
             <style>{`
+                .glass-panel {
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(40px);
+                    border: 1px solid rgba(255, 255, 255, 0.5);
+                    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+                }
                 @keyframes float {
                     0%, 100% { transform: translateY(0px); }
                     50% { transform: translateY(-10px); }
