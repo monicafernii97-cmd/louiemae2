@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
-import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
+import { aliexpressService } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames } from '../services/geminiService';
 import { translateProductFields, detectChinese } from '../services/translateService';
 import { FadeIn } from './FadeIn';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import { useMutation, useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
 
 interface ProductImportProps {
@@ -50,7 +50,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { /* ignore sessionStorage errors */ }
         }
     };
-    const [totalResults, setTotalResults] = useState(0);
+
     const [currentPage, setCurrentPage] = useState(1);
     const [error, setError] = useState<string | null>(null);
     const [totalPages, setTotalPages] = useState(1);
@@ -69,8 +69,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Import settings
     const [targetCollection, setTargetCollection] = useState<string>(collections[0]?.id || 'furniture');
     const [targetSubcategory, setTargetSubcategory] = useState<string>('');
-    const [pricingRule, setPricingRule] = useState<PricingRule>(DEFAULT_PRICING_RULE);
-    const [showPricingSettings, setShowPricingSettings] = useState(false);
+    const pricingRule = DEFAULT_PRICING_RULE;
 
     // Actions
     const scrapeProduct = useAction(api.scraper.scrapeProduct);
@@ -232,7 +231,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 }));
 
             setSearchResults(filteredProducts);
-            setTotalResults(result.totalCount);
             setTotalPages(result.totalPages || Math.ceil(result.totalCount / 20));
             setCurrentPage(page);
             setSelectAll(false);
@@ -669,7 +667,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {/* Left: Product Images & Basic Info */}
                             <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
-                                    {(currentProduct.images.length > 0 || previewImageIdx !== null) ? (
+                                    {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
                                                 const allImages = [...currentProduct.images, ...(currentProduct.descriptionImages || [])];
@@ -943,7 +941,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             aria-label={`${isSelected ? 'Deselect' : 'Select'} marketing image ${idx + 1}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
+                                                                const current = currentProduct.selectedImages || Array.from({ length: (currentProduct.images || []).length }, (_, i) => i);
                                                                 const newSelected = isSelected
                                                                     ? current.filter(i => i !== globalIdx)
                                                                     : [...current, globalIdx];
