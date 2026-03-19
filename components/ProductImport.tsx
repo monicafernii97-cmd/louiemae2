@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
@@ -421,7 +421,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     });
 
     // Reset preview when switching products or entering review mode
-    React.useEffect(() => {
+    useEffect(() => {
         setPreviewImageIdx(null);
     }, [reviewIndex, importStep]);
     const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
