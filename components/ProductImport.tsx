@@ -80,6 +80,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const imageUploadRef = useRef<HTMLInputElement>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -573,14 +574,49 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {/* Left: Product Images & Basic Info */}
                             <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
-                                    {currentProduct.images.length > 0 ? (
-                                        <img
-                                            src={currentProduct.images[0]}
-                                            alt="Main Preview"
-                                            referrerPolicy="no-referrer"
-                                            crossOrigin="anonymous"
-                                            className="w-full h-full object-contain p-4"
-                                        />
+                                    {(currentProduct.images.length > 0 || previewImage) ? (
+                                        <>
+                                            <img
+                                                src={previewImage || currentProduct.images[0]}
+                                                alt="Main Preview"
+                                                referrerPolicy="no-referrer"
+                                                crossOrigin="anonymous"
+                                                className="w-full h-full object-contain p-4"
+                                            />
+                                            {/* Navigation arrows */}
+                                            {(() => {
+                                                const allImages = [...currentProduct.images, ...(currentProduct.descriptionImages || [])];
+                                                if (allImages.length <= 1) return null;
+                                                const currentIdx = allImages.indexOf(previewImage || currentProduct.images[0]);
+                                                return (
+                                                    <>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const prev = currentIdx <= 0 ? allImages.length - 1 : currentIdx - 1;
+                                                                setPreviewImage(allImages[prev]);
+                                                            }}
+                                                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            ‹
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const next = currentIdx >= allImages.length - 1 ? 0 : currentIdx + 1;
+                                                                setPreviewImage(allImages[next]);
+                                                            }}
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            ›
+                                                        </button>
+                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            {(currentIdx >= 0 ? currentIdx : 0) + 1} / {allImages.length}
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+                                        </>
                                     ) : (
                                         <div
                                             onClick={() => imageUploadRef.current?.click()}
@@ -607,29 +643,34 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         const isSelected = currentProduct.selectedImages
                                             ? currentProduct.selectedImages.includes(i)
                                             : true; // By default all are selected
+                                        const isPreviewing = (previewImage || currentProduct.images[0]) === img;
                                         return (
                                             <div
                                                 key={i}
-                                                onClick={() => {
-                                                    const currentSelected = currentProduct.selectedImages ||
-                                                        currentProduct.images.map((_, idx) => idx);
-                                                    const newSelected = isSelected
-                                                        ? currentSelected.filter(idx => idx !== i)
-                                                        : [...currentSelected, i].sort((a, b) => a - b);
-                                                    // Ensure at least one image is selected
-                                                    if (newSelected.length > 0) {
-                                                        updateReviewProduct('selectedImages', newSelected);
-                                                    }
-                                                }}
+                                                onClick={() => setPreviewImage(img)}
                                                 className={`aspect-square rounded-lg border-2 overflow-hidden bg-white cursor-pointer transition-all relative
-                                                    ${isSelected ? 'border-bronze ring-2 ring-bronze/30' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
+                                                    ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
+                                                    ${isSelected ? 'border-bronze' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
                                             >
                                                 <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                {isSelected && (
-                                                    <div className="absolute top-1 right-1 bg-bronze text-white rounded-full w-5 h-5 flex items-center justify-center shadow">
-                                                        <Check className="w-3 h-3" />
-                                                    </div>
-                                                )}
+                                                {/* Selection checkbox */}
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const currentSelected = currentProduct.selectedImages ||
+                                                            currentProduct.images.map((_, idx) => idx);
+                                                        const newSelected = isSelected
+                                                            ? currentSelected.filter(idx => idx !== i)
+                                                            : [...currentSelected, i].sort((a, b) => a - b);
+                                                        if (newSelected.length > 0) {
+                                                            updateReviewProduct('selectedImages', newSelected);
+                                                        }
+                                                    }}
+                                                    className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors
+                                                        ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                >
+                                                    {isSelected && <Check className="w-3 h-3" />}
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -683,18 +724,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 const isSelected = currentProduct.selectedImages
                                                     ? currentProduct.selectedImages.includes(globalIdx)
                                                     : false; // Marketing images not selected by default
+                                                const isPreviewing = previewImage === img;
                                                 return (
                                                     <div
                                                         key={`mktg-${idx}`}
                                                         className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group transition-all border-2
+                                                            ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
                                                             ${isSelected ? 'border-bronze ring-2 ring-bronze/30 scale-[1.02]' : 'border-transparent hover:border-earth/20'}`}
-                                                        onClick={() => {
-                                                            const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
-                                                            const newSelected = isSelected
-                                                                ? current.filter(i => i !== globalIdx)
-                                                                : [...current, globalIdx];
-                                                            updateReviewProduct('selectedImages', newSelected);
-                                                        }}
+                                                        onClick={() => setPreviewImage(img)}
                                                     >
                                                         <img
                                                             src={img}
@@ -703,11 +740,21 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             crossOrigin="anonymous"
                                                             className="w-full h-full object-cover"
                                                         />
-                                                        {isSelected && (
-                                                            <div className="absolute top-1 right-1 bg-bronze text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow">
-                                                                <Check className="w-3 h-3" />
-                                                            </div>
-                                                        )}
+                                                        {/* Selection checkbox */}
+                                                        <div
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
+                                                                const newSelected = isSelected
+                                                                    ? current.filter(i => i !== globalIdx)
+                                                                    : [...current, globalIdx];
+                                                                updateReviewProduct('selectedImages', newSelected);
+                                                            }}
+                                                            className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors z-10
+                                                                ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                        >
+                                                            {isSelected && <Check className="w-3 h-3" />}
+                                                        </div>
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                                     </div>
                                                 );
