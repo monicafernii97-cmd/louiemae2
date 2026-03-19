@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
@@ -80,6 +80,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const imageUploadRef = useRef<HTMLInputElement>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
+    const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -418,6 +419,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             return saved ? parseInt(saved, 10) : 0;
         } catch { return 0; }
     });
+
+    // Reset preview when switching products or entering review mode
+    useEffect(() => {
+        setPreviewImageIdx(null);
+    }, [reviewIndex, importStep]);
     const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
         if (typeof idxOrUpdater === 'function') {
             setReviewIndexRaw(prev => {
@@ -573,14 +579,56 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {/* Left: Product Images & Basic Info */}
                             <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
-                                    {currentProduct.images.length > 0 ? (
-                                        <img
-                                            src={currentProduct.images[0]}
-                                            alt="Main Preview"
-                                            referrerPolicy="no-referrer"
-                                            crossOrigin="anonymous"
-                                            className="w-full h-full object-contain p-4"
-                                        />
+                                    {(currentProduct.images.length > 0 || previewImageIdx !== null) ? (
+                                        <>
+                                            {(() => {
+                                                const allImages = [...currentProduct.images, ...(currentProduct.descriptionImages || [])];
+                                                if (allImages.length === 0) return null;
+                                                const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length ? previewImageIdx : 0;
+                                                const displayUrl = allImages[currentIdx];
+                                                return (
+                                                    <>
+                                                        <img
+                                                            src={displayUrl}
+                                                            alt="Main Preview"
+                                                            referrerPolicy="no-referrer"
+                                                            crossOrigin="anonymous"
+                                                            className="w-full h-full object-contain p-4"
+                                                        />
+                                                        {/* Navigation arrows */}
+                                                        {allImages.length > 1 && (
+                                                            <>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const prev = currentIdx <= 0 ? allImages.length - 1 : currentIdx - 1;
+                                                                        setPreviewImageIdx(prev);
+                                                                    }}
+                                                                    aria-label="Previous image"
+                                                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                                                                >
+                                                                    ‹
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const next = currentIdx >= allImages.length - 1 ? 0 : currentIdx + 1;
+                                                                        setPreviewImageIdx(next);
+                                                                    }}
+                                                                    aria-label="Next image"
+                                                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                                                                >
+                                                                    ›
+                                                                </button>
+                                                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                                    {currentIdx + 1} / {allImages.length}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </>
                                     ) : (
                                         <div
                                             onClick={() => imageUploadRef.current?.click()}
@@ -607,29 +655,37 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         const isSelected = currentProduct.selectedImages
                                             ? currentProduct.selectedImages.includes(i)
                                             : true; // By default all are selected
+                                        const isPreviewing = (previewImageIdx ?? 0) === i;
                                         return (
                                             <div
                                                 key={i}
-                                                onClick={() => {
-                                                    const currentSelected = currentProduct.selectedImages ||
-                                                        currentProduct.images.map((_, idx) => idx);
-                                                    const newSelected = isSelected
-                                                        ? currentSelected.filter(idx => idx !== i)
-                                                        : [...currentSelected, i].sort((a, b) => a - b);
-                                                    // Ensure at least one image is selected
-                                                    if (newSelected.length > 0) {
-                                                        updateReviewProduct('selectedImages', newSelected);
-                                                    }
-                                                }}
+                                                onClick={() => setPreviewImageIdx(i)}
                                                 className={`aspect-square rounded-lg border-2 overflow-hidden bg-white cursor-pointer transition-all relative
-                                                    ${isSelected ? 'border-bronze ring-2 ring-bronze/30' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
+                                                    ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
+                                                    ${isSelected ? 'border-bronze' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
                                             >
                                                 <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                {isSelected && (
-                                                    <div className="absolute top-1 right-1 bg-bronze text-white rounded-full w-5 h-5 flex items-center justify-center shadow">
-                                                        <Check className="w-3 h-3" />
-                                                    </div>
-                                                )}
+                                                {/* Selection checkbox */}
+                                                <button
+                                                    type="button"
+                                                    aria-pressed={isSelected}
+                                                    aria-label={`${isSelected ? 'Deselect' : 'Select'} product image ${i + 1}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const currentSelected = currentProduct.selectedImages ||
+                                                            currentProduct.images.map((_, idx) => idx);
+                                                        const newSelected = isSelected
+                                                            ? currentSelected.filter(idx => idx !== i)
+                                                            : [...currentSelected, i].sort((a, b) => a - b);
+                                                        if (newSelected.length > 0) {
+                                                            updateReviewProduct('selectedImages', newSelected);
+                                                        }
+                                                    }}
+                                                    className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors
+                                                        ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                >
+                                                    {isSelected && <Check className="w-3 h-3" />}
+                                                </button>
                                             </div>
                                         );
                                     })}
@@ -683,18 +739,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 const isSelected = currentProduct.selectedImages
                                                     ? currentProduct.selectedImages.includes(globalIdx)
                                                     : false; // Marketing images not selected by default
+                                                const isPreviewing = previewImageIdx === globalIdx;
                                                 return (
                                                     <div
                                                         key={`mktg-${idx}`}
                                                         className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group transition-all border-2
+                                                            ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
                                                             ${isSelected ? 'border-bronze ring-2 ring-bronze/30 scale-[1.02]' : 'border-transparent hover:border-earth/20'}`}
-                                                        onClick={() => {
-                                                            const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
-                                                            const newSelected = isSelected
-                                                                ? current.filter(i => i !== globalIdx)
-                                                                : [...current, globalIdx];
-                                                            updateReviewProduct('selectedImages', newSelected);
-                                                        }}
+                                                        onClick={() => setPreviewImageIdx(globalIdx)}
                                                     >
                                                         <img
                                                             src={img}
@@ -703,11 +755,26 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             crossOrigin="anonymous"
                                                             className="w-full h-full object-cover"
                                                         />
-                                                        {isSelected && (
-                                                            <div className="absolute top-1 right-1 bg-bronze text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow">
-                                                                <Check className="w-3 h-3" />
-                                                            </div>
-                                                        )}
+                                                        {/* Selection checkbox */}
+                                                        <button
+                                                            type="button"
+                                                            aria-pressed={isSelected}
+                                                            aria-label={`${isSelected ? 'Deselect' : 'Select'} marketing image ${idx + 1}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
+                                                                const newSelected = isSelected
+                                                                    ? current.filter(i => i !== globalIdx)
+                                                                    : [...current, globalIdx];
+                                                                if (newSelected.length > 0) {
+                                                                    updateReviewProduct('selectedImages', newSelected);
+                                                                }
+                                                            }}
+                                                            className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors z-10
+                                                                ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                        >
+                                                            {isSelected && <Check className="w-3 h-3" />}
+                                                        </button>
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                                     </div>
                                                 );
