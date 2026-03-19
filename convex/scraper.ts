@@ -368,34 +368,38 @@ async function scrape1688(productId: string, originalUrl?: string) {
                     console.log(`[Scraper] OtapiItemDescription.ItemDescription: ${otapiDescHtml ? `${typeof otapiDescHtml} (${String(otapiDescHtml).length} chars)` : 'missing'}`);
                 }
 
-                // FALLBACK: also check Result.* and nested paths in case API format changes
+                // FALLBACK: scan top-level and Result.* for any other HTML strings
+                const htmlStrings = getHtmlCandidates(descData).filter(html => html !== otapiDescHtml);
                 if (descData?.Result && typeof descData.Result === 'object' && Object.keys(descData.Result).length > 0) {
                     console.log(`[Scraper] GetItemDescription Result keys: ${JSON.stringify(Object.keys(descData.Result))}`);
-                    const htmlStrings = [
-                        ...getHtmlCandidates(descData.Result),
-                        ...getHtmlCandidates(descData),
-                    ];
-                    if (typeof descData.Result === 'string' && descData.Result.length > 50) {
-                        htmlStrings.push(descData.Result);
-                    }
+                    htmlStrings.push(...getHtmlCandidates(descData.Result));
+                }
+                if (typeof descData?.Result === 'string' && descData.Result.length > 50) {
+                    htmlStrings.push(descData.Result);
+                }
+                if (htmlStrings.length > 0) {
                     const seenHtml = new Set<string>();
                     for (const html of htmlStrings) {
                         if (seenHtml.has(html)) continue;
                         seenHtml.add(html);
                         const extracted = extractImagesFromHtml(html);
                         extracted.forEach(pushImage);
-                        console.log(`[Scraper] Source 3 fallback (Result.*): ${extracted.length} images from ${html.length} char HTML`);
+                        console.log(`[Scraper] Source 3 fallback: ${extracted.length} images from ${html.length} char HTML`);
                     }
                 }
 
-                // Also check for structured image arrays in the response
-                const descImages = descData?.Result?.Images || descData?.Result?.DescriptionImages || descData?.OtapiItemDescription?.Images;
-                if (Array.isArray(descImages)) {
-                    descImages.forEach((img: any) => {
+                // Process ALL structured image arrays (not just the first truthy one)
+                const descImageArrays = [
+                    descData?.OtapiItemDescription?.Images,
+                    descData?.Result?.Images,
+                    descData?.Result?.DescriptionImages,
+                ].filter((value): value is any[] => Array.isArray(value));
+                for (const imgArray of descImageArrays) {
+                    imgArray.forEach((img: any) => {
                         const url = typeof img === 'string' ? img : img?.Url || img?.Large?.Url;
                         if (url && typeof url === 'string') pushImage(url);
                     });
-                    console.log(`[Scraper] Source 3 (images array): ${descImages.length} items`);
+                    console.log(`[Scraper] Source 3 (images array): ${imgArray.length} items`);
                 }
             } catch (descErr: any) {
                 console.warn(`[Scraper] Failed to parse description response: ${descErr.message}`);
