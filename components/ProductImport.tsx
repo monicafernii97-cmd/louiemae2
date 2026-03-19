@@ -1513,6 +1513,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                     <input
                                                                                         type="number"
                                                                                         step="0.01"
+                                                                                        min="0.01"
                                                                                         placeholder={variantSelling.toFixed(2)}
                                                                                         value={variant.sellingPriceOverride ?? ''}
                                                                                         className="w-24 px-2 py-1 text-right text-sm border border-earth/10 rounded-lg focus:ring-2 ring-bronze/20 bg-white"
