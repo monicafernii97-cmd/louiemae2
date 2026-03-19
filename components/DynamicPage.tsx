@@ -130,7 +130,7 @@ export const DynamicSectionRenderer: React.FC<{ section: PageSection, index: num
                 </section>
             );
 
-        case 'product-feature':
+        case 'product-feature': {
             const product = products.find(p => p.id === section.productId);
             if (!product) {
                 // Return a placeholder or null, but for admin preview purposes, user might want to see that something is there.
@@ -156,6 +156,7 @@ export const DynamicSectionRenderer: React.FC<{ section: PageSection, index: num
                     </div>
                 </section>
             );
+        }
 
         default:
         return null;

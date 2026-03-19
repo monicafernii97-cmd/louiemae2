@@ -54,6 +54,12 @@ export default [
                 MutationObserver: 'readonly',
                 ResizeObserver: 'readonly',
                 process: 'readonly',
+                HashChangeEvent: 'readonly',
+                ScrollBehavior: 'readonly',
+                DataTransfer: 'readonly',
+                MediaQueryListEvent: 'readonly',
+                Node: 'readonly',
+                requestAnimationFrame: 'readonly',
             },
         },
         plugins: {

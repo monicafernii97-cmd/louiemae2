@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, X, Instagram, Facebook, Twitter, ChevronDown, ArrowRight, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Menu, Search, X, Instagram, Facebook, Twitter, ChevronDown } from 'lucide-react';
 import { AiConcierge } from './components/AiConcierge';
 import { NavLink } from './types';
 import { HomePage } from './components/HomePage';
@@ -108,7 +108,7 @@ const AppContent = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activePage, setActivePage] = useState<string>('home');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [_selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -273,7 +273,7 @@ const AppContent = () => {
     const collectionExists = siteContent.collections.some(c => c.id === type);
 
     if (collectionExists) {
-      CurrentComponent = () => <StorePage collection={type as any} initialCategory={category || 'All'} forceProductView={viewProducts} />;
+      CurrentComponent = () => <StorePage collection={type as string} initialCategory={category || 'All'} forceProductView={viewProducts} />;
     } else {
       CurrentComponent = HomePage;
     }

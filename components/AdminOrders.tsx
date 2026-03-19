@@ -7,6 +7,14 @@ import { Package, Truck, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Ma
 type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 type CjStatus = 'pending' | 'sending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'failed' | 'cancelled';
 
+interface OrderItem {
+    name: string;
+    quantity: number;
+    price: number;
+    cjVariantId?: string;
+    cjSku?: string;
+}
+
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: React.ReactNode }> = {
     pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-700', icon: <Clock className="w-4 h-4" /> },
     paid: { label: 'Paid', color: 'bg-green-100 text-green-700', icon: <CheckCircle className="w-4 h-4" /> },
@@ -153,7 +161,7 @@ export const AdminOrders: React.FC = () => {
                         const isExpanded = expandedOrder === order._id;
                         const status = statusConfig[order.status as OrderStatus] || statusConfig.pending;
                         const cjStatus = order.cjStatus ? cjStatusConfig[order.cjStatus as CjStatus] : null;
-                        const hasCjProducts = order.items?.some((item: any) => item.cjVariantId || item.cjSku);
+                        const hasCjProducts = order.items?.some((item: OrderItem) => item.cjVariantId || item.cjSku);
 
                         return (
                             <div key={order._id} className={`bg-white border rounded-lg overflow-hidden shadow-sm ${order.cjStatus === 'failed' ? 'border-red-300' : 'border-earth/10'}`}>
@@ -203,7 +211,7 @@ export const AdminOrders: React.FC = () => {
                                             <div>
                                                 <h4 className="text-xs uppercase tracking-widest text-earth/50 mb-3">Items</h4>
                                                 <div className="space-y-2">
-                                                    {order.items.map((item: any, idx: number) => (
+                                                    {order.items.map((item: OrderItem, idx: number) => (
                                                         <div key={idx} className="flex justify-between text-sm">
                                                             <span className="text-earth">
                                                                 {item.name} × {item.quantity}

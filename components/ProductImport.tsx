@@ -41,12 +41,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         if (typeof resultsOrUpdater === 'function') {
             setSearchResultsRaw(prev => {
                 const next = resultsOrUpdater(prev);
-                try { sessionStorage.setItem('import-search-results', JSON.stringify(next)); } catch { }
+                try { sessionStorage.setItem('import-search-results', JSON.stringify(next)); } catch { /* ignore sessionStorage errors */ }
                 return next;
             });
         } else {
             setSearchResultsRaw(resultsOrUpdater);
-            try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { }
+            try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { /* ignore sessionStorage errors */ }
         }
     };
     const [totalResults, setTotalResults] = useState(0);
