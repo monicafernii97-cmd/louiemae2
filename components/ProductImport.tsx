@@ -420,10 +420,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         } catch { return 0; }
     });
 
-    // Reset preview when switching products in review mode
+    // Reset preview when switching products or entering review mode
     React.useEffect(() => {
         setPreviewImage(null);
-    }, [reviewIndex]);
+    }, [reviewIndex, importStep]);
     const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
         if (typeof idxOrUpdater === 'function') {
             setReviewIndexRaw(prev => {
@@ -602,7 +602,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 setPreviewImage(allImages[prev]);
                                                             }}
                                                             aria-label="Previous image"
-                                                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                                                         >
                                                             ‹
                                                         </button>
@@ -613,11 +613,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 setPreviewImage(allImages[next]);
                                                             }}
                                                             aria-label="Next image"
-                                                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                                                         >
                                                             ›
                                                         </button>
-                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                                             {(currentIdx >= 0 ? currentIdx : 0) + 1} / {allImages.length}
                                                         </div>
                                                     </>
@@ -661,7 +661,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             >
                                                 <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
                                                 {/* Selection checkbox */}
-                                                <div
+                                                <button
+                                                    type="button"
+                                                    aria-pressed={isSelected}
+                                                    aria-label={`${isSelected ? 'Deselect' : 'Select'} product image ${i + 1}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         const currentSelected = currentProduct.selectedImages ||
@@ -677,7 +680,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
                                                 >
                                                     {isSelected && <Check className="w-3 h-3" />}
-                                                </div>
+                                                </button>
                                             </div>
                                         );
                                     })}
@@ -748,7 +751,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             className="w-full h-full object-cover"
                                                         />
                                                         {/* Selection checkbox */}
-                                                        <div
+                                                        <button
+                                                            type="button"
+                                                            aria-pressed={isSelected}
+                                                            aria-label={`${isSelected ? 'Deselect' : 'Select'} marketing image ${idx + 1}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
@@ -763,7 +769,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
                                                         >
                                                             {isSelected && <Check className="w-3 h-3" />}
-                                                        </div>
+                                                        </button>
                                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                                     </div>
                                                 );
