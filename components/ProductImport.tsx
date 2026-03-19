@@ -463,6 +463,20 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         setError(null);
     };
 
+    /** Resolves selected images in the user's custom display order, normalizing URLs. */
+    const getOrderedImages = (p: ImportableProduct): string[] => {
+        const combinedImages = [...(p.images || []), ...(p.descriptionImages || [])];
+        const selected = p.selectedImages && p.selectedImages.length > 0
+            ? p.selectedImages : p.images.map((_, i) => i);
+        const ordered = p.imageOrder && p.imageOrder.length > 0
+            ? p.imageOrder.filter(i => selected.includes(i)) : [...selected];
+        const missing = selected.filter(i => !ordered.includes(i));
+        return [...ordered, ...missing]
+            .map(idx => combinedImages[idx])
+            .filter(Boolean)
+            .map(img => img.startsWith('//') ? 'https:' + img : img);
+    };
+
     // Final Import Action
     const confirmImport = () => {
         const selectedProducts = searchResults.filter(p => p.selected);
@@ -473,21 +487,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const subcategories = getSubcategoriesForCollection(productCollection);
             const subcategoryTitle = subcategories.find(s => s.id === productSubcategory)?.title || productSubcategory || p.category || 'General';
 
-            // Filter images based on user selection (defaults to all main images if no selection made)
-            // Use combined array so marketing image indices (globalIdx) resolve correctly
-            const combinedImages = [...p.images, ...(p.descriptionImages || [])];
-            const selected = p.selectedImages && p.selectedImages.length > 0
-                ? p.selectedImages
-                : p.images.map((_, i) => i);
-            // Respect user's custom image ordering (imageOrder stores the display sequence)
-            const ordered = p.imageOrder && p.imageOrder.length > 0
-                ? p.imageOrder.filter(i => selected.includes(i))
-                : [...selected];
-            // Add any selected images not yet in the order (newly added)
-            const missing = selected.filter(i => !ordered.includes(i));
-            const rawImages = [...ordered, ...missing].map(idx => combinedImages[idx]).filter(Boolean);
-            // Normalize protocol-relative URLs (// -> https://)
-            const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
+            const finalImages = getOrderedImages(p);
 
             // Detect if collection was changed from the default
             const collectionChanged = p.targetCollection && p.targetCollection !== targetCollection;
@@ -1318,17 +1318,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             return calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
         };
 
-        // Get ordered images for a product
-        const getOrderedImages = (p: ImportableProduct) => {
-            const combinedImages = [...(p.images || []), ...(p.descriptionImages || [])];
-            const selected = p.selectedImages && p.selectedImages.length > 0
-                ? p.selectedImages : p.images.map((_, i) => i);
-            const ordered = p.imageOrder && p.imageOrder.length > 0
-                ? p.imageOrder.filter(i => selected.includes(i)) : [...selected];
-            const missing = selected.filter(i => !ordered.includes(i));
-            return [...ordered, ...missing].map(idx => combinedImages[idx]).filter(Boolean)
-                .map(img => img.startsWith('//') ? 'https:' + img : img);
-        };
 
         return (
             <div className="min-h-[80vh] flex flex-col items-center p-4 md:p-8 relative z-20">
