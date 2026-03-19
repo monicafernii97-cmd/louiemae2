@@ -82,6 +82,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+    // Reset preview when switching products in review mode
+    React.useEffect(() => {
+        setPreviewImage(null);
+    }, [reviewIndex]);
+
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -748,7 +753,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 const newSelected = isSelected
                                                                     ? current.filter(i => i !== globalIdx)
                                                                     : [...current, globalIdx];
-                                                                updateReviewProduct('selectedImages', newSelected);
+                                                                if (newSelected.length > 0) {
+                                                                    updateReviewProduct('selectedImages', newSelected);
+                                                                }
                                                             }}
                                                             className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors z-10
                                                                 ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
