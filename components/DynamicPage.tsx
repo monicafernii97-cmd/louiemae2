@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { CustomPage, PageSection } from '../types';
 import { FadeIn } from './FadeIn';
-import { ArrowUpRight, ShoppingBag, ArrowRight } from 'lucide-react';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { useSite } from '../contexts/BlogContext';
 
 interface DynamicPageProps {
@@ -12,7 +12,6 @@ interface DynamicPageProps {
 
 export const DynamicSectionRenderer: React.FC<{ section: PageSection, index: number }> = ({ section, index }) => {
     const { products } = useSite();
-    const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
     switch (section.type) {
         case 'hero':
@@ -130,7 +129,7 @@ export const DynamicSectionRenderer: React.FC<{ section: PageSection, index: num
                 </section>
             );
 
-        case 'product-feature':
+        case 'product-feature': {
             const product = products.find(p => p.id === section.productId);
             if (!product) {
                 // Return a placeholder or null, but for admin preview purposes, user might want to see that something is there.
@@ -156,6 +155,7 @@ export const DynamicSectionRenderer: React.FC<{ section: PageSection, index: num
                     </div>
                 </section>
             );
+        }
 
         default:
         return null;

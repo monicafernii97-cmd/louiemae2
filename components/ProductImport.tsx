@@ -41,12 +41,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         if (typeof resultsOrUpdater === 'function') {
             setSearchResultsRaw(prev => {
                 const next = resultsOrUpdater(prev);
-                try { sessionStorage.setItem('import-search-results', JSON.stringify(next)); } catch { }
+                try { sessionStorage.setItem('import-search-results', JSON.stringify(next)); } catch { /* ignore sessionStorage errors */ }
                 return next;
             });
         } else {
             setSearchResultsRaw(resultsOrUpdater);
-            try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { }
+            try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { /* ignore sessionStorage errors */ }
         }
     };
     const [totalResults, setTotalResults] = useState(0);
@@ -428,12 +428,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         if (typeof idxOrUpdater === 'function') {
             setReviewIndexRaw(prev => {
                 const next = idxOrUpdater(prev);
-                try { sessionStorage.setItem('import-review-index', String(next)); } catch { }
+                try { sessionStorage.setItem('import-review-index', String(next)); } catch { /* ignore sessionStorage errors */ }
                 return next;
             });
         } else {
             setReviewIndexRaw(idxOrUpdater);
-            try { sessionStorage.setItem('import-review-index', String(idxOrUpdater)); } catch { }
+            try { sessionStorage.setItem('import-review-index', String(idxOrUpdater)); } catch { /* ignore sessionStorage errors */ }
         }
     };
 

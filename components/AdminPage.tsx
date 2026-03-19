@@ -6,9 +6,9 @@ import { useSite } from '../contexts/BlogContext';
 import { RichTextEditor } from './RichTextEditor';
 import { useNewsletter } from '../contexts/NewsletterContext';
 import { FadeIn } from './FadeIn';
-import { Plus, Edit3, Trash2, LogOut, Save, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, Box, Shirt, Baby, Sofa, Gamepad2, Bed, Wand2, ChevronDown, List, Layers, Link as LinkIcon, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, TrendingUp, BarChart2, Package, Lock, ChevronLeft } from 'lucide-react';
-import { BlogPost, SiteContent, CustomPage, PageSection, Product, CollectionType, CollectionConfig, NavLink, SectionItem, EmailCampaign } from '../types';
-import { generatePageStructure, suggestProductCategory, generateEmailSubject, generateEmailBody, generateProductName, generateProductDescription } from '../services/geminiService';
+import { Plus, Edit3, Trash2, LogOut, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, ChevronDown, Layers, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, BarChart2, Package, Lock, ChevronLeft } from 'lucide-react';
+import { BlogPost, CustomPage, PageSection, Product, CollectionType, CollectionConfig, EmailCampaign } from '../types';
+import { generatePageStructure } from '../services/geminiService';
 import { AdminOrders } from './AdminOrders';
 import { NewsletterStudio } from './NewsletterStudio';
 import { ProductStudio } from './ProductStudio';
@@ -147,20 +147,20 @@ const ImageUploader: React.FC<{
 };
 
 export const AdminPage: React.FC = () => {
-   const { isAuthenticated, isAuthLoading, signIn, logout, posts, addPost, updatePost, deletePost, siteContent, updateSiteContent, addCustomPage, updateCustomPage, deleteCustomPage, products, addProduct, updateProduct, deleteProduct, addCollection, updateCollection, deleteCollection, updateNavigation } = useSite();
+   const { isAuthenticated, isAuthLoading, signIn, logout, posts, addPost, updatePost, deletePost, siteContent, updateSiteContent, addCustomPage, updateCustomPage, deleteCustomPage, products, addProduct, updateProduct, deleteProduct, addCollection, updateCollection, deleteCollection } = useSite();
    const { subscribers, campaigns, createCampaign, updateCampaign, sendCampaign, deleteCampaign, stats } = useNewsletter();
 
    const [email, setEmail] = useState('');
    const [password, setPassword] = useState('');
    const [error, setError] = useState('');
    const [isSigningIn, setIsSigningIn] = useState(false);
-   const [authFlow, setAuthFlow] = useState<'signIn' | 'signUp'>('signIn');
+   const [authFlow] = useState<'signIn' | 'signUp'>('signIn');
 
    // Navigation State
    const [activeTab, setActiveTabState] = useState<'dashboard' | 'journal' | 'pages' | 'products' | 'structure' | 'newsletter' | 'orders' | 'import' | 'cj-settings'>(() => {
       const saved = localStorage.getItem('admin-active-tab');
-      const validTabs = ['dashboard', 'journal', 'pages', 'products', 'structure', 'newsletter', 'orders', 'import', 'cj-settings'];
-      return (saved && validTabs.includes(saved) ? saved : 'dashboard') as any;
+      const validTabs = ['dashboard', 'journal', 'pages', 'products', 'structure', 'newsletter', 'orders', 'import', 'cj-settings'] as const;
+      return saved && (validTabs as readonly string[]).includes(saved) ? saved as typeof validTabs[number] : 'dashboard';
    });
    const setActiveTab = (tab: typeof activeTab) => {
       setActiveTabState(tab);
@@ -180,20 +180,20 @@ export const AdminPage: React.FC = () => {
    const [isEditingPost, setIsEditingPost] = useState(false);
    const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null);
    const [excerptGenerating, setExcerptGenerating] = useState(false);
-   const [excerptOptions, setExcerptOptions] = useState<any[]>([]);
+   const [excerptOptions, setExcerptOptions] = useState<{ style: string; text: string }[]>([]);
 
    // Product Editor State
    const [isEditingProduct, setIsEditingProduct] = useState(false);
    const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
-   const [isCategorizing, setIsCategorizing] = useState(false);
+
 
    // Structure/Collection Editor State
    const [editingCollection, setEditingCollection] = useState<Partial<CollectionConfig> | null>(null);
-   const [editingNav, setEditingNav] = useState<NavLink[] | null>(null);
+
 
    // Newsletter Editor State
    const [editingCampaign, setEditingCampaign] = useState<Partial<EmailCampaign> | null>(null);
-   const [aiGenerating, setAiGenerating] = useState<'subject' | 'body' | null>(null);
+
 
    // New Page Generation State
    const [showPageGenerator, setShowPageGenerator] = useState(false);
@@ -211,8 +211,8 @@ export const AdminPage: React.FC = () => {
       try {
          await signIn(email, password, authFlow);
          // Auth state will update automatically via useConvexAuth
-      } catch (err: any) {
-         setError(err.message || 'Authentication failed. Please try again.');
+      } catch (err: unknown) {
+         setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
       } finally {
          setIsSigningIn(false);
       }
@@ -265,33 +265,7 @@ export const AdminPage: React.FC = () => {
       });
    };
 
-   const handleSaveCampaign = () => {
-      if (!editingCampaign?.subject || !editingCampaign?.content) return;
 
-      if (editingCampaign.id) {
-         updateCampaign(editingCampaign.id, editingCampaign);
-      } else {
-         createCampaign(editingCampaign as any);
-      }
-      setEditingCampaign(null);
-   };
-
-   const handleGenerateSubject = async () => {
-      if (!editingCampaign?.content) return alert("Write some content first for context.");
-      setAiGenerating('subject');
-      const subjects = await generateEmailSubject(editingCampaign.content.substring(0, 100)); // Use first 100 chars as topic
-      if (subjects.length > 0) {
-         setEditingCampaign(prev => prev ? ({ ...prev, subject: subjects[0] }) : null);
-      }
-      setAiGenerating(null);
-   };
-
-   const handleGenerateBody = async (topic: string) => {
-      setAiGenerating('body');
-      const body = await generateEmailBody(topic, editingCampaign?.type as any || 'newsletter');
-      setEditingCampaign(prev => prev ? ({ ...prev, content: body }) : null);
-      setAiGenerating(null);
-   };
 
    // --- BLOG HANDLERS ---
    const handleCreateNewPost = () => {
@@ -353,29 +327,8 @@ export const AdminPage: React.FC = () => {
       setIsEditingProduct(true);
    };
 
-   const handleSaveProduct = () => {
-      if (!editingProduct?.name || !editingProduct?.price) return;
-      if (editingProduct.id) {
-         updateProduct(editingProduct.id, editingProduct);
-      } else {
-         addProduct(editingProduct as Omit<Product, 'id'>);
-      }
-      setIsEditingProduct(false);
-      setEditingProduct(null);
-   };
-
    const handleDeleteProduct = (id: string) => {
       if (confirm('Delete this product?')) deleteProduct(id);
-   };
-
-   const handleAutoCategorize = async () => {
-      if (!editingProduct?.name) return;
-      setIsCategorizing(true);
-      const category = await suggestProductCategory(editingProduct.name, editingProduct.description || '');
-      if (category) {
-         setEditingProduct(prev => prev ? ({ ...prev, category }) : null);
-      }
-      setIsCategorizing(false);
    };
 
    // --- STRUCTURE HANDLERS ---
@@ -422,14 +375,14 @@ export const AdminPage: React.FC = () => {
             id: Date.now().toString(),
             slug: generatorPrompt.title.toLowerCase().replace(/\s+/g, '-'),
             title: generatedContent.title,
-            sections: generatedContent.sections as any
+            sections: generatedContent.sections as PageSection[]
          };
 
          addCustomPage(newPage);
          setShowPageGenerator(false);
          setGeneratorPrompt({ title: '', description: '' });
          setActivePageEditor(newPage.id);
-      } catch (e) {
+      } catch {
          alert("Failed to generate page. Please try again.");
       } finally {
          setIsGenerating(false);
@@ -1735,7 +1688,7 @@ export const AdminPage: React.FC = () => {
                if (campaign.id) {
                   updateCampaign(campaign.id, campaign);
                } else {
-                  createCampaign(campaign as any);
+                  createCampaign(campaign as Omit<EmailCampaign, 'id' | 'stats' | 'status'>);
                }
                // If status is sent, trigger send logic
                if (campaign.status === 'sent' && campaign.id) {
@@ -1806,7 +1759,7 @@ export const AdminPage: React.FC = () => {
                            </div>
                            <div>
                               <label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Status</label>
-                              <select value={editingPost.status} onChange={(e) => setEditingPost({ ...editingPost, status: e.target.value as any })} className="w-full bg-cream/30 p-3 border border-earth/10">
+                              <select value={editingPost.status} onChange={(e) => setEditingPost({ ...editingPost, status: e.target.value as 'draft' | 'published' })} className="w-full bg-cream/30 p-3 border border-earth/10">
                                  <option value="draft">Draft</option>
                                  <option value="published">Published</option>
                               </select>
@@ -1870,7 +1823,7 @@ ${plainText.slice(0, 3000)}`,
                            {excerptOptions.length > 0 && (
                               <div className="mt-3 space-y-2">
                                  <p className="text-[9px] uppercase tracking-widest text-earth/30 mb-2">Choose an excerpt:</p>
-                                 {excerptOptions.map((opt: any, idx: number) => (
+                                 {excerptOptions.map((opt, idx: number) => (
                                     <button
                                        key={idx}
                                        type="button"
