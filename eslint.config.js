@@ -64,6 +64,7 @@ export default [
                 TouchEvent: 'readonly',
                 Image: 'readonly',
                 getComputedStyle: 'readonly',
+                AbortController: 'readonly',
             },
         },
         plugins: {

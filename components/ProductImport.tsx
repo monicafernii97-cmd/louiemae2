@@ -104,43 +104,26 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const { storageId } = await response.json();
             const result = await saveFile({ storageId, fileName: file.name, fileType: file.type, purpose: 'product' });
             if (result.url) {
-                // Add the uploaded image to the current review product
-                const currentProduct = searchResults.filter(p => p.selected)[reviewIndex];
-                if (currentProduct) {
-                    const prevMainCount = currentProduct.images.length;
-                    const newImages = [...currentProduct.images, result.url];
-                    updateProductField(currentProduct.id, 'images', newImages);
-
-                    // Rebase indices: new main image shifts description-image offsets by 1
-                    const rebaseIdx = (idx: number) => (idx >= prevMainCount ? idx + 1 : idx);
-
-                    const baselineSelected =
-                        currentProduct.selectedImages ?? Array.from({ length: prevMainCount }, (_, i) => i);
-                    const rebasedSelected = baselineSelected.map(rebaseIdx);
-                    // Include the newly uploaded image as selected
-                    const newSelectedImages = [...new Set([...rebasedSelected, prevMainCount])].sort((a, b) => a - b);
-                    updateProductField(currentProduct.id, 'selectedImages', newSelectedImages);
-
-                    // Rebase variant-image map
-                    if (currentProduct.variantImageMap) {
-                        const rebasedMap = Object.fromEntries(
-                            Object.entries(currentProduct.variantImageMap).map(([variantId, idx]) => [
-                                variantId,
-                                rebaseIdx(idx as number),
-                            ])
-                        );
-                        updateProductField(currentProduct.id, 'variantImageMap', rebasedMap);
-                    }
-                    // Rebase image order
-                    if (currentProduct.imageOrder) {
-                        updateProductField(
-                            currentProduct.id,
-                            'imageOrder',
-                            currentProduct.imageOrder.map(rebaseIdx),
-                        );
-                    }
+                    // Capture the product ID before the functional updater
+                    const target = searchResults.filter(p => p.selected)[reviewIndex];
+                    if (!target) return;
+                    const productId = target.id;
+                    // Use a single functional updater so all rebases use latest state
+                    setSearchResults(prev => prev.map(p => {
+                        if (p.id !== productId) return p;
+                        const prevCount = p.images.length;
+                        const rebase = (idx: number) => (idx >= prevCount ? idx + 1 : idx);
+                        const updatedImages = [...p.images, result.url];
+                        const baseline = p.selectedImages ?? Array.from({ length: prevCount }, (_, i) => i);
+                        const rebasedSelected = baseline.map(rebase);
+                        const newSelected = [...new Set([...rebasedSelected, prevCount])].sort((a, b) => a - b);
+                        const newMap = p.variantImageMap
+                            ? Object.fromEntries(Object.entries(p.variantImageMap).map(([vid, idx]) => [vid, rebase(idx as number)]))
+                            : p.variantImageMap;
+                        const newOrder = p.imageOrder ? p.imageOrder.map(rebase) : p.imageOrder;
+                        return { ...p, images: updatedImages, selectedImages: newSelected, variantImageMap: newMap, imageOrder: newOrder };
+                    }));
                     toast.success('Image uploaded!');
-                }
             }
         } catch (err) {
             console.error('Image upload error:', err);
@@ -411,18 +394,21 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
     // Import Multi-Step Workflow State
     const [importStep, setImportStepRaw] = useState<'search' | 'review' | 'final-review'>(() => {
-        const saved = sessionStorage.getItem('import-step');
-        if (saved === 'review' || saved === 'final-review') return saved as 'review' | 'final-review';
+        try {
+            const saved = sessionStorage.getItem('import-step');
+            if (saved === 'review' || saved === 'final-review') return saved;
+        } catch { /* ignore sessionStorage errors */ }
         return 'search';
     });
     const setImportStep = (step: 'search' | 'review' | 'final-review') => {
         setImportStepRaw(step);
-        sessionStorage.setItem('import-step', step);
-        if (step === 'search') {
-            // Clear review data when going back to search
-            sessionStorage.removeItem('import-search-results');
-            sessionStorage.removeItem('import-review-index');
-        }
+        try {
+            sessionStorage.setItem('import-step', step);
+            if (step === 'search') {
+                sessionStorage.removeItem('import-search-results');
+                sessionStorage.removeItem('import-review-index');
+            }
+        } catch { /* ignore sessionStorage errors */ }
     };
     const [reviewIndex, setReviewIndexRaw] = useState(() => {
         try {
@@ -589,11 +575,20 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     updateProductField(productId, 'customName', result.name);
                                                     updateProductField(productId, 'customDescription', result.description);
                                                     if (variantsAtStart.length > 0) {
-                                                        const updatedVariants = variantsAtStart.map((v, i) => ({
-                                                            ...v,
-                                                            name: result.variantNames[i] || v.name,
+                                                        // Build a map of translated names keyed by variant ID
+                                                        const translatedMap = new Map<string, string>();
+                                                        variantsAtStart.forEach((v, i) => {
+                                                            if (result.variantNames[i]) translatedMap.set(v.id, result.variantNames[i]);
+                                                        });
+                                                        // Merge into the latest variants (preserves concurrent edits)
+                                                        setSearchResults(prev => prev.map(p => {
+                                                            if (p.id !== productId) return p;
+                                                            const merged = (p.variants || []).map(v => ({
+                                                                ...v,
+                                                                name: translatedMap.get(v.id) || v.name,
+                                                            }));
+                                                            return { ...p, variants: merged };
                                                         }));
-                                                        updateProductField(productId, 'variants', updatedVariants);
                                                     }
                                                     toast.success('Translation complete');
                                                 } catch {
@@ -1310,8 +1305,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     if (importStep === 'final-review') {
         const selectedProducts = searchResults.filter(p => p.selected);
 
-        // Per-variant selling price calculator
-        const getVariantSellingPrice = (product: ImportableProduct, variant: { priceAdjustment: number }) => {
+        // Per-variant selling price calculator (returns explicit override when present)
+        const getVariantSellingPrice = (product: ImportableProduct, variant: { priceAdjustment: number; sellingPriceOverride?: number }) => {
+            if (typeof variant.sellingPriceOverride === 'number' && Number.isFinite(variant.sellingPriceOverride)) {
+                return variant.sellingPriceOverride;
+            }
             const basePrice = product.salePrice || product.price;
             const variantPrice1688 = basePrice + variant.priceAdjustment;
             const collection = product.targetCollection || targetCollection;
@@ -1484,15 +1482,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                         onChange={(e) => {
                                                                                             const val = parseFloat(e.target.value);
                                                                                             if (!Number.isFinite(val) || val <= 0) return;
-                                                                                            // Back-calculate absolute priceAdjustment from desired selling price
-                                                                                            // Formula: selling = ((base + adj) * 1.4 + shipping) * 3
-                                                                                            // Reverse: adj = (selling / 3 - shipping) / 1.4 - base
-                                                                                            const pCollection = product.targetCollection || targetCollection;
-                                                                                            const shipping = getShippingEstimate(pCollection);
-                                                                                            const basePrice = product.salePrice || product.price;
-                                                                                            const newAdj = (val / 3 - shipping) / 1.4 - basePrice;
+                                                                                            // Store explicit selling-price override (bypasses rounding)
                                                                                             const updatedVariants = (product.variants || []).map(v =>
-                                                                                                v.id === variant.id ? { ...v, priceAdjustment: newAdj } : v
+                                                                                                v.id === variant.id ? { ...v, sellingPriceOverride: val } : v
                                                                                             );
                                                                                             updateProductField(product.id, 'variants', updatedVariants);
                                                                                         }}

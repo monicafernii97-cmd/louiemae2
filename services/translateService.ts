@@ -28,7 +28,7 @@ export function detectChinese(text: string): boolean {
 /**
  * Translates a single chunk of text (≤500 chars) via the MyMemory API.
  * Includes a 10-second timeout to prevent indefinite hangs on slow networks.
- * Returns the original text if the API call fails.
+ * Throws on failure so callers can distinguish success from error.
  */
 async function translateChunk(
     text: string,
@@ -62,10 +62,11 @@ async function translateChunk(
             return translated;
         }
 
-        return text;
-    } catch {
+        // API returned a non-200 status but HTTP was ok — treat as failure
+        throw new Error(`Translation returned status ${data.responseStatus}: ${data.responseData?.translatedText || 'unknown error'}`);
+    } catch (err) {
         clearTimeout(timeoutId);
-        return text;
+        throw err; // Bubble up so callers can detect failure
     }
 }
 
@@ -102,11 +103,13 @@ async function runWithConcurrency<T>(
  * concatenating the translated results.
  *
  * Skips translation if no Chinese characters are detected.
+ * Throws on failure so the UI can show appropriate error feedback.
  *
  * @param text - The text to translate
  * @param from - Source language code (default: 'zh-CN')
  * @param to - Target language code (default: 'en')
- * @returns Translated text, or the original if no Chinese detected or on error
+ * @returns Translated text, or the original if no Chinese detected
+ * @throws Error if the translation API fails
  */
 export async function translateText(
     text: string,
@@ -116,52 +119,49 @@ export async function translateText(
     if (!text.trim()) return text;
     if (!detectChinese(text)) return text;
 
-    try {
-        // Short text — translate directly
-        if (text.length <= MAX_CHUNK_SIZE) {
-            return await translateChunk(text, from, to);
-        }
-
-        // Split on Chinese sentence-end punctuation or newlines
-        const sentences = text.split(/(?<=[。！？\n])/);
-        const chunks: string[] = [];
-        let current = '';
-
-        for (const sentence of sentences) {
-            if ((current + sentence).length > MAX_CHUNK_SIZE && current) {
-                chunks.push(current);
-                current = sentence;
-            } else if (sentence.length > MAX_CHUNK_SIZE) {
-                // Split oversized sentence at chunk boundaries
-                if (current) chunks.push(current);
-                for (let i = 0; i < sentence.length; i += MAX_CHUNK_SIZE) {
-                    chunks.push(sentence.slice(i, i + MAX_CHUNK_SIZE));
-                }
-                current = '';
-            } else {
-                current += sentence;
-            }
-        }
-        if (current) chunks.push(current);
-
-        // Translate chunks with concurrency limit
-        const translated = await runWithConcurrency(
-            chunks.map(chunk => () => translateChunk(chunk, from, to)),
-            MAX_CONCURRENCY
-        );
-        return translated.join('');
-    } catch (err) {
-        console.warn('[Translate] MyMemory translation failed:', err);
-        return text;
+    // Short text — translate directly
+    if (text.length <= MAX_CHUNK_SIZE) {
+        return await translateChunk(text, from, to);
     }
+
+    // Split on Chinese sentence-end punctuation or newlines
+    const sentences = text.split(/(?<=[。！？\n])/);
+    const chunks: string[] = [];
+    let current = '';
+
+    for (const sentence of sentences) {
+        if (sentence.length > MAX_CHUNK_SIZE) {
+            // Split oversized sentence at chunk boundaries first
+            if (current) chunks.push(current);
+            for (let i = 0; i < sentence.length; i += MAX_CHUNK_SIZE) {
+                chunks.push(sentence.slice(i, i + MAX_CHUNK_SIZE));
+            }
+            current = '';
+        } else if ((current + sentence).length > MAX_CHUNK_SIZE && current) {
+            chunks.push(current);
+            current = sentence;
+        } else {
+            current += sentence;
+        }
+    }
+    if (current) chunks.push(current);
+
+    // Translate chunks with concurrency limit
+    const translated = await runWithConcurrency(
+        chunks.map(chunk => () => translateChunk(chunk, from, to)),
+        MAX_CONCURRENCY
+    );
+    return translated.join('');
 }
 
 /**
  * Translates all text fields of a product in a single batch call.
  * Runs translations with limited concurrency to avoid rate limiting.
+ * Throws on failure so the caller can show error feedback.
  *
  * @param fields - Object containing name, description, and variantNames
  * @returns Object with translated name, description, and variantNames
+ * @throws Error if any translation request fails
  */
 export async function translateProductFields(fields: {
     name: string;

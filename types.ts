@@ -189,6 +189,8 @@ export interface ProductVariant {
   image?: string;
   priceAdjustment: number; // +/- from base price
   inStock: boolean;
+  /** Explicit selling-price override set on the final review page (bypasses rounding). */
+  sellingPriceOverride?: number;
   // CJ fulfillment mapping - links to CJ variant for correct fulfillment
   cjVariantId?: string;  // CJ vid for this variant
   cjSku?: string;         // CJ SKU for this variant
