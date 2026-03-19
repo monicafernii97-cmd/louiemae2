@@ -131,6 +131,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         );
                         updateProductField(currentProduct.id, 'variantImageMap', rebasedMap);
                     }
+                    // Rebase image order
+                    if (currentProduct.imageOrder) {
+                        updateProductField(
+                            currentProduct.id,
+                            'imageOrder',
+                            currentProduct.imageOrder.map(rebaseIdx),
+                        );
+                    }
                     toast.success('Image uploaded!');
                 }
             }
@@ -569,21 +577,23 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     return (
                                         <button
                                             onClick={async () => {
+                                                const productId = currentProduct.id;
+                                                const variantsAtStart = currentProduct.variants ?? [];
                                                 setIsTranslating(true);
                                                 try {
                                                     const result = await translateProductFields({
                                                         name: currentProduct.customName || currentProduct.name,
                                                         description: currentProduct.customDescription || currentProduct.description || '',
-                                                        variantNames: (currentProduct.variants || []).map(v => v.name),
+                                                        variantNames: variantsAtStart.map(v => v.name),
                                                     });
-                                                    updateReviewProduct('customName', result.name);
-                                                    updateReviewProduct('customDescription', result.description);
-                                                    if (currentProduct.variants && result.variantNames.length > 0) {
-                                                        const updatedVariants = currentProduct.variants.map((v, i) => ({
+                                                    updateProductField(productId, 'customName', result.name);
+                                                    updateProductField(productId, 'customDescription', result.description);
+                                                    if (variantsAtStart.length > 0) {
+                                                        const updatedVariants = variantsAtStart.map((v, i) => ({
                                                             ...v,
                                                             name: result.variantNames[i] || v.name,
                                                         }));
-                                                        updateReviewProduct('variants', updatedVariants);
+                                                        updateProductField(productId, 'variants', updatedVariants);
                                                     }
                                                     toast.success('Translation complete');
                                                 } catch {
@@ -1484,11 +1494,16 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                         className="w-24 px-2 py-1 text-right text-sm border border-earth/10 rounded-lg focus:ring-2 ring-bronze/20 bg-white"
                                                                                         onChange={(e) => {
                                                                                             const val = parseFloat(e.target.value);
-                                                                                            if (!Number.isFinite(val)) return;
-                                                                                            // Store per-variant price override as a price adjustment delta
-                                                                                            const delta = val - variantSelling;
+                                                                                            if (!Number.isFinite(val) || val <= 0) return;
+                                                                                            // Back-calculate absolute priceAdjustment from desired selling price
+                                                                                            // Formula: selling = ((base + adj) * 1.4 + shipping) * 3
+                                                                                            // Reverse: adj = (selling / 3 - shipping) / 1.4 - base
+                                                                                            const pCollection = product.targetCollection || targetCollection;
+                                                                                            const shipping = getShippingEstimate(pCollection);
+                                                                                            const basePrice = product.salePrice || product.price;
+                                                                                            const newAdj = (val / 3 - shipping) / 1.4 - basePrice;
                                                                                             const updatedVariants = (product.variants || []).map(v =>
-                                                                                                v.id === variant.id ? { ...v, priceAdjustment: variant.priceAdjustment + delta / 3 } : v
+                                                                                                v.id === variant.id ? { ...v, priceAdjustment: newAdj } : v
                                                                                             );
                                                                                             updateProductField(product.id, 'variants', updatedVariants);
                                                                                         }}
