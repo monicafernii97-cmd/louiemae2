@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
@@ -453,7 +453,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const getOrderedImages = (p: ImportableProduct): string[] => {
         const combinedImages = [...(p.images || []), ...(p.descriptionImages || [])];
         const selected = p.selectedImages && p.selectedImages.length > 0
-            ? p.selectedImages : p.images.map((_, i) => i);
+            ? p.selectedImages : (p.images || []).map((_, i) => i);
         const ordered = p.imageOrder && p.imageOrder.length > 0
             ? p.imageOrder.filter(i => selected.includes(i)) : [...selected];
         const missing = selected.filter(i => !ordered.includes(i));
@@ -800,7 +800,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 {/* Image Order Strip — drag/reorder selected images, green ✓ = main */}
                                 {(() => {
                                     const combinedImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
-                                    const selected = currentProduct.selectedImages || currentProduct.images.map((_, i) => i);
+                                    const selected = currentProduct.selectedImages || (currentProduct.images || []).map((_, i) => i);
                                     // Use custom order if set, otherwise natural order of selected
                                     const ordered = currentProduct.imageOrder && currentProduct.imageOrder.length > 0
                                         ? currentProduct.imageOrder.filter(i => selected.includes(i))
