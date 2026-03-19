@@ -671,7 +671,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
-                                                const allImages = [...currentProduct.images, ...(currentProduct.descriptionImages || [])];
+                                                const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
                                                 if (allImages.length === 0) return null;
                                                 const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length ? previewImageIdx : 0;
                                                 const displayUrl = allImages[currentIdx];
@@ -762,7 +762,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         const currentSelected = currentProduct.selectedImages ||
-                                                            currentProduct.images.map((_, idx) => idx);
+                                                            (currentProduct.images || []).map((_, idx) => idx);
                                                         const newSelected = isSelected
                                                             ? currentSelected.filter(idx => idx !== i)
                                                             : [...currentSelected, i].sort((a, b) => a - b);
