@@ -80,7 +80,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const imageUploadRef = useRef<HTMLInputElement>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -422,7 +422,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
     // Reset preview when switching products or entering review mode
     React.useEffect(() => {
-        setPreviewImage(null);
+        setPreviewImageIdx(null);
     }, [reviewIndex, importStep]);
     const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
         if (typeof idxOrUpdater === 'function') {
@@ -579,47 +579,51 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {/* Left: Product Images & Basic Info */}
                             <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
-                                    {(currentProduct.images.length > 0 || previewImage) ? (
+                                    {(currentProduct.images.length > 0 || previewImageIdx !== null) ? (
                                         <>
-                                            <img
-                                                src={previewImage || currentProduct.images[0]}
-                                                alt="Main Preview"
-                                                referrerPolicy="no-referrer"
-                                                crossOrigin="anonymous"
-                                                className="w-full h-full object-contain p-4"
-                                            />
-                                            {/* Navigation arrows */}
                                             {(() => {
                                                 const allImages = [...currentProduct.images, ...(currentProduct.descriptionImages || [])];
-                                                if (allImages.length <= 1) return null;
-                                                const currentIdx = allImages.indexOf(previewImage || currentProduct.images[0]);
+                                                const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length ? previewImageIdx : 0;
+                                                const displayUrl = allImages[currentIdx] || currentProduct.images[0];
                                                 return (
                                                     <>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const prev = currentIdx <= 0 ? allImages.length - 1 : currentIdx - 1;
-                                                                setPreviewImage(allImages[prev]);
-                                                            }}
-                                                            aria-label="Previous image"
-                                                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                                                        >
-                                                            ‹
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const next = currentIdx >= allImages.length - 1 ? 0 : currentIdx + 1;
-                                                                setPreviewImage(allImages[next]);
-                                                            }}
-                                                            aria-label="Next image"
-                                                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                                                        >
-                                                            ›
-                                                        </button>
-                                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                            {(currentIdx >= 0 ? currentIdx : 0) + 1} / {allImages.length}
-                                                        </div>
+                                                        <img
+                                                            src={displayUrl}
+                                                            alt="Main Preview"
+                                                            referrerPolicy="no-referrer"
+                                                            crossOrigin="anonymous"
+                                                            className="w-full h-full object-contain p-4"
+                                                        />
+                                                        {/* Navigation arrows */}
+                                                        {allImages.length > 1 && (
+                                                            <>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const prev = currentIdx <= 0 ? allImages.length - 1 : currentIdx - 1;
+                                                                        setPreviewImageIdx(prev);
+                                                                    }}
+                                                                    aria-label="Previous image"
+                                                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                                                                >
+                                                                    ‹
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const next = currentIdx >= allImages.length - 1 ? 0 : currentIdx + 1;
+                                                                        setPreviewImageIdx(next);
+                                                                    }}
+                                                                    aria-label="Next image"
+                                                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-8 h-8 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                                                                >
+                                                                    ›
+                                                                </button>
+                                                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                                    {currentIdx + 1} / {allImages.length}
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </>
                                                 );
                                             })()}
@@ -650,11 +654,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         const isSelected = currentProduct.selectedImages
                                             ? currentProduct.selectedImages.includes(i)
                                             : true; // By default all are selected
-                                        const isPreviewing = (previewImage || currentProduct.images[0]) === img;
+                                        const isPreviewing = (previewImageIdx ?? 0) === i;
                                         return (
                                             <div
                                                 key={i}
-                                                onClick={() => setPreviewImage(img)}
+                                                onClick={() => setPreviewImageIdx(i)}
                                                 className={`aspect-square rounded-lg border-2 overflow-hidden bg-white cursor-pointer transition-all relative
                                                     ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
                                                     ${isSelected ? 'border-bronze' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
@@ -734,14 +738,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 const isSelected = currentProduct.selectedImages
                                                     ? currentProduct.selectedImages.includes(globalIdx)
                                                     : false; // Marketing images not selected by default
-                                                const isPreviewing = previewImage === img;
+                                                const isPreviewing = previewImageIdx === globalIdx;
                                                 return (
                                                     <div
                                                         key={`mktg-${idx}`}
                                                         className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group transition-all border-2
                                                             ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
                                                             ${isSelected ? 'border-bronze ring-2 ring-bronze/30 scale-[1.02]' : 'border-transparent hover:border-earth/20'}`}
-                                                        onClick={() => setPreviewImage(img)}
+                                                        onClick={() => setPreviewImageIdx(globalIdx)}
                                                     >
                                                         <img
                                                             src={img}
