@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAction, useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
-import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2, RotateCcw, Key, Link2, Zap } from 'lucide-react';
+import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2, RotateCcw, Key, Link2 } from 'lucide-react';
 import { FadeIn } from './FadeIn';
 import { CJVariantManager } from './CJVariantManager';
 
@@ -43,10 +43,10 @@ export const CJSettings: React.FC = () => {
     // Use the admin products.adminRemove mutation for deleting (no auth required)
     const deleteProduct = useMutation(api.products.adminRemove);
 
-    const handleDeleteProduct = async (id: Id<"products">, productName: string, _cjSourcingId?: string) => {
-        console.log("Delete button clicked for:", productName, id);
+    const handleDeleteProduct = async (id: Id<"products">, _productName: string, _cjSourcingId?: string) => {
+        console.log("Delete button clicked for:", _productName, id);
 
-        const confirmed = window.confirm(`Remove "${productName}" from import queue? This cannot be undone.`);
+        const confirmed = window.confirm(`Remove "${_productName}" from import queue? This cannot be undone.`);
         console.log("User confirmed:", confirmed);
 
         if (!confirmed) {
@@ -61,17 +61,17 @@ export const CJSettings: React.FC = () => {
             console.log("Calling deleteProduct mutation with id:", id);
             await deleteProduct({ id });
             console.log("Delete successful!");
-            setResult({ success: true, message: `"${productName}" removed successfully` });
-        } catch (error: any) {
+            setResult({ success: true, message: `"${_productName}" removed successfully` });
+        } catch (error: unknown) {
             console.error("Delete failed with error:", error);
-            setResult({ success: false, message: error.message || 'Failed to remove product' });
+            setResult({ success: false, message: error instanceof Error ? error.message : 'Failed to remove product' });
         } finally {
             console.log("Deletion process complete, resetting state");
             setDeletingId(null);
         }
     };
 
-    const handleResubmit = async (id: Id<"products">, productName: string) => {
+    const handleResubmit = async (id: Id<"products">, _productName: string) => {
         setResubmittingId(id);
         setResult(null);
 
@@ -80,8 +80,8 @@ export const CJSettings: React.FC = () => {
             setResult({ success: res.success, message: res.message });
             // Refresh token status after action
             getTokenStatus({}).then(setTokenStatus).catch(() => null);
-        } catch (error: any) {
-            setResult({ success: false, message: error.message || 'Failed to resubmit product' });
+        } catch (error: unknown) {
+            setResult({ success: false, message: error instanceof Error ? error.message : 'Failed to resubmit product' });
         } finally {
             setResubmittingId(null);
         }
@@ -105,8 +105,8 @@ export const CJSettings: React.FC = () => {
         try {
             const res = await testConnection({});
             setResult(res);
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: error instanceof Error ? error.message : 'Connection test failed' });
         } finally {
             setTesting(false);
         }
@@ -118,8 +118,8 @@ export const CJSettings: React.FC = () => {
         try {
             const res = await configureWebhooks({});
             setResult(res);
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: error instanceof Error ? error.message : 'Webhook configuration failed' });
         } finally {
             setConfiguring(false);
         }
@@ -134,8 +134,8 @@ export const CJSettings: React.FC = () => {
                 success: true,
                 message: `Synced ${res.synced} orders${res.errors > 0 ? `, ${res.errors} errors` : ''}`
             });
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: error instanceof Error ? error.message : 'Tracking sync failed' });
         } finally {
             setSyncing(false);
         }
@@ -150,15 +150,15 @@ export const CJSettings: React.FC = () => {
                 success: true,
                 message: `Checked ${res.checked} products: ${res.approved} approved, ${res.rejected} rejected`
             });
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: error instanceof Error ? error.message : 'Sourcing check failed' });
         } finally {
             setCheckingSourcing(false);
         }
     };
 
     // Action Card Component (Refined & Minimalist)
-    const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: any) => (
+    const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: { icon: React.FC<{ className?: string }>; title: string; description: string; loading: boolean; onClick: () => void; colorClass?: string }) => (
         <div
             onClick={loading ? undefined : onClick}
             className="group relative backdrop-blur-xl bg-white/60 border border-white/40 p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer overflow-hidden rounded-xl active:scale-[0.98] md:hover:-translate-y-1"

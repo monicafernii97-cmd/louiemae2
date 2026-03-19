@@ -11,6 +11,7 @@ import {
     type OGLRenderingContext,
 } from "ogl";
 import { useEffect, useRef } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 
 /* --------------------------------
@@ -87,7 +88,7 @@ function autoBind(instance: object) {
     const proto = Object.getPrototypeOf(instance);
     Object.getOwnPropertyNames(proto).forEach((key) => {
         if (key !== "constructor" && typeof (instance as Record<string, unknown>)[key] === "function") {
-            (instance as Record<string, unknown>)[key] = ((instance as Record<string, unknown>)[key] as Function).bind(instance);
+            (instance as Record<string, unknown>)[key] = ((instance as Record<string, unknown>)[key] as (...args: unknown[]) => unknown).bind(instance);
         }
     });
 }
