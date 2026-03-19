@@ -491,9 +491,28 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 isNew: true,
                 inStock: p.inStock,
                 // Filter variants: undefined = all, [] = none, [...ids] = only those
-                variants: p.selectedVariants === undefined
-                    ? p.variants
-                    : p.variants?.filter(v => p.selectedVariants!.includes(v.id)),
+                // Normalize variant prices so they round-trip correctly after import
+                variants: (() => {
+                    const raw = p.selectedVariants === undefined
+                        ? p.variants
+                        : p.variants?.filter(v => p.selectedVariants!.includes(v.id));
+                    if (!raw) return raw;
+                    const finalPrice = (typeof p.customPrice === 'number' && Number.isFinite(p.customPrice))
+                        ? p.customPrice
+                        : calculateProductPrice(p);
+                    const collection = p.targetCollection || targetCollection;
+                    return raw.map(v => {
+                        // If user set an explicit override, convert to priceAdjustment relative to product.price
+                        if (typeof v.sellingPriceOverride === 'number' && Number.isFinite(v.sellingPriceOverride)) {
+                            return { ...v, priceAdjustment: v.sellingPriceOverride - finalPrice, sellingPriceOverride: undefined };
+                        }
+                        // Otherwise compute the selling price shown in preview and normalize
+                        const basePrice = p.salePrice || p.price;
+                        const variantPrice1688 = basePrice + v.priceAdjustment;
+                        const variantSelling = calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
+                        return { ...v, priceAdjustment: variantSelling - finalPrice };
+                    });
+                })(),
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
                 // Two-stage pricing metadata — use upstream CNY if available (from sourcePriceCny on the product)
@@ -565,31 +584,39 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             onClick={async () => {
                                                 const productId = currentProduct.id;
                                                 const variantsAtStart = currentProduct.variants ?? [];
+                                                const nameAtRequest = currentProduct.customName || currentProduct.name;
+                                                const descAtRequest = currentProduct.customDescription || currentProduct.description || '';
                                                 setIsTranslating(true);
                                                 try {
                                                     const result = await translateProductFields({
-                                                        name: currentProduct.customName || currentProduct.name,
-                                                        description: currentProduct.customDescription || currentProduct.description || '',
+                                                        name: nameAtRequest,
+                                                        description: descAtRequest,
                                                         variantNames: variantsAtStart.map(v => v.name),
                                                     });
-                                                    updateProductField(productId, 'customName', result.name);
-                                                    updateProductField(productId, 'customDescription', result.description);
-                                                    if (variantsAtStart.length > 0) {
-                                                        // Build a map of translated names keyed by variant ID
-                                                        const translatedMap = new Map<string, string>();
-                                                        variantsAtStart.forEach((v, i) => {
-                                                            if (result.variantNames[i]) translatedMap.set(v.id, result.variantNames[i]);
-                                                        });
-                                                        // Merge into the latest variants (preserves concurrent edits)
-                                                        setSearchResults(prev => prev.map(p => {
-                                                            if (p.id !== productId) return p;
-                                                            const merged = (p.variants || []).map(v => ({
+                                                    // Merge all translated fields via functional updater
+                                                    // Only overwrite name/description if the user hasn't edited them while translating
+                                                    const translatedMap = new Map<string, string>();
+                                                    variantsAtStart.forEach((v, i) => {
+                                                        if (result.variantNames[i]) translatedMap.set(v.id, result.variantNames[i]);
+                                                    });
+                                                    setSearchResults(prev => prev.map(p => {
+                                                        if (p.id !== productId) return p;
+                                                        const updates: Partial<typeof p> = {};
+                                                        // Only apply translated name if user hasn't changed it
+                                                        const currentName = p.customName || p.name;
+                                                        if (currentName === nameAtRequest) updates.customName = result.name;
+                                                        // Only apply translated description if user hasn't changed it
+                                                        const currentDesc = p.customDescription || p.description || '';
+                                                        if (currentDesc === descAtRequest) updates.customDescription = result.description;
+                                                        // Merge translated variant names (always safe — keyed by ID)
+                                                        if (translatedMap.size > 0) {
+                                                            updates.variants = (p.variants || []).map(v => ({
                                                                 ...v,
                                                                 name: translatedMap.get(v.id) || v.name,
                                                             }));
-                                                            return { ...p, variants: merged };
-                                                        }));
-                                                    }
+                                                        }
+                                                        return { ...p, ...updates };
+                                                    }));
                                                     toast.success('Translation complete');
                                                 } catch {
                                                     toast.error('Translation failed');
@@ -804,6 +831,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             {/* Click to set as main */}
                                                             {!isMain && (
                                                                 <button
+                                                                    aria-label={`Set image ${pos + 1} as the main listing image`}
                                                                     onClick={() => {
                                                                         const newOrder = [imgIdx, ...finalOrder.filter(i => i !== imgIdx)];
                                                                         updateReviewProduct('imageOrder', newOrder);
@@ -818,6 +846,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             <div className="absolute bottom-0.5 right-0.5 flex gap-px">
                                                                 {pos > 0 && (
                                                                     <button
+                                                                        aria-label={`Move image ${pos + 1} left`}
                                                                         onClick={() => {
                                                                             const newOrder = [...finalOrder];
                                                                             [newOrder[pos - 1], newOrder[pos]] = [newOrder[pos], newOrder[pos - 1]];
@@ -831,6 +860,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 )}
                                                                 {pos < finalOrder.length - 1 && (
                                                                     <button
+                                                                        aria-label={`Move image ${pos + 1} right`}
                                                                         onClick={() => {
                                                                             const newOrder = [...finalOrder];
                                                                             [newOrder[pos], newOrder[pos + 1]] = [newOrder[pos + 1], newOrder[pos]];

@@ -155,9 +155,10 @@ export async function translateText(
 }
 
 /**
- * Translates all text fields of a product in a single batch call.
- * Runs translations with limited concurrency to avoid rate limiting.
- * Throws on failure so the caller can show error feedback.
+ * Translates all text fields of a product sequentially.
+ * Each `translateText` call may fan out into multiple concurrent chunk requests
+ * (limited by MAX_CONCURRENCY), so we run fields one-at-a-time to avoid
+ * exceeding the rate limit.
  *
  * @param fields - Object containing name, description, and variantNames
  * @returns Object with translated name, description, and variantNames
@@ -172,16 +173,13 @@ export async function translateProductFields(fields: {
     description: string;
     variantNames: string[];
 }> {
-    // Build all translation tasks
-    const tasks: (() => Promise<string>)[] = [
-        () => translateText(fields.name),
-        () => translateText(fields.description),
-        ...fields.variantNames.map(vn => () => translateText(vn)),
-    ];
-
-    // Run with concurrency limit
-    const results = await runWithConcurrency(tasks, MAX_CONCURRENCY);
-    const [name, description, ...variantNames] = results;
+    // Run sequentially to keep total concurrency within MAX_CONCURRENCY
+    const name = await translateText(fields.name);
+    const description = await translateText(fields.description);
+    const variantNames: string[] = [];
+    for (const vn of fields.variantNames) {
+        variantNames.push(await translateText(vn));
+    }
 
     return { name, description, variantNames };
 }
