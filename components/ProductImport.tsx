@@ -528,10 +528,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             };
         });
 
-        onImportProducts(productsToImport);
-        setSearchResults(prev => prev.map(p => ({ ...p, selected: false })));
-        setSelectAll(false);
-        setImportStep('search');
+        try {
+            onImportProducts(productsToImport);
+            setSearchResults(prev => prev.map(p => ({ ...p, selected: false })));
+            setSelectAll(false);
+            setImportStep('search');
+        } finally {
+            setIsImporting(false);
+        }
     };
 
     // Helper to update current review item
@@ -598,9 +602,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     });
                                                     // Merge all translated fields via functional updater
                                                     // Only overwrite name/description if the user hasn't edited them while translating
-                                                    const translatedMap = new Map<string, string>();
+                                                    const translatedMap = new Map<string, { requested: string; translated: string }>();
                                                     variantsAtStart.forEach((v, i) => {
-                                                        if (result.variantNames[i]) translatedMap.set(v.id, result.variantNames[i]);
+                                                        if (result.variantNames[i]) {
+                                                            translatedMap.set(v.id, {
+                                                                requested: v.name,
+                                                                translated: result.variantNames[i],
+                                                            });
+                                                        }
                                                     });
                                                     setSearchResults(prev => prev.map(p => {
                                                         if (p.id !== productId) return p;
@@ -611,12 +620,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         // Only apply translated description if user hasn't changed it
                                                         const currentDesc = p.customDescription || p.description || '';
                                                         if (currentDesc === descAtRequest) updates.customDescription = result.description;
-                                                        // Merge translated variant names (always safe — keyed by ID)
+                                                        // Merge translated variant names only if user hasn't edited them
                                                         if (translatedMap.size > 0) {
-                                                            updates.variants = (p.variants || []).map(v => ({
-                                                                ...v,
-                                                                name: translatedMap.get(v.id) || v.name,
-                                                            }));
+                                                            updates.variants = (p.variants || []).map(v => {
+                                                                const entry = translatedMap.get(v.id);
+                                                                if (!entry || v.name !== entry.requested) return v;
+                                                                return { ...v, name: entry.translated };
+                                                            });
                                                         }
                                                         return { ...p, ...updates };
                                                     }));
@@ -838,6 +848,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     onClick={() => {
                                                                         const newOrder = [imgIdx, ...finalOrder.filter(i => i !== imgIdx)];
                                                                         updateReviewProduct('imageOrder', newOrder);
+                                                                        setPreviewImageIdx(newOrder[0]);
                                                                     }}
                                                                     className="absolute top-0.5 left-0.5 bg-white/80 hover:bg-green-100 backdrop-blur rounded-full w-4 h-4 flex items-center justify-center transition-colors"
                                                                     title="Set as main image"
@@ -854,6 +865,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                             const newOrder = [...finalOrder];
                                                                             [newOrder[pos - 1], newOrder[pos]] = [newOrder[pos], newOrder[pos - 1]];
                                                                             updateReviewProduct('imageOrder', newOrder);
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) {
+                                                                                setPreviewImageIdx(newOrder[0]);
+                                                                            }
                                                                         }}
                                                                         className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-4 h-4 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
                                                                         title="Move left"
@@ -868,6 +882,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                             const newOrder = [...finalOrder];
                                                                             [newOrder[pos], newOrder[pos + 1]] = [newOrder[pos + 1], newOrder[pos]];
                                                                             updateReviewProduct('imageOrder', newOrder);
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) {
+                                                                                setPreviewImageIdx(newOrder[0]);
+                                                                            }
                                                                         }}
                                                                         className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-4 h-4 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
                                                                         title="Move right"
