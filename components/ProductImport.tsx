@@ -82,11 +82,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-    // Reset preview when switching products in review mode
-    React.useEffect(() => {
-        setPreviewImage(null);
-    }, [reviewIndex]);
-
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -424,6 +419,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             return saved ? parseInt(saved, 10) : 0;
         } catch { return 0; }
     });
+
+    // Reset preview when switching products in review mode
+    React.useEffect(() => {
+        setPreviewImage(null);
+    }, [reviewIndex]);
     const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
         if (typeof idxOrUpdater === 'function') {
             setReviewIndexRaw(prev => {
