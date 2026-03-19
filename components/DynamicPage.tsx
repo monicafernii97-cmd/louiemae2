@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { CustomPage, PageSection } from '../types';
 import { FadeIn } from './FadeIn';
-import { ArrowUpRight, ShoppingBag, ArrowRight } from 'lucide-react';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { useSite } from '../contexts/BlogContext';
 
 interface DynamicPageProps {
@@ -12,7 +12,6 @@ interface DynamicPageProps {
 
 export const DynamicSectionRenderer: React.FC<{ section: PageSection, index: number }> = ({ section, index }) => {
     const { products } = useSite();
-    const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
     switch (section.type) {
         case 'hero':

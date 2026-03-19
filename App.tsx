@@ -108,7 +108,7 @@ const AppContent = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activePage, setActivePage] = useState<string>('home');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [_selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [, setSelectedProductId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -236,31 +236,30 @@ const AppContent = () => {
   // Merge dynamic custom pages into links if needed, or allow them to be manually added in admin
   const extendedNavLinks = siteContent.navLinks;
 
-  // Determine which component to render
-  let CurrentComponent: React.FC = HomePage;
+  // Determine what to render
+  let currentView: React.ReactNode = <HomePage />;
   let dynamicPageData = null;
 
-  if (activePage === 'admin') CurrentComponent = AdminPage;
-  else if (activePage === 'blog') CurrentComponent = BlogPage;
+  if (activePage === 'admin') currentView = <AdminPage />;
+  else if (activePage === 'blog') currentView = <BlogPage />;
   else if (activePage.startsWith('#blog/')) {
     const postId = activePage.replace('#blog/', '');
-    CurrentComponent = () => <BlogPostView postId={postId} />;
+    currentView = <BlogPostView postId={postId} />;
   }
-  else if (activePage === 'story') CurrentComponent = StoryPage;
-  else if (activePage === 'shop') CurrentComponent = ShopLandingPage;
-  else if (activePage === 'new-arrivals') CurrentComponent = NewArrivalsPage;
-  else if (activePage === 'new-collection') CurrentComponent = NewCollectionPage;
-  else if (activePage === 'aliexpress-test') CurrentComponent = AliExpressTest;
-  else if (activePage === 'checkout-success') CurrentComponent = CheckoutSuccess;
-  else if (activePage === 'checkout-cancel') CurrentComponent = CheckoutCancel;
+  else if (activePage === 'story') currentView = <StoryPage />;
+  else if (activePage === 'shop') currentView = <ShopLandingPage />;
+  else if (activePage === 'new-arrivals') currentView = <NewArrivalsPage />;
+  else if (activePage === 'new-collection') currentView = <NewCollectionPage />;
+  else if (activePage === 'aliexpress-test') currentView = <AliExpressTest />;
+  else if (activePage === 'checkout-success') currentView = <CheckoutSuccess />;
+  else if (activePage === 'checkout-cancel') currentView = <CheckoutCancel />;
   else if (activePage.startsWith('#support')) {
-    // Don't set CurrentComponent — SupportPage is rendered directly below
+    // Don't set currentView — SupportPage is rendered directly below
   }
   else if (activePage.startsWith('#pages/')) {
     const slug = activePage.replace('#pages/', '');
     dynamicPageData = siteContent.customPages.find(p => p.slug === slug);
-    if (dynamicPageData) CurrentComponent = () => <DynamicPage page={dynamicPageData!} />;
-    else CurrentComponent = HomePage; // Fallback
+    currentView = dynamicPageData ? <DynamicPage page={dynamicPageData} /> : <HomePage />;
   }
   else if (activePage.startsWith('#collection/')) {
     const [path, query] = activePage.split('?');
@@ -273,9 +272,9 @@ const AppContent = () => {
     const collectionExists = siteContent.collections.some(c => c.id === type);
 
     if (collectionExists) {
-      CurrentComponent = () => <StorePage collection={type as string} initialCategory={category || 'All'} forceProductView={viewProducts} />;
+      currentView = <StorePage collection={type as string} initialCategory={category || 'All'} forceProductView={viewProducts} />;
     } else {
-      CurrentComponent = HomePage;
+      currentView = <HomePage />;
     }
   }
 
@@ -545,7 +544,7 @@ const AppContent = () => {
       {activePage.startsWith('#support') ? (
         <SupportPage section={activePage.match(/#support\/(.+)/)?.[1]} />
       ) : (
-        <CurrentComponent />
+        {currentView}
       )}
 
       {/* Footer (Hidden on Admin) */}
