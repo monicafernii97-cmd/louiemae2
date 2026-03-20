@@ -83,6 +83,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    /** Draft text for price override inputs — keyed by variantId. Stored as raw string to avoid coercing transient values (e.g. "0.", ".5"). */
+    const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,6 +125,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         const newOrder = p.imageOrder ? p.imageOrder.map(rebase) : p.imageOrder;
                         return { ...p, images: updatedImages, selectedImages: newSelected, variantImageMap: newMap, imageOrder: newOrder };
                     }));
+                    // Rebase previewImageIdx when upload shifts combined-image indices
+                    const previousImageCount = (target.images || []).length;
+                    setPreviewImageIdx(prev =>
+                        prev !== null && prev >= previousImageCount ? prev + 1 : prev
+                    );
                     toast.success('Image uploaded!');
             }
         } catch (err) {
@@ -528,9 +535,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         try {
             onImportProducts(productsToImport);
-            setSearchResults(prev => prev.map(p => ({ ...p, selected: false })));
+            setSearchResultsRaw(prev => prev.map(p => ({ ...p, selected: false })));
             setSelectAll(false);
             setImportStep('search');
+            try { sessionStorage.removeItem('import-search-results'); } catch { /* ignore */ }
         } finally {
             setIsImporting(false);
         }
@@ -613,11 +621,20 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         if (currentDesc === descAtRequest) updates.customDescription = result.description;
                                                         // Merge translated variant names only if user hasn't edited them
                                                         if (translatedMap.size > 0) {
+                                                            const translatedIds = new Set<string>();
                                                             updates.variants = (p.variants || []).map(v => {
                                                                 const entry = translatedMap.get(v.id);
                                                                 if (!entry || v.name !== entry.requested) return v;
+                                                                translatedIds.add(v.id);
                                                                 return { ...v, name: entry.translated };
                                                             });
+                                                            // Update originalVariants so translated names become the new baseline
+                                                            if (p.originalVariants) {
+                                                                updates.originalVariants = p.originalVariants.map(v => {
+                                                                    const entry = translatedIds.has(v.id) ? translatedMap.get(v.id) : undefined;
+                                                                    return entry ? { ...v, name: entry.translated } : v;
+                                                                });
+                                                            }
                                                         }
                                                         return { ...p, ...updates };
                                                     }));
@@ -1515,10 +1532,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                         step="0.01"
                                                                                         min="0.01"
                                                                                         placeholder={variantSelling.toFixed(2)}
-                                                                                        value={variant.sellingPriceOverride ?? ''}
+                                                                                        value={priceDrafts[variant.id] ?? (variant.sellingPriceOverride != null ? String(variant.sellingPriceOverride) : '')}
                                                                                         className="w-24 px-2 py-1 text-right text-sm border border-earth/10 rounded-lg focus:ring-2 ring-bronze/20 bg-white"
                                                                                         onChange={(e) => {
-                                                                                            // Clear override when input is empty, otherwise set it
+                                                                                            setPriceDrafts(prev => ({ ...prev, [variant.id]: e.target.value }));
+                                                                                        }}
+                                                                                        onBlur={(e) => {
+                                                                                            // Validate and commit on blur
                                                                                             const parsed = parseFloat(e.target.value);
                                                                                             const newOverride = e.target.value === ''
                                                                                                 ? undefined
@@ -1527,6 +1547,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                                 v.id === variant.id ? { ...v, sellingPriceOverride: newOverride } : v
                                                                                             );
                                                                                             updateProductField(product.id, 'variants', updatedVariants);
+                                                                                            // Clear draft so it falls back to committed value
+                                                                                            setPriceDrafts(prev => { const next = { ...prev }; delete next[variant.id]; return next; });
                                                                                         }}
                                                                                     />
                                                                                 </td>
