@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Loader2, Check, X, Star, DollarSign, Wand2, Truck, Package, Plus, ChevronDown, ChevronUp, ExternalLink, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Info, ArrowUpRight, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
-import { aliexpressService, AliExpressProduct } from '../services/aliexpressService';
+import { aliexpressService } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames } from '../services/geminiService';
+import { translateProductFields, detectChinese } from '../services/translateService';
 import { FadeIn } from './FadeIn';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import { useMutation, useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
 
 interface ProductImportProps {
@@ -49,7 +50,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             try { sessionStorage.setItem('import-search-results', JSON.stringify(resultsOrUpdater)); } catch { /* ignore sessionStorage errors */ }
         }
     };
-    const [totalResults, setTotalResults] = useState(0);
+
     const [currentPage, setCurrentPage] = useState(1);
     const [error, setError] = useState<string | null>(null);
     const [totalPages, setTotalPages] = useState(1);
@@ -68,8 +69,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Import settings
     const [targetCollection, setTargetCollection] = useState<string>(collections[0]?.id || 'furniture');
     const [targetSubcategory, setTargetSubcategory] = useState<string>('');
-    const [pricingRule, setPricingRule] = useState<PricingRule>(DEFAULT_PRICING_RULE);
-    const [showPricingSettings, setShowPricingSettings] = useState(false);
+    const pricingRule = DEFAULT_PRICING_RULE;
 
     // Actions
     const scrapeProduct = useAction(api.scraper.scrapeProduct);
@@ -81,6 +81,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [openImagePicker, setOpenImagePicker] = useState<string | null>(null);
     const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+    /** Draft text for price override inputs — keyed by variantId. Stored as raw string to avoid coercing transient values (e.g. "0.", ".5"). */
+    const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,35 +106,31 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const { storageId } = await response.json();
             const result = await saveFile({ storageId, fileName: file.name, fileType: file.type, purpose: 'product' });
             if (result.url) {
-                // Add the uploaded image to the current review product
-                const currentProduct = searchResults.filter(p => p.selected)[reviewIndex];
-                if (currentProduct) {
-                    const prevMainCount = currentProduct.images.length;
-                    const newImages = [...currentProduct.images, result.url];
-                    updateProductField(currentProduct.id, 'images', newImages);
-
-                    // Rebase indices: new main image shifts description-image offsets by 1
-                    const rebaseIdx = (idx: number) => (idx >= prevMainCount ? idx + 1 : idx);
-
-                    const baselineSelected =
-                        currentProduct.selectedImages ?? Array.from({ length: prevMainCount }, (_, i) => i);
-                    const rebasedSelected = baselineSelected.map(rebaseIdx);
-                    // Include the newly uploaded image as selected
-                    const newSelectedImages = [...new Set([...rebasedSelected, prevMainCount])].sort((a, b) => a - b);
-                    updateProductField(currentProduct.id, 'selectedImages', newSelectedImages);
-
-                    // Rebase variant-image map
-                    if (currentProduct.variantImageMap) {
-                        const rebasedMap = Object.fromEntries(
-                            Object.entries(currentProduct.variantImageMap).map(([variantId, idx]) => [
-                                variantId,
-                                rebaseIdx(idx as number),
-                            ])
-                        );
-                        updateProductField(currentProduct.id, 'variantImageMap', rebasedMap);
-                    }
+                    // Capture the product ID before the functional updater
+                    const target = searchResults.filter(p => p.selected)[reviewIndex];
+                    if (!target) return;
+                    const productId = target.id;
+                    // Use a single functional updater so all rebases use latest state
+                    setSearchResults(prev => prev.map(p => {
+                        if (p.id !== productId) return p;
+                        const prevCount = (p.images || []).length;
+                        const rebase = (idx: number) => (idx >= prevCount ? idx + 1 : idx);
+                        const updatedImages = [...(p.images || []), result.url];
+                        const baseline = p.selectedImages ?? Array.from({ length: prevCount }, (_, i) => i);
+                        const rebasedSelected = baseline.map(rebase);
+                        const newSelected = [...new Set([...rebasedSelected, prevCount])].sort((a, b) => a - b);
+                        const newMap = p.variantImageMap
+                            ? Object.fromEntries(Object.entries(p.variantImageMap).map(([vid, idx]) => [vid, rebase(idx as number)]))
+                            : p.variantImageMap;
+                        const newOrder = p.imageOrder ? p.imageOrder.map(rebase) : p.imageOrder;
+                        return { ...p, images: updatedImages, selectedImages: newSelected, variantImageMap: newMap, imageOrder: newOrder };
+                    }));
+                    // Rebase previewImageIdx when upload shifts combined-image indices
+                    const previousImageCount = (target.images || []).length;
+                    setPreviewImageIdx(prev =>
+                        prev !== null && prev >= previousImageCount ? prev + 1 : prev
+                    );
                     toast.success('Image uploaded!');
-                }
             }
         } catch (err) {
             console.error('Image upload error:', err);
@@ -157,7 +157,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [selectAll, setSelectAll] = useState(false);
 
     // Two-stage pricing: cost-stack formula
-    // Stage 1 (Pre-Sourcing): estimated_cj = 1688_price × 1.6, selling = (cj + shipping) × 3
+    // Stage 1 (Pre-Sourcing): estimated_cj = 1688_price × 1.4, selling = (cj + shipping) × 3
     const getShippingEstimate = (collection: string): number => {
         switch (collection) {
             case 'fashion': return 8;
@@ -173,7 +173,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         estimatedShipping: number;
         sellingPrice: number;
     } => {
-        const estimatedCjCost = basePriceUsd * 1.6;
+        const estimatedCjCost = basePriceUsd * 1.4;
         const estimatedShipping = getShippingEstimate(collection);
         let sellingPrice = (estimatedCjCost + estimatedShipping) * 3;
 
@@ -238,7 +238,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 }));
 
             setSearchResults(filteredProducts);
-            setTotalResults(result.totalCount);
             setTotalPages(result.totalPages || Math.ceil(result.totalCount / 20));
             setCurrentPage(page);
             setSelectAll(false);
@@ -400,18 +399,29 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     };
 
     // Import Multi-Step Workflow State
-    const [importStep, setImportStepRaw] = useState<'search' | 'review'>(() => {
-        const saved = sessionStorage.getItem('import-step');
-        return (saved === 'review') ? 'review' : 'search';
+    const [importStep, setImportStepRaw] = useState<'search' | 'review' | 'final-review'>(() => {
+        try {
+            const savedStep = sessionStorage.getItem('import-step');
+            if (savedStep === 'review' || savedStep === 'final-review') {
+                // Only restore non-search steps if the saved batch has selected products
+                const savedResults = JSON.parse(sessionStorage.getItem('import-search-results') || '[]');
+                if (Array.isArray(savedResults) && savedResults.some((p: any) => p.selected)) {
+                    return savedStep;
+                }
+            }
+        } catch { /* ignore sessionStorage errors */ }
+        return 'search';
     });
-    const setImportStep = (step: 'search' | 'review') => {
+    const setImportStep = (step: 'search' | 'review' | 'final-review') => {
         setImportStepRaw(step);
-        sessionStorage.setItem('import-step', step);
-        if (step === 'search') {
-            // Clear review data when going back to search
-            sessionStorage.removeItem('import-search-results');
-            sessionStorage.removeItem('import-review-index');
-        }
+        if (step !== 'final-review') setPriceDrafts({});
+        try {
+            sessionStorage.setItem('import-step', step);
+            if (step === 'search') {
+                sessionStorage.removeItem('import-search-results');
+                sessionStorage.removeItem('import-review-index');
+            }
+        } catch { /* ignore sessionStorage errors */ }
     };
     const [reviewIndex, setReviewIndexRaw] = useState(() => {
         try {
@@ -452,8 +462,24 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         setError(null);
     };
 
+    /** Resolves selected images in the user's custom display order, normalizing URLs. */
+    const getOrderedImages = (p: ImportableProduct): string[] => {
+        const combinedImages = [...(p.images || []), ...(p.descriptionImages || [])];
+        const selected = p.selectedImages && p.selectedImages.length > 0
+            ? p.selectedImages : (p.images || []).map((_, i) => i);
+        const ordered = p.imageOrder && p.imageOrder.length > 0
+            ? p.imageOrder.filter(i => selected.includes(i)) : [...selected];
+        const missing = selected.filter(i => !ordered.includes(i));
+        return [...ordered, ...missing]
+            .map(idx => combinedImages[idx])
+            .filter(Boolean)
+            .map(img => img.startsWith('//') ? 'https:' + img : img);
+    };
+
     // Final Import Action
     const confirmImport = () => {
+        if (isImporting) return;
+        setIsImporting(true);
         const selectedProducts = searchResults.filter(p => p.selected);
 
         const productsToImport: Omit<Product, 'id'>[] = selectedProducts.map(p => {
@@ -462,14 +488,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const subcategories = getSubcategoriesForCollection(productCollection);
             const subcategoryTitle = subcategories.find(s => s.id === productSubcategory)?.title || productSubcategory || p.category || 'General';
 
-            // Filter images based on user selection (defaults to all main images if no selection made)
-            // Use combined array so marketing image indices (globalIdx) resolve correctly
-            const combinedImages = [...p.images, ...(p.descriptionImages || [])];
-            const rawImages = p.selectedImages && p.selectedImages.length > 0
-                ? p.selectedImages.map(idx => combinedImages[idx]).filter(Boolean)
-                : p.images;
-            // Normalize protocol-relative URLs (// -> https://)
-            const finalImages = rawImages.map(img => img.startsWith('//') ? 'https:' + img : img);
+            const finalImages = getOrderedImages(p);
 
             // Detect if collection was changed from the default
             const collectionChanged = p.targetCollection && p.targetCollection !== targetCollection;
@@ -487,9 +506,28 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 isNew: true,
                 inStock: p.inStock,
                 // Filter variants: undefined = all, [] = none, [...ids] = only those
-                variants: p.selectedVariants === undefined
-                    ? p.variants
-                    : p.variants?.filter(v => p.selectedVariants!.includes(v.id)),
+                // Normalize variant prices so they round-trip correctly after import
+                variants: (() => {
+                    const raw = p.selectedVariants === undefined
+                        ? p.variants
+                        : p.variants?.filter(v => p.selectedVariants!.includes(v.id));
+                    if (!raw) return raw;
+                    const finalPrice = (typeof p.customPrice === 'number' && Number.isFinite(p.customPrice))
+                        ? p.customPrice
+                        : calculateProductPrice(p);
+                    const collection = p.targetCollection || targetCollection;
+                    return raw.map(v => {
+                        // If user set an explicit override, convert to priceAdjustment relative to product.price
+                        if (typeof v.sellingPriceOverride === 'number' && Number.isFinite(v.sellingPriceOverride)) {
+                            return { ...v, priceAdjustment: v.sellingPriceOverride - finalPrice, sellingPriceOverride: undefined };
+                        }
+                        // Otherwise compute the selling price shown in preview and normalize
+                        const basePrice = p.salePrice || p.price;
+                        const variantPrice1688 = basePrice + v.priceAdjustment;
+                        const variantSelling = calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
+                        return { ...v, priceAdjustment: variantSelling - finalPrice };
+                    });
+                })(),
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
                 // Two-stage pricing metadata — use upstream CNY if available (from sourcePriceCny on the product)
@@ -502,10 +540,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             };
         });
 
-        onImportProducts(productsToImport);
-        setSearchResults(prev => prev.map(p => ({ ...p, selected: false })));
-        setSelectAll(false);
-        setImportStep('search');
+        try {
+            onImportProducts(productsToImport);
+            setSearchResultsRaw(prev => prev.map(p => ({ ...p, selected: false })));
+            setSelectAll(false);
+            setImportStep('search');
+            try { sessionStorage.removeItem('import-search-results'); } catch { /* ignore */ }
+        } finally {
+            setIsImporting(false);
+        }
     };
 
     // Helper to update current review item
@@ -525,14 +568,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
         return (
             <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 md:p-8 relative z-20">
-                <style>{`
-                    .glass-panel {
-                        background: rgba(255, 255, 255, 0.95);
-                        backdrop-filter: blur(40px);
-                        border: 1px solid rgba(255, 255, 255, 0.5);
-                        box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
-                    }
-                `}</style>
+
 
                 <FadeIn className="w-full max-w-6xl" mobileFast>
                     <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
@@ -548,6 +584,83 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 </button>
                                 <div className="h-4 w-px bg-earth/10"></div>
                                 <span className="text-xl font-serif text-earth">Reviewing {reviewIndex + 1} of {selectedProducts.length}</span>
+                            </div>
+                            {/* Translate button */}
+                            <div className="relative z-10 flex items-center gap-2 mr-auto md:mr-0">
+                                {(() => {
+                                    const hasChineseText = detectChinese(currentProduct.customName || currentProduct.name) ||
+                                        detectChinese(currentProduct.customDescription || currentProduct.description || '') ||
+                                        (currentProduct.variants || []).some(v => detectChinese(v.name));
+                                    if (!hasChineseText) return null;
+                                    return (
+                                        <button
+                                            onClick={async () => {
+                                                const productId = currentProduct.id;
+                                                const variantsAtStart = currentProduct.variants ?? [];
+                                                const nameAtRequest = currentProduct.customName || currentProduct.name;
+                                                const descAtRequest = currentProduct.customDescription || currentProduct.description || '';
+                                                setIsTranslating(true);
+                                                try {
+                                                    const result = await translateProductFields({
+                                                        name: nameAtRequest,
+                                                        description: descAtRequest,
+                                                        variantNames: variantsAtStart.map(v => v.name),
+                                                    });
+                                                    // Merge all translated fields via functional updater
+                                                    // Only overwrite name/description if the user hasn't edited them while translating
+                                                    const translatedMap = new Map<string, { requested: string; translated: string }>();
+                                                    variantsAtStart.forEach((v, i) => {
+                                                        if (result.variantNames[i]) {
+                                                            translatedMap.set(v.id, {
+                                                                requested: v.name,
+                                                                translated: result.variantNames[i],
+                                                            });
+                                                        }
+                                                    });
+                                                    setSearchResults(prev => prev.map(p => {
+                                                        if (p.id !== productId) return p;
+                                                        const updates: Partial<typeof p> = {};
+                                                        // Only apply translated name if user hasn't changed it
+                                                        const currentName = p.customName || p.name;
+                                                        if (currentName === nameAtRequest) updates.customName = result.name;
+                                                        // Only apply translated description if user hasn't changed it
+                                                        const currentDesc = p.customDescription || p.description || '';
+                                                        if (currentDesc === descAtRequest) updates.customDescription = result.description;
+                                                        // Merge translated variant names only if user hasn't edited them
+                                                        if (translatedMap.size > 0) {
+                                                            const translatedIds = new Set<string>();
+                                                            updates.variants = (p.variants || []).map(v => {
+                                                                const entry = translatedMap.get(v.id);
+                                                                if (!entry || v.name !== entry.requested) return v;
+                                                                translatedIds.add(v.id);
+                                                                return { ...v, name: entry.translated };
+                                                            });
+                                                            // Update originalVariants so translated names become the new baseline
+                                                            if (p.originalVariants) {
+                                                                updates.originalVariants = p.originalVariants.map(v => {
+                                                                    const entry = translatedIds.has(v.id) ? translatedMap.get(v.id) : undefined;
+                                                                    return entry ? { ...v, name: entry.translated } : v;
+                                                                });
+                                                            }
+                                                        }
+                                                        return { ...p, ...updates };
+                                                    }));
+                                                    toast.success('Translation complete');
+                                                } catch (err) {
+                                                    console.error('Translation failed:', err);
+                                                    toast.error('Translation failed');
+                                                } finally {
+                                                    setIsTranslating(false);
+                                                }
+                                            }}
+                                            disabled={isTranslating}
+                                            className="px-4 py-2 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-all text-xs uppercase tracking-widest font-bold flex items-center gap-1.5 disabled:opacity-50"
+                                        >
+                                            {isTranslating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
+                                            Translate
+                                        </button>
+                                    );
+                                })()}
                             </div>
                             <div className="relative z-10 flex flex-wrap gap-2 md:gap-4">
                                 <button
@@ -566,10 +679,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={confirmImport}
+                                        onClick={() => setImportStep('final-review')}
                                         className="px-8 py-2 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20"
                                     >
-                                        Complete Import ({selectedProducts.length})
+                                        Final Review → ({selectedProducts.length})
                                     </button>
                                 )}
                             </div>
@@ -579,12 +692,24 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             {/* Left: Product Images & Basic Info */}
                             <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
-                                    {(currentProduct.images.length > 0 || previewImageIdx !== null) ? (
+                                    {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
-                                                const allImages = [...currentProduct.images, ...(currentProduct.descriptionImages || [])];
+                                                const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
                                                 if (allImages.length === 0) return null;
-                                                const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length ? previewImageIdx : 0;
+                                                // Default to the ordered main image instead of raw index 0
+                                                const fallbackIdx = (() => {
+                                                    const sel = currentProduct.selectedImages && currentProduct.selectedImages.length > 0
+                                                        ? currentProduct.selectedImages
+                                                        : (currentProduct.images || []).map((_, i) => i);
+                                                    const ord = currentProduct.imageOrder && currentProduct.imageOrder.length > 0
+                                                        ? currentProduct.imageOrder.filter(i => sel.includes(i))
+                                                        : [...sel];
+                                                    return ord[0] ?? sel[0] ?? 0;
+                                                })();
+                                                const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length
+                                                    ? previewImageIdx
+                                                    : fallbackIdx;
                                                 const displayUrl = allImages[currentIdx];
                                                 return (
                                                     <>
@@ -639,9 +764,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             <p className="text-xs text-earth/20 mt-1">Tap to upload</p>
                                         </div>
                                     )}
-                                    {currentProduct.images.length > 0 && (
+                                    {(currentProduct.images?.length ?? 0) > 0 && (
                                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
-                                            {(currentProduct.selectedImages?.length || currentProduct.images.length)} / {currentProduct.images.length + (currentProduct.descriptionImages?.length || 0)} Selected
+                                            {(currentProduct.selectedImages?.length || currentProduct.images?.length || 0)} / {(currentProduct.images?.length || 0) + (currentProduct.descriptionImages?.length || 0)} Selected
                                         </div>
                                     )}
                                 </div>
@@ -651,7 +776,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Click to Select Images</p>
                                 </div>
                                 <div className="grid grid-cols-4 gap-2 max-h-52 overflow-y-auto">
-                                    {currentProduct.images.map((img, i) => {
+                                    {(currentProduct.images || []).map((img, i) => {
                                         const isSelected = currentProduct.selectedImages
                                             ? currentProduct.selectedImages.includes(i)
                                             : true; // By default all are selected
@@ -673,7 +798,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         const currentSelected = currentProduct.selectedImages ||
-                                                            currentProduct.images.map((_, idx) => idx);
+                                                            (currentProduct.images || []).map((_, idx) => idx);
                                                         const newSelected = isSelected
                                                             ? currentSelected.filter(idx => idx !== i)
                                                             : [...currentSelected, i].sort((a, b) => a - b);
@@ -713,8 +838,99 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     />
                                 </div>
 
+                                {/* Image Order Strip — drag/reorder selected images, green ✓ = main */}
+                                {(() => {
+                                    const combinedImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
+                                    const selected = currentProduct.selectedImages || (currentProduct.images || []).map((_, i) => i);
+                                    // Use custom order if set, otherwise natural order of selected
+                                    const ordered = currentProduct.imageOrder && currentProduct.imageOrder.length > 0
+                                        ? currentProduct.imageOrder.filter(i => selected.includes(i))
+                                        : [...selected];
+                                    // Add any newly selected images not yet in the order
+                                    const missing = selected.filter(i => !ordered.includes(i));
+                                    const finalOrder = [...ordered, ...missing];
+
+                                    if (finalOrder.length === 0) return null;
+
+                                    return (
+                                        <div className="mt-3 mb-2">
+                                            <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Image Order <span className="normal-case text-earth/30">(first = main listing image)</span></p>
+                                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                                {finalOrder.map((imgIdx, pos) => {
+                                                    const isMain = pos === 0;
+                                                    const imgSrc = combinedImages[imgIdx];
+                                                    if (!imgSrc) return null;
+                                                    return (
+                                                        <div key={imgIdx} className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${isMain ? 'border-green-500 ring-2 ring-green-300/40' : 'border-earth/10'}`}>
+                                                            <img src={imgSrc} alt={`Order ${pos + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                            {/* Main image badge */}
+                                                            {isMain && (
+                                                                <div className="absolute top-0.5 left-0.5 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center" title="Main listing image">
+                                                                    <Check className="w-2.5 h-2.5" />
+                                                                </div>
+                                                            )}
+                                                            {/* Click to set as main */}
+                                                            {!isMain && (
+                                                                <button
+                                                                    aria-label={`Set image ${pos + 1} as the main listing image`}
+                                                                    onClick={() => {
+                                                                        const newOrder = [imgIdx, ...finalOrder.filter(i => i !== imgIdx)];
+                                                                        updateReviewProduct('imageOrder', newOrder);
+                                                                        setPreviewImageIdx(newOrder[0]);
+                                                                    }}
+                                                                    className="absolute top-0.5 left-0.5 bg-white/80 hover:bg-green-100 backdrop-blur rounded-full w-4 h-4 flex items-center justify-center transition-colors"
+                                                                    title="Set as main image"
+                                                                >
+                                                                    <Check className="w-2.5 h-2.5 text-earth/40" />
+                                                                </button>
+                                                            )}
+                                                            {/* Reorder buttons */}
+                                                            <div className="absolute bottom-0.5 right-0.5 flex gap-px">
+                                                                {pos > 0 && (
+                                                                    <button
+                                                                        aria-label={`Move image ${pos + 1} left`}
+                                                                        onClick={() => {
+                                                                            const newOrder = [...finalOrder];
+                                                                            [newOrder[pos - 1], newOrder[pos]] = [newOrder[pos], newOrder[pos - 1]];
+                                                                            updateReviewProduct('imageOrder', newOrder);
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) {
+                                                                                setPreviewImageIdx(newOrder[0]);
+                                                                            }
+                                                                        }}
+                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-4 h-4 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
+                                                                        title="Move left"
+                                                                    >
+                                                                        <ChevronLeft className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                                {pos < finalOrder.length - 1 && (
+                                                                    <button
+                                                                        aria-label={`Move image ${pos + 1} right`}
+                                                                        onClick={() => {
+                                                                            const newOrder = [...finalOrder];
+                                                                            [newOrder[pos], newOrder[pos + 1]] = [newOrder[pos + 1], newOrder[pos]];
+                                                                            updateReviewProduct('imageOrder', newOrder);
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) {
+                                                                                setPreviewImageIdx(newOrder[0]);
+                                                                            }
+                                                                        }}
+                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-4 h-4 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
+                                                                        title="Move right"
+                                                                    >
+                                                                        <ChevronRight className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Empty state when no images */}
-                                {currentProduct.images.length === 0 && (
+                                {(currentProduct.images?.length ?? 0) === 0 && (
                                     <div className="flex flex-col items-center justify-center py-6 text-center">
                                         <ImageIcon className="w-10 h-10 text-earth/15 mb-3" />
                                         <p className="text-xs text-earth/40 mb-3">No images available</p>
@@ -762,7 +978,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             aria-label={`${isSelected ? 'Deselect' : 'Select'} marketing image ${idx + 1}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                const current = currentProduct.selectedImages || Array.from({ length: currentProduct.images.length }, (_, i) => i);
+                                                                const current = currentProduct.selectedImages || Array.from({ length: (currentProduct.images || []).length }, (_, i) => i);
                                                                 const newSelected = isSelected
                                                                     ? current.filter(i => i !== globalIdx)
                                                                     : [...current, globalIdx];
@@ -896,7 +1112,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 <span>${(currentProduct.salePrice || currentProduct.price).toFixed(2)}</span>
                                                             </div>
                                                             <div className="flex justify-between text-xs text-earth/60">
-                                                                <span>Est. CJ Cost (×1.6):</span>
+                                                                <span>Est. CJ Cost (×1.4):</span>
                                                                 <span>${pStack.estimatedCjCost.toFixed(2)}</span>
                                                             </div>
                                                             <div className="flex justify-between text-xs text-earth/60">
@@ -1154,6 +1370,243 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </FadeIn>
+            </div>
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FINAL REVIEW PAGE — Storefront-style preview before import
+    // ═══════════════════════════════════════════════════════════════════════
+    if (importStep === 'final-review') {
+        const selectedProducts = searchResults.filter(p => p.selected);
+
+        // Per-variant selling price calculator (returns explicit override when present)
+        const getVariantSellingPrice = (product: ImportableProduct, variant: { priceAdjustment: number; sellingPriceOverride?: number }) => {
+            if (typeof variant.sellingPriceOverride === 'number' && Number.isFinite(variant.sellingPriceOverride)) {
+                return variant.sellingPriceOverride;
+            }
+            const basePrice = product.salePrice || product.price;
+            const variantPrice1688 = basePrice + variant.priceAdjustment;
+            const collection = product.targetCollection || targetCollection;
+            return calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
+        };
+
+
+        return (
+            <div className="min-h-[80vh] flex flex-col items-center p-4 md:p-8 relative z-20">
+
+
+                <FadeIn className="w-full max-w-6xl" mobileFast>
+                    <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
+                        {/* Header */}
+                        <div className="bg-cream/50 p-4 md:p-8 border-b border-earth/5 flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-center">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setImportStep('review')}
+                                    className="flex items-center gap-2 text-earth/60 hover:text-earth transition-colors text-xs uppercase tracking-widest font-bold"
+                                >
+                                    <ChevronLeft className="w-4 h-4" /> Back to Review
+                                </button>
+                                <div className="h-4 w-px bg-earth/10"></div>
+                                <span className="text-xl font-serif text-earth">Final Preview — {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <button
+                                onClick={confirmImport}
+                                disabled={isImporting}
+                                className="px-8 py-3 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20 flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <Check className="w-4 h-4" /> Confirm & Import ({selectedProducts.length})
+                            </button>
+                        </div>
+
+                        {/* Product Cards */}
+                        <div className="p-4 md:p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                            {selectedProducts.map((product, productIdx) => {
+                                const pCollection = product.targetCollection || targetCollection;
+                                const pStack = calculateCostStackPrice(product.salePrice || product.price, pCollection);
+                                const hasCustomPrice = typeof product.customPrice === 'number' && Number.isFinite(product.customPrice);
+                                const displayPrice = hasCustomPrice ? product.customPrice! : pStack.sellingPrice;
+                                const orderedImages = getOrderedImages(product);
+                                const filteredVariants = product.selectedVariants === undefined
+                                    ? product.variants
+                                    : product.variants?.filter(v => product.selectedVariants!.includes(v.id));
+
+                                return (
+                                    <div key={product.id} className="bg-white rounded-2xl border border-earth/10 overflow-hidden shadow-sm">
+                                        <div className="flex flex-col lg:flex-row">
+                                            {/* Image Gallery */}
+                                            <div className="lg:w-80 flex-shrink-0 bg-cream/20 p-4">
+                                                {orderedImages.length > 0 && (
+                                                    <div className="space-y-2">
+                                                        {/* Main image */}
+                                                        <div className="aspect-square rounded-xl overflow-hidden border border-earth/10 relative">
+                                                            <img
+                                                                src={orderedImages[0]}
+                                                                alt={product.customName || product.name}
+                                                                referrerPolicy="no-referrer"
+                                                                crossOrigin="anonymous"
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center" title="Main listing image">
+                                                                <Check className="w-3 h-3" />
+                                                            </div>
+                                                        </div>
+                                                        {/* Thumbnail strip */}
+                                                        {orderedImages.length > 1 && (
+                                                            <div className="flex gap-1 overflow-x-auto">
+                                                                {orderedImages.slice(1, 7).map((img, i) => (
+                                                                    <div key={i} className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-earth/10">
+                                                                        <img src={img} alt={`Thumbnail ${i + 2}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                                    </div>
+                                                                ))}
+                                                                {orderedImages.length > 7 && (
+                                                                    <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-earth/5 flex items-center justify-center text-xs text-earth/40 font-bold">
+                                                                        +{orderedImages.length - 7}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Product Details */}
+                                            <div className="flex-1 p-4 md:p-6 space-y-4">
+                                                {/* Title + Collection */}
+                                                <div>
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <h3 className="text-lg font-serif text-earth leading-tight">{product.customName || product.name}</h3>
+                                                        <span className="text-xs uppercase tracking-widest bg-cream px-3 py-1 rounded-full text-earth/60 font-bold flex-shrink-0">
+                                                            {collections.find(c => c.id === pCollection)?.title || pCollection}
+                                                        </span>
+                                                    </div>
+                                                    {(product.customDescription || product.description) && (
+                                                        <p className="text-sm text-earth/50 mt-1 line-clamp-2">{product.customDescription || product.description}</p>
+                                                    )}
+                                                </div>
+
+                                                {/* Base Price Summary */}
+                                                <div className="bg-cream/40 rounded-xl p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                                                    <div>
+                                                        <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold">1688 Cost</p>
+                                                        <p className="text-sm font-bold text-earth">${(product.salePrice || product.price).toFixed(2)}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold">Est. CJ (×1.4)</p>
+                                                        <p className="text-sm font-bold text-earth">${pStack.estimatedCjCost.toFixed(2)}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold">Shipping</p>
+                                                        <p className="text-sm font-bold text-earth">${pStack.estimatedShipping.toFixed(2)}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold">Selling Price</p>
+                                                        <p className="text-lg font-bold text-green-700">${displayPrice.toFixed(2)}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Variant Pricing Table */}
+                                                {filteredVariants && filteredVariants.length > 0 && (
+                                                    <div>
+                                                        <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">
+                                                            Variant Pricing ({filteredVariants.length} variant{filteredVariants.length !== 1 ? 's' : ''})
+                                                        </h4>
+                                                        <div className="border border-earth/10 rounded-xl overflow-hidden">
+                                                            <table className="w-full text-sm">
+                                                                <thead>
+                                                                    <tr className="bg-cream/50 text-left">
+                                                                        <th className="px-3 py-2 text-[9px] uppercase tracking-widest text-earth/50 font-bold">Variant</th>
+                                                                        <th className="px-3 py-2 text-[9px] uppercase tracking-widest text-earth/50 font-bold text-right">1688 Cost</th>
+                                                                        <th className="px-3 py-2 text-[9px] uppercase tracking-widest text-earth/50 font-bold text-right">Selling Price</th>
+                                                                        <th className="px-3 py-2 text-[9px] uppercase tracking-widest text-earth/50 font-bold text-right w-28">Override</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-earth/5">
+                                                                    {filteredVariants.map((variant) => {
+                                                                        const variantBasePrice = (product.salePrice || product.price) + variant.priceAdjustment;
+                                                                        const variantSelling = getVariantSellingPrice(product, variant);
+                                                                        return (
+                                                                            <tr key={variant.id} className="hover:bg-cream/20 transition-colors">
+                                                                                <td className="px-3 py-2">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        {variant.image && (
+                                                                                            <img src={variant.image} alt={variant.name} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-8 h-8 rounded-md object-cover border border-earth/10" />
+                                                                                        )}
+                                                                                        <span className="text-earth truncate max-w-[160px]">{variant.name}</span>
+                                                                                        {variant.priceAdjustment !== 0 && (
+                                                                                            <span className={`text-xs ${variant.priceAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                                                                {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td className="px-3 py-2 text-right text-earth/60">${variantBasePrice.toFixed(2)}</td>
+                                                                                <td className="px-3 py-2 text-right font-medium text-earth">${variantSelling.toFixed(2)}</td>
+                                                                                <td className="px-3 py-2 text-right">
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        step="0.01"
+                                                                                        min="0.01"
+                                                                                        placeholder={variantSelling.toFixed(2)}
+                                                                                        value={priceDrafts[`${product.id}:${variant.id}`] ?? (variant.sellingPriceOverride != null ? String(variant.sellingPriceOverride) : '')}
+                                                                                        className="w-24 px-2 py-1 text-right text-sm border border-earth/10 rounded-lg focus:ring-2 ring-bronze/20 bg-white"
+                                                                                        onChange={(e) => {
+                                                                                            setPriceDrafts(prev => ({ ...prev, [`${product.id}:${variant.id}`]: e.target.value }));
+                                                                                        }}
+                                                                                        onBlur={(e) => {
+                                                                                            // Validate and commit on blur
+                                                                                            const parsed = parseFloat(e.target.value);
+                                                                                            const newOverride = e.target.value === ''
+                                                                                                ? undefined
+                                                                                                : (Number.isFinite(parsed) && parsed > 0 ? parsed : undefined);
+                                                                                            const updatedVariants = (product.variants || []).map(v =>
+                                                                                                v.id === variant.id ? { ...v, sellingPriceOverride: newOverride } : v
+                                                                                            );
+                                                                                            updateProductField(product.id, 'variants', updatedVariants);
+                                                                                            // Clear draft so it falls back to committed value
+                                                                                            setPriceDrafts(prev => { const next = { ...prev }; delete next[`${product.id}:${variant.id}`]; return next; });
+                                                                                        }}
+                                                                                    />
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Product index badge */}
+                                                <div className="flex justify-between items-center pt-2">
+                                                    <span className="text-[9px] uppercase tracking-widest text-earth/30 font-bold">Product {productIdx + 1} of {selectedProducts.length}</span>
+                                                    <span className="text-[9px] text-earth/30">{orderedImages.length} images · {filteredVariants?.length || 0} variants</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Sticky Footer */}
+                        <div className="bg-cream/50 p-4 md:p-6 border-t border-earth/5 flex justify-between items-center">
+                            <button
+                                onClick={() => setImportStep('review')}
+                                className="px-6 py-2 rounded-full border border-earth/10 hover:bg-white transition-all text-xs uppercase tracking-widest font-bold"
+                            >
+                                <ChevronLeft className="w-3 h-3 inline mr-1" /> Back to Editing
+                            </button>
+                            <button
+                                onClick={confirmImport}
+                                disabled={isImporting}
+                                className="px-10 py-3 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20 flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <Check className="w-4 h-4" /> Confirm & Import All ({selectedProducts.length})
+                            </button>
                         </div>
                     </div>
                 </FadeIn>
@@ -1423,6 +1876,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
             {/* Custom Styles for Float/Glow Animations */}
             <style>{`
+                .glass-panel {
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(40px);
+                    border: 1px solid rgba(255, 255, 255, 0.5);
+                    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+                }
                 @keyframes float {
                     0%, 100% { transform: translateY(0px); }
                     50% { transform: translateY(-10px); }

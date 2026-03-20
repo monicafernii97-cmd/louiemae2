@@ -60,6 +60,11 @@ export default [
                 MediaQueryListEvent: 'readonly',
                 Node: 'readonly',
                 requestAnimationFrame: 'readonly',
+                WheelEvent: 'readonly',
+                TouchEvent: 'readonly',
+                Image: 'readonly',
+                getComputedStyle: 'readonly',
+                AbortController: 'readonly',
             },
         },
         plugins: {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAction, useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
-import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2, RotateCcw, Key, Link2, Zap } from 'lucide-react';
+import { Wifi, RefreshCw, Settings, CheckCircle, XCircle, Loader2, Package, Clock, AlertTriangle, ArrowRight, ExternalLink, Trash2, RotateCcw, Key, Link2 } from 'lucide-react';
 import { FadeIn } from './FadeIn';
 import { CJVariantManager } from './CJVariantManager';
 
@@ -43,45 +43,42 @@ export const CJSettings: React.FC = () => {
     // Use the admin products.adminRemove mutation for deleting (no auth required)
     const deleteProduct = useMutation(api.products.adminRemove);
 
-    const handleDeleteProduct = async (id: Id<"products">, productName: string, _cjSourcingId?: string) => {
-        console.log("Delete button clicked for:", productName, id);
+    /** Extracts a human-readable message from an unknown caught error. */
+    const getErrorMessage = (error: unknown, fallback: string) =>
+        error instanceof Error ? error.message : fallback;
 
-        const confirmed = window.confirm(`Remove "${productName}" from import queue? This cannot be undone.`);
-        console.log("User confirmed:", confirmed);
+    const handleDeleteProduct = async (id: Id<"products">, _productName: string, _cjSourcingId?: string) => {
+        if (import.meta.env.DEV) console.log("Delete button clicked for:", _productName, id);
 
-        if (!confirmed) {
-            console.log("User cancelled deletion");
-            return;
-        }
+        const confirmed = window.confirm(`Remove "${_productName}" from import queue? This cannot be undone.`);
+        if (import.meta.env.DEV) console.log("User confirmed:", confirmed);
 
-        console.log("Starting deletion process...");
+        if (!confirmed) return;
+
         setDeletingId(id);
 
         try {
-            console.log("Calling deleteProduct mutation with id:", id);
             await deleteProduct({ id });
-            console.log("Delete successful!");
-            setResult({ success: true, message: `"${productName}" removed successfully` });
-        } catch (error: any) {
-            console.error("Delete failed with error:", error);
-            setResult({ success: false, message: error.message || 'Failed to remove product' });
+            setResult({ success: true, message: `"${_productName}" removed successfully` });
+        } catch (error: unknown) {
+            if (import.meta.env.DEV) console.error("Delete failed:", error);
+            setResult({ success: false, message: getErrorMessage(error, 'Failed to remove product') });
         } finally {
-            console.log("Deletion process complete, resetting state");
             setDeletingId(null);
         }
     };
 
-    const handleResubmit = async (id: Id<"products">, productName: string) => {
+    /** Resubmits a product for CJ sourcing. */
+    const handleResubmit = async (id: Id<"products">) => {
         setResubmittingId(id);
         setResult(null);
 
         try {
             const res = await resubmitProduct({ productId: id });
             setResult({ success: res.success, message: res.message });
-            // Refresh token status after action
             getTokenStatus({}).then(setTokenStatus).catch(() => null);
-        } catch (error: any) {
-            setResult({ success: false, message: error.message || 'Failed to resubmit product' });
+        } catch (error: unknown) {
+            setResult({ success: false, message: getErrorMessage(error, 'Failed to resubmit product') });
         } finally {
             setResubmittingId(null);
         }
@@ -105,8 +102,8 @@ export const CJSettings: React.FC = () => {
         try {
             const res = await testConnection({});
             setResult(res);
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: getErrorMessage(error, 'Connection test failed') });
         } finally {
             setTesting(false);
         }
@@ -118,8 +115,8 @@ export const CJSettings: React.FC = () => {
         try {
             const res = await configureWebhooks({});
             setResult(res);
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: getErrorMessage(error, 'Webhook configuration failed') });
         } finally {
             setConfiguring(false);
         }
@@ -134,8 +131,8 @@ export const CJSettings: React.FC = () => {
                 success: true,
                 message: `Synced ${res.synced} orders${res.errors > 0 ? `, ${res.errors} errors` : ''}`
             });
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: getErrorMessage(error, 'Tracking sync failed') });
         } finally {
             setSyncing(false);
         }
@@ -150,15 +147,15 @@ export const CJSettings: React.FC = () => {
                 success: true,
                 message: `Checked ${res.checked} products: ${res.approved} approved, ${res.rejected} rejected`
             });
-        } catch (error: any) {
-            setResult({ success: false, message: error.message });
+        } catch (error: unknown) {
+            setResult({ success: false, message: getErrorMessage(error, 'Sourcing check failed') });
         } finally {
             setCheckingSourcing(false);
         }
     };
 
     // Action Card Component (Refined & Minimalist)
-    const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: any) => (
+    const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: { icon: React.FC<{ className?: string }>; title: string; description: string; loading: boolean; onClick: () => void; colorClass?: string }) => (
         <div
             onClick={loading ? undefined : onClick}
             className="group relative backdrop-blur-xl bg-white/60 border border-white/40 p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer overflow-hidden rounded-xl active:scale-[0.98] md:hover:-translate-y-1"
@@ -405,7 +402,7 @@ export const CJSettings: React.FC = () => {
                                                     <div className="flex flex-wrap items-center justify-end gap-2 mt-3 pt-3 border-t border-earth/5">
                                                         {/* Resubmit - always available for pending products */}
                                                         <button
-                                                            onClick={() => handleResubmit(product._id, product.name)}
+                                                            onClick={() => handleResubmit(product._id)}
                                                             disabled={resubmittingId === product._id}
                                                             className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
                                                             title="Resubmit to CJ"
@@ -550,7 +547,7 @@ export const CJSettings: React.FC = () => {
                                                     <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-red-100/50">
                                                         {/* Resubmit */}
                                                         <button
-                                                            onClick={() => handleResubmit(product._id, product.name)}
+                                                            onClick={() => handleResubmit(product._id)}
                                                             disabled={resubmittingId === product._id}
                                                             className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
                                                             title="Retry submission to CJ"
