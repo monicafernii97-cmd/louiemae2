@@ -401,8 +401,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Import Multi-Step Workflow State
     const [importStep, setImportStepRaw] = useState<'search' | 'review' | 'final-review'>(() => {
         try {
-            const saved = sessionStorage.getItem('import-step');
-            if (saved === 'review' || saved === 'final-review') return saved;
+            const savedStep = sessionStorage.getItem('import-step');
+            if (savedStep === 'review' || savedStep === 'final-review') {
+                // Only restore non-search steps if the saved batch has selected products
+                const savedResults = JSON.parse(sessionStorage.getItem('import-search-results') || '[]');
+                if (Array.isArray(savedResults) && savedResults.some((p: any) => p.selected)) {
+                    return savedStep;
+                }
+            }
         } catch { /* ignore sessionStorage errors */ }
         return 'search';
     });
@@ -691,7 +697,19 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             {(() => {
                                                 const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
                                                 if (allImages.length === 0) return null;
-                                                const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length ? previewImageIdx : 0;
+                                                // Default to the ordered main image instead of raw index 0
+                                                const fallbackIdx = (() => {
+                                                    const sel = currentProduct.selectedImages && currentProduct.selectedImages.length > 0
+                                                        ? currentProduct.selectedImages
+                                                        : (currentProduct.images || []).map((_, i) => i);
+                                                    const ord = currentProduct.imageOrder && currentProduct.imageOrder.length > 0
+                                                        ? currentProduct.imageOrder.filter(i => sel.includes(i))
+                                                        : [...sel];
+                                                    return ord[0] ?? sel[0] ?? 0;
+                                                })();
+                                                const currentIdx = previewImageIdx !== null && previewImageIdx < allImages.length
+                                                    ? previewImageIdx
+                                                    : fallbackIdx;
                                                 const displayUrl = allImages[currentIdx];
                                                 return (
                                                     <>
@@ -1533,10 +1551,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                         step="0.01"
                                                                                         min="0.01"
                                                                                         placeholder={variantSelling.toFixed(2)}
-                                                                                        value={priceDrafts[variant.id] ?? (variant.sellingPriceOverride != null ? String(variant.sellingPriceOverride) : '')}
+                                                                                        value={priceDrafts[`${product.id}:${variant.id}`] ?? (variant.sellingPriceOverride != null ? String(variant.sellingPriceOverride) : '')}
                                                                                         className="w-24 px-2 py-1 text-right text-sm border border-earth/10 rounded-lg focus:ring-2 ring-bronze/20 bg-white"
                                                                                         onChange={(e) => {
-                                                                                            setPriceDrafts(prev => ({ ...prev, [variant.id]: e.target.value }));
+                                                                                            setPriceDrafts(prev => ({ ...prev, [`${product.id}:${variant.id}`]: e.target.value }));
                                                                                         }}
                                                                                         onBlur={(e) => {
                                                                                             // Validate and commit on blur
@@ -1549,7 +1567,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                                             );
                                                                                             updateProductField(product.id, 'variants', updatedVariants);
                                                                                             // Clear draft so it falls back to committed value
-                                                                                            setPriceDrafts(prev => { const next = { ...prev }; delete next[variant.id]; return next; });
+                                                                                            setPriceDrafts(prev => { const next = { ...prev }; delete next[`${product.id}:${variant.id}`]; return next; });
                                                                                         }}
                                                                                     />
                                                                                 </td>
