@@ -408,6 +408,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     });
     const setImportStep = (step: 'search' | 'review' | 'final-review') => {
         setImportStepRaw(step);
+        if (step !== 'final-review') setPriceDrafts({});
         try {
             sessionStorage.setItem('import-step', step);
             if (step === 'search') {
