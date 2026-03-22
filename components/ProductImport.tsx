@@ -3,7 +3,7 @@ import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, Ale
 import { toast, Toaster } from 'sonner';
 import { aliexpressService } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
-import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames } from '../services/geminiService';
+import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames, isLikelyFallback } from '../services/geminiService';
 import { translateProductFields, detectChinese } from '../services/translateService';
 import { FadeIn } from './FadeIn';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
@@ -26,6 +26,34 @@ const DEFAULT_PRICING_RULE: PricingRule = {
     type: 'percentage',
     value: 45, // 45% markup
     roundUp: true
+};
+
+// Approximate exchange rates for pre-sourcing estimation (CJ confirms final pricing)
+const CURRENCY_RATES_TO_USD: Record<string, number> = {
+    USD: 1,
+    CNY: 0.14,
+    RMB: 0.14, // alias for CNY
+    GBP: 1.27,
+    EUR: 1.09,
+    CAD: 0.74,
+    AUD: 0.66,
+    JPY: 0.0067,
+    KRW: 0.00075,
+    HKD: 0.13,
+    SGD: 0.75,
+    MYR: 0.22,
+    THB: 0.029,
+    INR: 0.012,
+};
+
+/** Converts a price from a source currency to approximate USD. */
+const convertToUsd = (price: number, currency: string): { usd: number; rate: number } => {
+    const code = currency.toUpperCase().trim();
+    const rate = CURRENCY_RATES_TO_USD[code];
+    if (rate) return { usd: +(price * rate).toFixed(2), rate };
+    // Unknown currency — assume 1:1 and warn
+    console.warn(`[Currency] Unknown currency "${code}", treating as USD`);
+    return { usd: price, rate: 1 };
 };
 
 export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImportProducts }) => {
@@ -311,6 +339,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 category: product.category || '',
                 collection: product.targetCollection || targetCollection,
                 keywords: extractKeywords(product.name + ' ' + (product.description || '')),
+                sourceMetadata: {
+                    variantNames: product.variants?.map(v => v.name).filter(Boolean),
+                    imageCount: product.images?.length,
+                    priceUsd: product.salePrice || product.price,
+                    rating: product.averageRating,
+                    salesCount: product.reviewCount,
+                    sellerName: product.seller?.name,
+                },
             };
 
             const enhancedName = await generateProductNameV2(context);
@@ -376,6 +412,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 category: product.category || '',
                 collection: product.targetCollection || targetCollection,
                 keywords: extractKeywords((product.customName || product.name) + ' ' + (product.description || '')),
+                sourceMetadata: {
+                    variantNames: product.variants?.map(v => v.name).filter(Boolean),
+                    imageCount: product.images?.length,
+                    priceUsd: product.salePrice || product.price,
+                    rating: product.averageRating,
+                    salesCount: product.reviewCount,
+                    sellerName: product.seller?.name,
+                },
             };
 
             const enhancedDescription = await generateProductDescriptionV2(context);
@@ -515,6 +559,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     const finalPrice = (typeof p.customPrice === 'number' && Number.isFinite(p.customPrice))
                         ? p.customPrice
                         : calculateProductPrice(p);
+                    const costStackBase = calculateCostStackPrice(p.salePrice || p.price, p.targetCollection || targetCollection).sellingPrice;
+                    // Fix 5: If user set a custom price, compute markup ratio and propagate to variants
+                    const hasCustomPrice = typeof p.customPrice === 'number' && Number.isFinite(p.customPrice);
+                    const markupRatio = hasCustomPrice && costStackBase > 0 ? p.customPrice! / costStackBase : 1;
                     const collection = p.targetCollection || targetCollection;
                     return raw.map(v => {
                         // If user set an explicit override, convert to priceAdjustment relative to product.price
@@ -525,7 +573,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         const basePrice = p.salePrice || p.price;
                         const variantPrice1688 = basePrice + v.priceAdjustment;
                         const variantSelling = calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
-                        return { ...v, priceAdjustment: variantSelling - finalPrice };
+                        // Apply same markup ratio from user's custom base price
+                        const scaledSelling = Math.ceil(variantSelling * markupRatio);
+                        return { ...v, priceAdjustment: scaledSelling - finalPrice };
                     });
                 })(),
                 sourceUrl: p.productUrl || '',
@@ -690,7 +740,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                         <div className="flex flex-col lg:flex-row h-[70vh]">
                             {/* Left: Product Images & Basic Info */}
-                            <div className="w-full lg:w-1/3 bg-white/40 p-10 border-r border-earth/5 overflow-y-auto">
+                            <div className="w-full lg:w-1/3 bg-white/40 p-4 md:p-10 border-r border-earth/5 overflow-y-auto">
                                 <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
                                     {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
@@ -1751,22 +1801,31 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 console.log('[URL Import] Processing as generic product:', result.data);
                 const data = result.data;
                 const genId = `gen_${Date.now()}`;
-                // Guard against non-USD prices from foreign pages
+                // Convert non-USD prices to approximate USD
+                let importPrice = data.price || 0;
+                let sourceCurrency: string | undefined;
+                let sourcePriceOriginal: number | undefined;
                 if (data.currency && String(data.currency).toUpperCase() !== 'USD') {
-                    throw new Error(`Generic import currently supports USD pages only; received ${data.currency}.`);
+                    const code = String(data.currency).toUpperCase();
+                    const { usd, rate } = convertToUsd(importPrice, code);
+                    sourceCurrency = code;
+                    sourcePriceOriginal = importPrice;
+                    importPrice = usd;
+                    console.log(`[URL Import] Converted ${sourcePriceOriginal} ${code} → $${importPrice} USD (rate: ${rate})`);
+                    toast.info(`Price converted: ${sourcePriceOriginal} ${code} → $${importPrice} USD`);
                 }
                 importableProduct = {
                     id: genId,
                     name: data.title || 'Unknown',
-                    price: data.price || 0,
+                    price: importPrice,
                     description: data.description || '',
                     images: (data.images && data.images.length > 0) ? data.images : (data.image ? [data.image] : []),
                     category: '',
                     collection: targetCollection as CollectionType,
                     variants: [],
                     sourceId: genId,
-                    originalPrice: data.price || 0,
-                    salePrice: data.price || 0,
+                    originalPrice: importPrice,
+                    salePrice: importPrice,
                     shippingInfo: { freeShipping: false, estimatedDays: 'Unknown', cost: 0 },
                     seller: { id: '', name: 'Unknown', rating: 0, feedbackScore: 0 },
                     reviewCount: 0,
@@ -1775,8 +1834,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     source: 'generic',
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
-                    customPrice: calculateFinalPrice(data.price || 0)
-                };
+                    customPrice: calculateFinalPrice(importPrice),
+                    // Store original currency metadata for audit trail
+                    ...(sourceCurrency && { sourceCurrency, sourcePriceOriginal }),
+                } as any;
             }
 
             console.log('[URL Import] Created importable product:', importableProduct.name, 'images:', importableProduct.images?.length, 'variants:', importableProduct.variants?.length);
@@ -1814,6 +1875,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         category: '',
                         collection: targetCollection,
                         keywords: extractKeywords(importableProduct.name + ' ' + (importableProduct.description || '')),
+                        sourceMetadata: {
+                            variantNames: importableProduct.variants?.map((v: any) => v.name).filter(Boolean),
+                            imageCount: importableProduct.images?.length,
+                            priceUsd: importableProduct.salePrice || importableProduct.price,
+                            rating: importableProduct.averageRating,
+                            salesCount: importableProduct.reviewCount,
+                            sellerName: importableProduct.seller?.name,
+                        },
                     };
 
                     toast.loading('Enhancing with AI...', { id: 'ai-enhance' });
@@ -1826,9 +1895,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                     toast.dismiss('ai-enhance');
 
-                    // Only use AI results if they look valid (not generic fallbacks)
-                    const isValidAiName = enhancedName && !enhancedName.includes('Chair') && !enhancedName.includes('Table') && !enhancedName.includes('Lamp');
-                    const isValidAiDesc = enhancedDescription && !enhancedDescription.includes('solid oak') && !enhancedDescription.includes('Nordic restraint');
+                    // Fix 2: Use isLikelyFallback instead of brittle keyword blocklist
+                    const isValidAiName = enhancedName && !isLikelyFallback(enhancedName);
+                    const isValidAiDesc = enhancedDescription && enhancedDescription.length > 80;
 
                     if (isValidAiName || isValidAiDesc) {
                         importableProduct = {

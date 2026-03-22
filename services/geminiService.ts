@@ -786,6 +786,15 @@ export interface ProductContext {
   collection: string;
   keywords?: string[];
   priceRange?: 'budget' | 'mid' | 'premium';
+  /** Real product metadata for grounding AI generation in actual data */
+  sourceMetadata?: {
+    variantNames?: string[];
+    imageCount?: number;
+    priceUsd?: number;
+    rating?: number;
+    salesCount?: number;
+    sellerName?: string;
+  };
 }
 
 /**
@@ -938,6 +947,29 @@ const generateFallbackName = (originalName: string, collection: string): string 
 
   // Return 2-3 word format: "Aurora Dining Chair" (no "The")
   return `${randomName} ${productType}`;
+};
+
+// Collect all known fallback first-names into a Set for fast lookup
+const ALL_FALLBACK_NAMES = new Set(
+  Object.values(PRODUCT_NAME_INSPIRATIONS).flat().map(n => n.toLowerCase())
+);
+
+/**
+ * Detects whether a generated product name is likely a fallback.
+ * Returns true if the name starts with a known fallback first-name
+ * AND the remaining words match a known product type mapping.
+ * This replaces the old brittle keyword blocklist (Chair/Table/Lamp).
+ */
+export const isLikelyFallback = (name: string): boolean => {
+  if (!name) return true;
+  const parts = name.trim().split(/\s+/);
+  if (parts.length < 2 || parts.length > 3) return false;
+  const firstName = parts[0].toLowerCase();
+  if (!ALL_FALLBACK_NAMES.has(firstName)) return false;
+  // Check if the remaining words match a known product type
+  const typePart = parts.slice(1).join(' ');
+  const knownTypes = new Set(Object.values(PRODUCT_TYPE_MAPPINGS).map(t => t.toLowerCase()));
+  return knownTypes.has(typePart.toLowerCase());
 };
 
 export const generateProductName = async (
@@ -1330,6 +1362,15 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
       collection: context.collection,
       extractedKeywords: keywords,
       sourceDescription: (context.originalDescription || '').slice(0, 500),
+      // Real product metadata for grounding (Fix 1)
+      ...(context.sourceMetadata && {
+        variants: context.sourceMetadata.variantNames?.slice(0, 10),
+        imageCount: context.sourceMetadata.imageCount,
+        priceUsd: context.sourceMetadata.priceUsd,
+        rating: context.sourceMetadata.rating,
+        salesCount: context.sourceMetadata.salesCount,
+        seller: context.sourceMetadata.sellerName,
+      }),
     };
 
     const response = await ai.models.generateContent({

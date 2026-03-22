@@ -923,7 +923,7 @@ export const AdminPage: React.FC = () => {
 
                         <div className="space-y-4">
                            {campaigns.map(camp => (
-                              <div key={camp.id} className="bg-white p-6 border border-earth/5 flex justify-between items-center group">
+                              <div key={camp.id} className="bg-white p-4 md:p-6 border border-earth/5 flex flex-col md:flex-row justify-between md:items-center group gap-3">
                                  <div>
                                     <div className="flex items-center gap-3 mb-2">
                                        <span className={`w-2 h-2 rounded-full ${camp.status === 'sent' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
@@ -1140,7 +1140,7 @@ export const AdminPage: React.FC = () => {
                               <p className="font-sans text-sm text-earth/60 line-clamp-2 mb-4">{post.excerpt}</p>
                               <span className={`text-[10px] uppercase tracking-widest px-2 py-1 ${post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{post.status}</span>
                            </div>
-                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
                               <button onClick={() => handleEditPost(post)} className="p-2 hover:bg-earth/10 rounded-full"><Edit3 className="w-4 h-4 text-earth" /></button>
                               <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-red-50 text-red-800 rounded-full"><Trash2 className="w-4 h-4" /></button>
                            </div>
@@ -1206,7 +1206,7 @@ export const AdminPage: React.FC = () => {
                            <h3 className="font-serif text-xl text-earth mb-4 italic">Core Homepage Elements</h3>
                            <div className="space-y-6">
                               <ImageUploader label="Hero Image" currentImage={siteContent.home.hero.image} onImageChange={(val) => updateSiteContent('home', { hero: { ...siteContent.home.hero, image: val } })} aspectRatio="aspect-[21/9]" />
-                              <div className="grid grid-cols-2 gap-6"><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Main Title Line 1</label><input type="text" value={siteContent.home.hero.titleLine1} onChange={(e) => updateSiteContent('home', { hero: { ...siteContent.home.hero, titleLine1: e.target.value } })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-xl" /></div></div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Main Title Line 1</label><input type="text" value={siteContent.home.hero.titleLine1} onChange={(e) => updateSiteContent('home', { hero: { ...siteContent.home.hero, titleLine1: e.target.value } })} className="w-full bg-cream/30 p-3 border border-earth/10 font-serif text-xl" /></div></div>
                            </div>
                            <p className="text-xs text-earth/40 italic">Note: Core category grids and features are fixed. Add dynamic sections below to expand the page.</p>
                         </div>
