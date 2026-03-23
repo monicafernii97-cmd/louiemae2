@@ -954,10 +954,18 @@ const ALL_FALLBACK_NAMES = new Set(
   Object.values(PRODUCT_NAME_INSPIRATIONS).flat().map(n => n.toLowerCase())
 );
 
+// Known product types + generic fallback labels emitted by generateFallbackName()
+const KNOWN_FALLBACK_TYPES = new Set([
+  ...Object.values(PRODUCT_TYPE_MAPPINGS).map(type => type.toLowerCase()),
+  'piece',
+  'item',
+  'accent',
+]);
+
 /**
  * Detects whether a generated product name is likely a fallback.
  * Returns true if the name starts with a known fallback first-name
- * AND the remaining words match a known product type mapping.
+ * AND the remaining words match a known product type mapping or generic label.
  * This replaces the old brittle keyword blocklist (Chair/Table/Lamp).
  */
 export const isLikelyFallback = (name: string): boolean => {
@@ -966,10 +974,26 @@ export const isLikelyFallback = (name: string): boolean => {
   if (parts.length < 2 || parts.length > 3) return false;
   const firstName = parts[0].toLowerCase();
   if (!ALL_FALLBACK_NAMES.has(firstName)) return false;
-  // Check if the remaining words match a known product type
+  // Check if the remaining words match a known product type or generic label
   const typePart = parts.slice(1).join(' ');
-  const knownTypes = new Set(Object.values(PRODUCT_TYPE_MAPPINGS).map(t => t.toLowerCase()));
-  return knownTypes.has(typePart.toLowerCase());
+  return KNOWN_FALLBACK_TYPES.has(typePart.toLowerCase());
+};
+
+/** Distinctive phrases from the fallback description template pool. */
+const FALLBACK_DESC_MARKERS = [
+  'solid oak', 'nordic restraint', 'nordic precision', 'hand-rubbed finish',
+  'scandinavian elegance', 'bouclé over solid oak', 'quiet sophistication',
+  'thoughtfully curated', 'effortlessly refined', 'anchors any room',
+];
+
+/**
+ * Detects whether a generated description is likely a generic fallback
+ * rather than an AI result grounded in real product data.
+ */
+export const isLikelyFallbackDescription = (desc: string): boolean => {
+  if (!desc) return true;
+  const lower = desc.toLowerCase();
+  return FALLBACK_DESC_MARKERS.some(marker => lower.includes(marker));
 };
 
 export const generateProductName = async (

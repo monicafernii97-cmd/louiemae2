@@ -241,7 +241,29 @@ export const aliexpressService = {
             }
 
             const data = await response.json();
-            const product = (data.result || data) as AliExpressProduct;
+            // Unwrap OTAPI response structure and normalize to SourceProduct fields
+            const raw = data.Result?.Item || data.result || data;
+            const product: AliExpressProduct = {
+                id: raw.Id || raw.id || cleanId,
+                name: raw.Title || raw.title || raw.name || 'Unknown',
+                price: raw.Price?.OriginalPrice || raw.price || 0,
+                description: raw.Description || raw.description || '',
+                images: Array.isArray(raw.Pictures)
+                    ? raw.Pictures.map((p: any) => p.Url || p.Large?.Url || p)
+                    : (Array.isArray(raw.images) ? raw.images : (raw.image ? [raw.image] : [])),
+                category: raw.CategoryId || raw.category || '',
+                collection: 'decor' as const,
+                sourceId: raw.Id || raw.id || cleanId,
+                originalPrice: raw.Price?.OriginalPrice || raw.originalPrice || raw.price || 0,
+                salePrice: raw.Price?.Price || raw.salePrice || raw.price || 0,
+                shippingInfo: { freeShipping: true, estimatedDays: '7-15', cost: 0 },
+                seller: { id: '', name: raw.ProviderName || '', rating: 0, feedbackScore: 0 },
+                variants: raw.variants || [],
+                reviewCount: raw.SoldQuantity || raw.reviewCount || 0,
+                averageRating: raw.averageRating || 0,
+                productUrl: raw.ExternalItemUrl || raw.TaobaoItemUrl || raw.url || '',
+                source: '1688',
+            };
 
             // Cache for 4 hours
             setCache(cacheKey, product, 4 * 60 * 60 * 1000);

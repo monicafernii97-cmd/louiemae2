@@ -3,7 +3,7 @@ import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, Ale
 import { toast, Toaster } from 'sonner';
 import { aliexpressService } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
-import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames, isLikelyFallback } from '../services/geminiService';
+import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames, isLikelyFallback, isLikelyFallbackDescription } from '../services/geminiService';
 import { translateProductFields, detectChinese } from '../services/translateService';
 import { FadeIn } from './FadeIn';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
@@ -46,14 +46,13 @@ const CURRENCY_RATES_TO_USD: Record<string, number> = {
     INR: 0.012,
 };
 
-/** Converts a price from a source currency to approximate USD. */
+/** Converts a price from a source currency to approximate USD. Throws for unsupported currencies. */
 const convertToUsd = (price: number, currency: string): { usd: number; rate: number } => {
     const code = currency.toUpperCase().trim();
     const rate = CURRENCY_RATES_TO_USD[code];
     if (rate) return { usd: +(price * rate).toFixed(2), rate };
-    // Unknown currency — assume 1:1 and warn
-    console.warn(`[Currency] Unknown currency "${code}", treating as USD`);
-    return { usd: price, rate: 1 };
+    // Unknown currency — surface error to reviewer
+    throw new Error(`Unsupported currency "${code}". Only ${Object.keys(CURRENCY_RATES_TO_USD).filter(c => c !== 'RMB').join(', ')} are supported.`);
 };
 
 export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImportProducts }) => {
@@ -225,6 +224,22 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     // Legacy wrapper for search results display
     const calculateFinalPrice = (basePrice: number): number => {
         return calculateCostStackPrice(basePrice, targetCollection).sellingPrice;
+    };
+
+    /**
+     * Shared helper: compute a variant's selling price with optional markup scaling.
+     * Used by both confirmImport() and getVariantSellingPrice() for preview parity.
+     */
+    const getScaledVariantSelling = (
+        variantPrice1688: number,
+        collection: string,
+        markupRatio: number,
+        hasCustomPrice: boolean,
+    ): number => {
+        const raw = calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
+        // When user set a custom price, scale; use ceil-0.01 to match the .99 pattern
+        const scaled = hasCustomPrice ? Math.ceil(raw * markupRatio) - 0.01 : raw;
+        return Number(scaled.toFixed(2));
     };
 
     // Search handler
@@ -569,12 +584,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                         if (typeof v.sellingPriceOverride === 'number' && Number.isFinite(v.sellingPriceOverride)) {
                             return { ...v, priceAdjustment: v.sellingPriceOverride - finalPrice, sellingPriceOverride: undefined };
                         }
-                        // Otherwise compute the selling price shown in preview and normalize
-                        const basePrice = p.salePrice || p.price;
-                        const variantPrice1688 = basePrice + v.priceAdjustment;
-                        const variantSelling = calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
-                        // Apply same markup ratio from user's custom base price
-                        const scaledSelling = Math.ceil(variantSelling * markupRatio);
+                        const scaledSelling = getScaledVariantSelling(
+                            (p.salePrice || p.price) + v.priceAdjustment, collection, markupRatio, hasCustomPrice
+                        );
                         return { ...v, priceAdjustment: scaledSelling - finalPrice };
                     });
                 })(),
@@ -585,6 +597,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
                 estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
                 pricingStage: 'estimated' as const,
+                sourceCurrency: (p as any).sourceCurrency,
+                sourcePriceOriginal: (p as any).sourcePriceOriginal,
                 // Subcategory — clear if collection changed to avoid stale category
                 subcategory: collectionChanged ? undefined : (productSubcategory || undefined),
             };
@@ -1441,7 +1455,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
             const basePrice = product.salePrice || product.price;
             const variantPrice1688 = basePrice + variant.priceAdjustment;
             const collection = product.targetCollection || targetCollection;
-            return calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
+            // Apply same scaling logic as confirmImport for preview parity
+            const costStackBase = calculateCostStackPrice(product.salePrice || product.price, collection).sellingPrice;
+            const hasCustomPrice = typeof product.customPrice === 'number' && Number.isFinite(product.customPrice);
+            const markupRatio = hasCustomPrice && costStackBase > 0 ? product.customPrice! / costStackBase : 1;
+            return getScaledVariantSelling(variantPrice1688, collection, markupRatio, hasCustomPrice);
         };
 
 
@@ -1897,7 +1915,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                     // Fix 2: Use isLikelyFallback instead of brittle keyword blocklist
                     const isValidAiName = enhancedName && !isLikelyFallback(enhancedName);
-                    const isValidAiDesc = enhancedDescription && enhancedDescription.length > 80;
+                    const isValidAiDesc = enhancedDescription && enhancedDescription.length > 80 && !isLikelyFallbackDescription(enhancedDescription);
 
                     if (isValidAiName || isValidAiDesc) {
                         importableProduct = {
