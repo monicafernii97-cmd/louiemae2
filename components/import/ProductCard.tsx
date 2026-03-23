@@ -20,6 +20,7 @@ export interface ImportableProduct extends AliExpressProduct {
     descriptionImages?: string[]; // Marketing/description images from 1688 GetItemDescription
     sourceCurrency?: string; // Original currency code (e.g. 'CNY', 'USD') for audit trail
     sourcePriceOriginal?: number; // Original price in source currency for audit trail
+    sourcePriceCny?: number; // Upstream CNY price for two-stage pricing
 }
 
 interface ProductCardProps {

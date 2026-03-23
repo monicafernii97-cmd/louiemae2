@@ -593,7 +593,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
                 // Two-stage pricing metadata — use upstream CNY if available (from sourcePriceCny on the product)
-                sourcePriceCny: (p as any).sourcePriceCny || undefined,
+                sourcePriceCny: p.sourcePriceCny || undefined,
                 estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
                 estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
                 pricingStage: 'estimated' as const,
