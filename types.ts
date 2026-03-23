@@ -24,6 +24,9 @@ export interface Product {
   estimatedShipping?: number;     // Estimated shipping (category-based)
   confirmedCjCost?: number;       // Actual CJ cost after sourcing approval
   pricingStage?: 'estimated' | 'confirmed';
+  // Currency conversion metadata
+  sourceCurrency?: string;          // Original currency code (e.g. 'GBP', 'CNY')
+  sourcePriceOriginal?: number;     // Original price in source currency
   // Multi-category
   subcategory?: string;           // Specific subcategory (e.g., "Skirts")
 }
