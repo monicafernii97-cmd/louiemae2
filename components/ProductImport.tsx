@@ -631,14 +631,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         if (!currentProduct) return <div>Error: Product not found</div>;
 
         return (
-            <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 md:p-8 relative z-20">
+            <div className="min-h-[80vh] flex flex-col items-center justify-start py-4 relative z-20 w-full">
 
-
-                <FadeIn className="w-full max-w-6xl" mobileFast>
-                    <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
+                <FadeIn className="w-full max-w-full" mobileFast>
+                    <div className="bg-white/20 backdrop-blur-3xl rounded-[2rem] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50">
                         {/* Header / Progress */}
-                        <div className="bg-cream/50 p-4 md:p-8 border-b border-earth/5 flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-center relative overflow-hidden">
-                            <div className="absolute top-0 left-0 bottom-0 bg-bronze/10 transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
+                        <div className="bg-white/10 p-5 md:p-8 border-b border-white/20 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-center relative overflow-hidden backdrop-blur-xl">
+                            <div className="absolute top-0 left-0 bottom-0 bg-gradient-to-r from-bronze/20 to-transparent transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
                             <div className="relative z-10 flex items-center gap-4">
                                 <button
                                     onClick={() => setImportStep('search')}
@@ -730,21 +729,21 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <button
                                     onClick={() => setReviewIndex(prev => Math.max(0, prev - 1))}
                                     disabled={reviewIndex === 0}
-                                    className="px-6 py-2 rounded-full border border-earth/10 hover:bg-white disabled:opacity-30 transition-all text-xs uppercase tracking-widest font-bold"
+                                    className="px-6 py-3 rounded-full border border-white/40 bg-white/20 backdrop-blur-md hover:bg-white/40 disabled:opacity-30 transition-all text-xs uppercase tracking-widest font-bold text-earth"
                                 >
                                     Previous
                                 </button>
                                 {reviewIndex < selectedProducts.length - 1 ? (
                                     <button
                                         onClick={() => setReviewIndex(prev => Math.min(selectedProducts.length - 1, prev + 1))}
-                                        className="px-8 py-2 rounded-full bg-earth text-cream hover:bg-bronze transition-all text-xs uppercase tracking-widest font-bold shadow-lg"
+                                        className="px-8 py-3 rounded-full bg-earth text-cream hover:bg-bronze transition-all text-xs uppercase tracking-widest font-bold shadow-[0_10px_30px_rgba(0,0,0,0.15)] hover:-translate-y-0.5"
                                     >
                                         Next Item
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => setImportStep('final-review')}
-                                        className="px-8 py-2 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20"
+                                        className="px-8 py-3 rounded-full bg-green-600 border border-green-500/50 text-white hover:bg-green-500 transition-all text-xs uppercase tracking-widest font-bold shadow-[0_10px_30px_rgba(34,197,94,0.3)] hover:-translate-y-0.5"
                                     >
                                         Final Review → ({selectedProducts.length})
                                     </button>
@@ -752,16 +751,23 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </div>
                         </div>
 
-                        <div className="flex flex-col lg:flex-row h-[70vh]">
-                            {/* Left: Product Images & Basic Info */}
-                            <div className="w-full lg:w-1/3 bg-white/40 p-4 md:p-10 border-r border-earth/5 overflow-y-auto">
-                                <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
+                        <div className="flex flex-col overflow-y-auto custom-scrollbar relative pb-12" style={{ maxHeight: '75vh' }}>
+                            {/* SECTION 1: VISUALS */}
+                            <div className="w-full bg-white/30 backdrop-blur-md border-b border-white/20 flex flex-col relative">
+                                {/* Section Title */}
+                                <div className="text-center pt-8 pb-4 px-6">
+                                    <h3 className="font-serif text-2xl text-earth">Step 1: Curate Visuals</h3>
+                                    <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto text-sm">Select, reorder, and preview the images for this product. The first image will be used as the main listing image.</p>
+                                </div>
+
+                                {/* Main Preview (compact — not aspect-square) */}
+                                <div className="px-6 md:px-12 pb-4">
+                                    <div className="max-w-md mx-auto rounded-[1.5rem] overflow-hidden shadow-[0_15px_30px_rgba(0,0,0,0.08)] border border-white/60 bg-white relative group" style={{ height: '280px' }}>
                                     {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
                                                 const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
                                                 if (allImages.length === 0) return null;
-                                                // Default to the ordered main image instead of raw index 0
                                                 const fallbackIdx = (() => {
                                                     const sel = currentProduct.selectedImages && currentProduct.selectedImages.length > 0
                                                         ? currentProduct.selectedImages
@@ -782,9 +788,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             alt="Main Preview"
                                                             referrerPolicy="no-referrer"
                                                             crossOrigin="anonymous"
-                                                            className="w-full h-full object-contain p-4"
+                                                            className="w-full h-full object-contain p-3"
                                                         />
-                                                        {/* Navigation arrows */}
                                                         {allImages.length > 1 && (
                                                             <>
                                                                 <button
@@ -809,7 +814,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 >
                                                                     ›
                                                                 </button>
-                                                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm">
                                                                     {currentIdx + 1} / {allImages.length}
                                                                 </div>
                                                             </>
@@ -823,23 +828,25 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             onClick={() => imageUploadRef.current?.click()}
                                             className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-bronze/5 transition-colors"
                                         >
-                                            <ImageIcon className="w-16 h-16 text-earth/10 mb-4" />
+                                            <ImageIcon className="w-12 h-12 text-earth/10 mb-3" />
                                             <p className="text-sm text-earth/30 font-medium">No images yet</p>
                                             <p className="text-xs text-earth/20 mt-1">Tap to upload</p>
                                         </div>
                                     )}
                                     {(currentProduct.images?.length ?? 0) > 0 && (
-                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
+                                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold text-earth shadow-sm border border-white/50 tracking-widest uppercase">
                                             {(currentProduct.selectedImages?.length || currentProduct.images?.length || 0)} / {(currentProduct.images?.length || 0) + (currentProduct.descriptionImages?.length || 0)} Selected
                                         </div>
                                     )}
+                                    </div>
                                 </div>
-
+                                
+                                <div className="px-6 md:px-10 pb-8 w-full">
                                 {/* Selectable Image Grid - CLICK TO SELECT */}
                                 <div className="mb-4">
-                                    <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Click to Select Images</p>
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold mb-2">Select Images for Import</p>
                                 </div>
-                                <div className="grid grid-cols-4 gap-2 max-h-52 overflow-y-auto">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     {(currentProduct.images || []).map((img, i) => {
                                         const isSelected = currentProduct.selectedImages
                                             ? currentProduct.selectedImages.includes(i)
@@ -848,33 +855,46 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         return (
                                             <div
                                                 key={i}
-                                                onClick={() => setPreviewImageIdx(i)}
-                                                className={`aspect-square rounded-lg border-2 overflow-hidden bg-white cursor-pointer transition-all relative
-                                                    ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
-                                                    ${isSelected ? 'border-bronze' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
+                                                // Make the whole card toggle selection
+                                                onClick={() => {
+                                                    const currentSelected = currentProduct.selectedImages ||
+                                                        (currentProduct.images || []).map((_, idx) => idx);
+                                                    const newSelected = isSelected
+                                                        ? currentSelected.filter(idx => idx !== i)
+                                                        : [...currentSelected, i].sort((a, b) => a - b);
+                                                    if (newSelected.length > 0) {
+                                                        updateReviewProduct('selectedImages', newSelected);
+                                                    }
+                                                }}
+                                                className={`aspect-square rounded-[1.5rem] border-[3px] overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group
+                                                    ${isPreviewing ? 'ring-4 ring-bronze/30 shadow-lg' : ''}
+                                                    ${isSelected ? 'border-green-500 shadow-[0_10px_20px_rgba(34,197,94,0.2)]' : 'border-white/40 opacity-50 hover:opacity-100 hover:border-earth/20'}`}
                                             >
-                                                <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                {/* Selection checkbox */}
+                                                <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                                
+                                                {/* Selection Overlay */}
+                                                <div className={`absolute inset-0 transition-opacity duration-300 ${isSelected ? 'bg-green-500/10' : 'bg-black/0 group-hover:bg-black/5'}`} />
+
+                                                {/* Preview Button (Overlay) */}
                                                 <button
                                                     type="button"
-                                                    aria-pressed={isSelected}
-                                                    aria-label={`${isSelected ? 'Deselect' : 'Select'} product image ${i + 1}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        const currentSelected = currentProduct.selectedImages ||
-                                                            (currentProduct.images || []).map((_, idx) => idx);
-                                                        const newSelected = isSelected
-                                                            ? currentSelected.filter(idx => idx !== i)
-                                                            : [...currentSelected, i].sort((a, b) => a - b);
-                                                        if (newSelected.length > 0) {
-                                                            updateReviewProduct('selectedImages', newSelected);
-                                                        }
+                                                        setPreviewImageIdx(i);
                                                     }}
-                                                    className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors
-                                                        ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                    className="absolute inset-0 m-auto w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-xl text-earth hover:text-bronze"
+                                                    title="Preview Image"
                                                 >
-                                                    {isSelected && <Check className="w-3 h-3" />}
+                                                    <Search className="w-5 h-5" />
                                                 </button>
+
+                                                {/* Checkbox Icon */}
+                                                <div
+                                                    className={`absolute top-3 right-3 rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-all duration-300 transform
+                                                        ${isSelected ? 'bg-green-500 text-white scale-100' : 'bg-white/80 backdrop-blur border border-earth/10 text-earth/20 scale-90 group-hover:scale-100'}`}
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -882,14 +902,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     {/* Upload Image Button */}
                                     <div
                                         onClick={() => !isUploadingImage && imageUploadRef.current?.click()}
-                                        className="aspect-square rounded-lg border-2 border-dashed border-earth/20 bg-white/50 cursor-pointer hover:border-bronze/40 hover:bg-bronze/5 transition-all flex flex-col items-center justify-center gap-1"
+                                        className="aspect-square rounded-[1.5rem] border-2 border-dashed border-earth/20 bg-white/30 backdrop-blur-sm cursor-pointer hover:border-bronze/40 hover:bg-white/50 transition-all duration-300 flex flex-col items-center justify-center gap-3 shadow-inner"
                                     >
                                         {isUploadingImage ? (
-                                            <Loader2 className="w-5 h-5 text-bronze animate-spin" />
+                                            <Loader2 className="w-8 h-8 text-bronze animate-spin" />
                                         ) : (
                                             <>
-                                                <Upload className="w-4 h-4 text-earth/30" />
-                                                <span className="text-[8px] uppercase tracking-widest text-earth/30 font-bold">Add</span>
+                                                <div className="p-4 bg-white/50 rounded-full shadow-sm"><Upload className="w-6 h-6 text-earth/50" /></div>
+                                                <span className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold">Upload</span>
                                             </>
                                         )}
                                     </div>
@@ -1008,11 +1028,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 )}
                                 {/* Description/Marketing Images from 1688 */}
                                 {currentProduct.descriptionImages && currentProduct.descriptionImages.length > 0 && (
-                                    <div className="mt-4">
-                                        <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">
-                                            Marketing Images ({currentProduct.descriptionImages.length})
-                                        </h4>
-                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                                    <div className="mt-8">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <h4 className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold">
+                                                Additional Details ({currentProduct.descriptionImages.length})
+                                            </h4>
+                                            <div className="h-px flex-1 bg-gradient-to-r from-earth/10 to-transparent" />
+                                        </div>
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                             {currentProduct.descriptionImages.map((img, idx) => {
                                                 // Marketing images are offset by main images count for selection indices
                                                 const globalIdx = (currentProduct.images?.length || 0) + idx;
@@ -1023,44 +1046,44 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 return (
                                                     <div
                                                         key={`mktg-${idx}`}
-                                                        className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group transition-all border-2
-                                                            ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
-                                                            ${isSelected ? 'border-bronze ring-2 ring-bronze/30 scale-[1.02]' : 'border-transparent hover:border-earth/20'}`}
-                                                        onClick={() => setPreviewImageIdx(globalIdx)}
+                                                        className={`aspect-square rounded-[1.5rem] border-[3px] overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group
+                                                            ${isPreviewing ? 'ring-4 ring-bronze/30 shadow-lg' : ''}
+                                                            ${isSelected ? 'border-green-500 shadow-[0_10px_20px_rgba(34,197,94,0.2)]' : 'border-white/40 opacity-50 hover:opacity-100 hover:border-earth/20'}`}
                                                     >
                                                         <img
                                                             src={img}
                                                             alt={`Marketing ${idx + 1}`}
                                                             referrerPolicy="no-referrer"
                                                             crossOrigin="anonymous"
-                                                            className="w-full h-full object-cover"
+                                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                                         />
-                                                        {/* Selection checkbox */}
+                                                        
+                                                        <div className={`absolute inset-0 transition-opacity duration-300 ${isSelected ? 'bg-green-500/10' : 'bg-black/0 group-hover:bg-black/5'}`} />
+
+                                                        {/* Preview Button (Overlay) */}
                                                         <button
                                                             type="button"
-                                                            aria-pressed={isSelected}
-                                                            aria-label={`${isSelected ? 'Deselect' : 'Select'} marketing image ${idx + 1}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                const current = currentProduct.selectedImages || Array.from({ length: (currentProduct.images || []).length }, (_, i) => i);
-                                                                const newSelected = isSelected
-                                                                    ? current.filter(i => i !== globalIdx)
-                                                                    : [...current, globalIdx];
-                                                                if (newSelected.length > 0) {
-                                                                    updateReviewProduct('selectedImages', newSelected);
-                                                                }
+                                                                setPreviewImageIdx(globalIdx);
                                                             }}
-                                                            className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors z-10
-                                                                ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                            className="absolute inset-0 m-auto w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-xl text-earth hover:text-bronze"
+                                                            title="Preview Image"
                                                         >
-                                                            {isSelected && <Check className="w-3 h-3" />}
+                                                            <Search className="w-5 h-5" />
                                                         </button>
-                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+
+                                                        {/* Checkbox Icon */}
+                                                        <div
+                                                            className={`absolute top-3 right-3 rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-all duration-300 transform
+                                                                ${isSelected ? 'bg-green-500 text-white scale-100' : 'bg-white/80 backdrop-blur border border-earth/10 text-earth/20 scale-90 group-hover:scale-100'}`}
+                                                        >
+                                                            <Check className="w-4 h-4" />
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
                                         </div>
-                                        <p className="text-[9px] text-earth/30 mt-1 italic">Click to select marketing images for import</p>
                                     </div>
                                 )}
 
@@ -1079,12 +1102,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </span>
                                     </div>
                                 </div>
+                                </div> {/* End Visuals Section Content */}
                             </div>
 
-                            {/* Right: Customization Form */}
-                            <div className="w-full lg:w-2/3 p-10 space-y-8 overflow-y-auto bg-white/60">
-                                <div className="flex gap-4">
-                                    <div className="flex-1 space-y-6">
+                            {/* SECTION 2: PRODUCT DETAILS */}
+                            <div className="w-full bg-white/40 backdrop-blur-md p-6 md:p-10 border-b border-earth/10">
+                                <div className="text-center mb-10">
+                                    <h3 className="font-serif text-3xl text-earth">Step 2: Details & Story</h3>
+                                    <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Enhance the product name, set your pricing margins, and generate a compelling description.</p>
+                                </div>
+                                
+                                <div className="space-y-12">
                                         {/* Product Name */}
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
@@ -1101,7 +1129,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 type="text"
                                                 value={currentProduct.customName || currentProduct.name}
                                                 onChange={(e) => updateReviewProduct('customName', e.target.value)}
-                                                className="w-full p-4 bg-white border border-earth/10 rounded-xl font-serif text-lg text-earth focus:ring-2 ring-bronze/20 focus:border-bronze transition-all shadow-sm"
+                                                className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl font-serif text-lg text-earth focus:bg-white/80 focus:ring-2 ring-bronze/30 focus:border-bronze transition-all shadow-md placeholder-earth/40"
                                             />
                                         </div>
 
@@ -1123,11 +1151,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             ).sellingPrice;
                                                             updateReviewProduct('customPrice', newPrice);
                                                         }}
-                                                        className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth appearance-none focus:ring-2 ring-bronze/20 shadow-sm font-medium"
+                                                        className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-sm text-earth appearance-none focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md font-medium transition-all"
                                                     >
                                                         {collections.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                                                     </select>
-                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/30 pointer-events-none" />
+                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/40 pointer-events-none" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
@@ -1136,14 +1164,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     <select
                                                         value={currentProduct.targetSubcategory || targetSubcategory}
                                                         onChange={(e) => updateReviewProduct('targetSubcategory', e.target.value)}
-                                                        className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth appearance-none focus:ring-2 ring-bronze/20 shadow-sm font-medium"
+                                                        className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-sm text-earth appearance-none focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md font-medium transition-all"
                                                     >
                                                         <option value="">Select Sub-Category</option>
                                                         {getSubcategoriesForCollection(currentProduct.targetCollection || targetCollection as string).map(s => (
                                                             <option key={s.id} value={s.id}>{s.title}</option>
                                                         ))}
                                                     </select>
-                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/30 pointer-events-none" />
+                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/40 pointer-events-none" />
                                                 </div>
                                             </div>
                                         </div>
@@ -1156,7 +1184,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 typeof currentProduct.customPrice === 'number' && Number.isFinite(currentProduct.customPrice);
                                             const displayPrice = hasCustomPrice ? currentProduct.customPrice! : pStack.sellingPrice;
                                             return (
-                                                <div className="bg-cream/30 p-4 md:p-6 rounded-2xl border border-earth/5 space-y-3">
+                                                <div className="bg-white/40 backdrop-blur-md p-5 md:p-8 rounded-[2rem] border border-white/40 shadow-lg space-y-4">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                                         <div className="space-y-2">
                                                             <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Your Price ($)</label>
@@ -1167,7 +1195,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     const value = Number(e.target.value);
                                                                     updateReviewProduct('customPrice', Number.isFinite(value) ? value : undefined);
                                                                 }}
-                                                                className="w-full p-3 bg-white border border-earth/10 rounded-xl font-serif text-xl text-bronze font-bold focus:ring-2 ring-bronze/20 shadow-sm"
+                                                                className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl font-serif text-2xl text-bronze font-bold focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md transition-all"
                                                             />
                                                         </div>
                                                         <div className="space-y-1 flex flex-col justify-center">
@@ -1221,219 +1249,175 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 rows={6}
                                                 value={currentProduct.customDescription || currentProduct.description || ''}
                                                 onChange={(e) => updateReviewProduct('customDescription', e.target.value)}
-                                                className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth/80 focus:ring-2 ring-bronze/20 shadow-sm resize-none"
+                                                className="w-full p-5 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-sm text-earth/90 focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md resize-none transition-all"
                                             />
                                         </div>
                                     </div>
-
-                                    {/* Variants Sidebar (if any) - CLICKABLE SELECTION + IMAGE ALLOCATION */}
-                                    {currentProduct.variants && currentProduct.variants.length > 0 && (
-                                        <div className="w-full lg:w-80 bg-white p-4 md:p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">
-                                                    Select Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
-                                                </h4>
-                                                <button
-                                                    onClick={() => {
-                                                        const allIds = currentProduct.variants!.map(v => v.id);
-                                                        const currentSelected = currentProduct.selectedVariants;
-                                                        // Toggle: select all → undefined (all), deselect all → []
-                                                        const allCurrentlySelected =
-                                                            currentSelected === undefined || currentSelected.length === allIds.length;
-                                                        const newSelected = allCurrentlySelected ? [] : undefined;
-                                                        updateReviewProduct('selectedVariants', newSelected);
-                                                    }}
-                                                    className="text-[10px] text-bronze hover:underline font-medium"
-                                                >
-                                                    {(currentProduct.selectedVariants?.length ?? currentProduct.variants.length) === currentProduct.variants.length ? 'Deselect All' : 'Select All'}
-                                                </button>
-                                            </div>
-                                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {currentProduct.variants.map((variant) => {
-                                                    const isSelected = currentProduct.selectedVariants
-                                                        ? currentProduct.selectedVariants.includes(variant.id)
-                                                        : true;
-                                                    // Find original name for revert
-                                                    const originalName = currentProduct.originalVariants?.find(ov => ov.id === variant.id)?.name;
-                                                    const nameWasEdited = originalName && variant.name !== originalName;
-                                                    // All available images (main + description/marketing)
-                                                    const allImages = [
-                                                        ...(currentProduct.images || []),
-                                                        ...(currentProduct.descriptionImages || []),
-                                                    ];
-                                                    // Allocated image for this variant
-                                                    const allocatedIdx = currentProduct.variantImageMap?.[variant.id];
-                                                    const allocatedImage = allocatedIdx !== undefined ? allImages[allocatedIdx] : undefined;
-                                                    const displayImage = allocatedImage || variant.image || currentProduct.images?.[0];
-                                                    return (
+                                </div>
+                            
+                            {/* SECTION 3: VARIANTS */}
+                            {currentProduct.variants && currentProduct.variants.length > 0 && (
+                                <div className="w-full p-6 md:p-10 mt-4">
+                                    <div className="text-center mb-10">
+                                        <h3 className="font-serif text-3xl text-earth">Step 3: Variants</h3>
+                                        <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Manage styles, sizes, their specific stock status, and assign allocated images.</p>
+                                    </div>
+                                    
+                                    <div className="w-full bg-white/40 backdrop-blur-md p-8 md:p-10 rounded-[2.5rem] border border-white/40 shadow-xl overflow-hidden">
+                                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-earth/10">
+                                            <h4 className="text-xs uppercase tracking-[0.2em] text-earth font-bold">
+                                                Active Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
+                                            </h4>
+                                            <button
+                                                onClick={() => {
+                                                    const allIds = currentProduct.variants!.map(v => v.id);
+                                                    const currentSelected = currentProduct.selectedVariants;
+                                                    const allCurrentlySelected = currentSelected === undefined || currentSelected.length === allIds.length;
+                                                    const newSelected = allCurrentlySelected ? [] : undefined;
+                                                    updateReviewProduct('selectedVariants', newSelected);
+                                                }}
+                                                className="text-xs text-bronze hover:underline font-bold tracking-widest uppercase bg-bronze/10 px-4 py-2 rounded-full transition-all"
+                                            >
+                                                {(currentProduct.selectedVariants?.length ?? currentProduct.variants.length) === currentProduct.variants.length ? 'Deselect All' : 'Select All'}
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {currentProduct.variants.map((variant) => {
+                                                const isSelected = currentProduct.selectedVariants ? currentProduct.selectedVariants.includes(variant.id) : true;
+                                                const originalName = currentProduct.originalVariants?.find(ov => ov.id === variant.id)?.name;
+                                                const nameWasEdited = originalName && variant.name !== originalName;
+                                                const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
+                                                const allocatedIdx = currentProduct.variantImageMap?.[variant.id];
+                                                const allocatedImage = allocatedIdx !== undefined ? allImages[allocatedIdx] : undefined;
+                                                const displayImage = allocatedImage || variant.image || currentProduct.images?.[0];
+                                                
+                                                return (
+                                                    <div
+                                                        key={variant.id}
+                                                        className={`rounded-3xl transition-all border-4 overflow-hidden relative
+                                                            ${isSelected
+                                                                ? 'bg-white border-green-500 shadow-lg'
+                                                                : 'bg-white/30 border-white/40 opacity-60 hover:opacity-100 hover:border-earth/20'}`}
+                                                    >
                                                         <div
-                                                            key={variant.id}
-                                                            className={`rounded-lg transition-all border-2 overflow-hidden
-                                                                ${isSelected
-                                                                    ? 'bg-bronze/5 border-bronze/30'
-                                                                    : 'bg-gray-50 border-transparent opacity-50 hover:opacity-75'}`}
+                                                            onClick={() => {
+                                                                const allIds = currentProduct.variants!.map(v => v.id);
+                                                                const currentSelected = currentProduct.selectedVariants || allIds;
+                                                                const newSelected = isSelected ? currentSelected.filter(id => id !== variant.id) : [...currentSelected, variant.id];
+                                                                updateReviewProduct('selectedVariants', newSelected);
+                                                            }}
+                                                            className="flex items-center gap-4 p-5 cursor-pointer"
                                                         >
-                                                            {/* Main variant row — click to select/deselect */}
+                                                            {/* Variant Image */}
                                                             <div
-                                                                onClick={() => {
-                                                                    const allIds = currentProduct.variants!.map(v => v.id);
-                                                                    const currentSelected = currentProduct.selectedVariants || allIds;
-                                                                    const newSelected = isSelected
-                                                                        ? currentSelected.filter(id => id !== variant.id)
-                                                                        : [...currentSelected, variant.id];
-                                                                    updateReviewProduct('selectedVariants', newSelected);
+                                                                className="w-20 h-20 rounded-2xl border-2 border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:border-bronze shadow-sm"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const pickerKey = `${currentProduct.id}:${variant.id}`;
+                                                                    setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
                                                                 }}
-                                                                className="flex items-center gap-3 text-sm p-2 cursor-pointer"
                                                             >
-                                                                {/* Variant image — click to open image picker */}
-                                                                <div
-                                                                    className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:ring-2 hover:ring-bronze/30"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        const pickerKey = `${currentProduct.id}:${variant.id}`;
-                                                                        setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
-                                                                    }}
-                                                                    title="Click to assign image to this variant"
-                                                                >
-                                                                    {displayImage ? (
-                                                                        <img
-                                                                            src={displayImage}
-                                                                            alt={variant.name}
-                                                                            referrerPolicy="no-referrer"
-                                                                            crossOrigin="anonymous"
-                                                                            className="w-full h-full object-cover"
-                                                                        />
-                                                                    ) : (
-                                                                        <Package className="w-4 h-4 text-gray-300" />
-                                                                    )}
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                                                        <ImageIcon className="w-4 h-4 text-white" />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={variant.name}
-                                                                            onClick={(e) => e.stopPropagation()}
-                                                                            onChange={(e) => {
-                                                                                const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                    v.id === variant.id ? { ...v, name: e.target.value } : v
-                                                                                );
-                                                                                updateReviewProduct('variants', updatedVariants);
-                                                                            }}
-                                                                            onBlur={(e) => {
-                                                                                // Auto-revert to original name if cleared
-                                                                                if (!e.target.value.trim() && originalName) {
-                                                                                    const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                        v.id === variant.id ? { ...v, name: originalName } : v
-                                                                                    );
-                                                                                    updateReviewProduct('variants', updatedVariants);
-                                                                                }
-                                                                            }}
-                                                                            className="w-full bg-transparent font-medium text-earth text-xs border-b border-transparent hover:border-earth/20 focus:border-bronze focus:outline-none truncate px-0 py-0.5 transition-colors"
-                                                                            title="Click to edit variant name"
-                                                                            placeholder={originalName || 'Variant name'}
-                                                                        />
-                                                                        {/* Reset button — only show if name was edited */}
-                                                                        {nameWasEdited && (
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                        v.id === variant.id ? { ...v, name: originalName! } : v
-                                                                                    );
-                                                                                    updateReviewProduct('variants', updatedVariants);
-                                                                                }}
-                                                                                className="flex-shrink-0 text-earth/40 hover:text-bronze transition-colors"
-                                                                                title={`Reset to: ${originalName}`}
-                                                                            >
-                                                                                <RotateCcw className="w-3 h-3" />
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                    {/* Show original name as reference */}
-                                                                    {originalName && nameWasEdited && (
-                                                                        <p className="text-[9px] text-earth/30 truncate" title={originalName}>
-                                                                            Original: {originalName}
-                                                                        </p>
-                                                                    )}
-                                                                    <div className="flex items-center gap-2 text-[10px]">
-                                                                        <span className={variant.inStock ? 'text-green-600' : 'text-red-500'}>
-                                                                            {variant.inStock ? '● In Stock' : '○ Out of Stock'}
-                                                                        </span>
-                                                                        {variant.priceAdjustment !== 0 && (
-                                                                            <span className={variant.priceAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}>
-                                                                                {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
-                                                                    ${isSelected ? 'bg-bronze text-white' : 'bg-gray-200'}`}>
-                                                                    {isSelected && <Check className="w-3 h-3" />}
+                                                                {displayImage ? (
+                                                                    <img src={displayImage} alt={variant.name} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <Package className="w-8 h-8 text-earth/20" />
+                                                                )}
+                                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                                    <ImageIcon className="w-6 h-6 text-white" />
                                                                 </div>
                                                             </div>
-                                                            {/* Image picker dropdown for variant-image allocation */}
-                                                            {openImagePicker === `${currentProduct.id}:${variant.id}` && (
-                                                            <div className="border-t border-earth/10 p-2 bg-white/80">
-                                                                <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold mb-1">Assign image to this variant</p>
-                                                                <div className="grid grid-cols-5 gap-1 max-h-24 overflow-y-auto">
-                                                                    {allImages.map((img, imgIdx) => (
-                                                                        <div
-                                                                            key={imgIdx}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                const newMap = { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx };
-                                                                                updateReviewProduct('variantImageMap', newMap);
-                                                                                // Also update the variant's image field directly
-                                                                                const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                    v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v
-                                                                                );
+                                                            
+                                                            <div className="flex-1 min-w-0 pr-4">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={variant.name}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onChange={(e) => {
+                                                                            const updatedVariants = currentProduct.variants!.map(v => v.id === variant.id ? { ...v, name: e.target.value } : v);
+                                                                            updateReviewProduct('variants', updatedVariants);
+                                                                        }}
+                                                                        onBlur={(e) => {
+                                                                            if (!e.target.value.trim() && originalName) {
+                                                                                const updatedVariants = currentProduct.variants!.map(v => v.id === variant.id ? { ...v, name: originalName } : v);
                                                                                 updateReviewProduct('variants', updatedVariants);
-                                                                                // Close picker
-                                                                                setOpenImagePicker(null);
-                                                                            }}
-                                                                            className={`aspect-square rounded border cursor-pointer overflow-hidden hover:ring-2 hover:ring-bronze/40 transition-all
-                                                                                ${allocatedIdx === imgIdx ? 'ring-2 ring-bronze border-bronze' : 'border-earth/10'}`}
-                                                                        >
+                                                                            }
+                                                                        }}
+                                                                        className="w-full bg-earth/5 font-medium text-earth text-sm border border-transparent hover:border-earth/20 focus:border-bronze focus:bg-white focus:outline-none truncate px-3 py-1 rounded-lg transition-all"
+                                                                        placeholder={originalName || 'Variant name'}
+                                                                    />
+                                                                    {nameWasEdited && (
+                                                                        <button onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const updatedVariants = currentProduct.variants!.map(v => v.id === variant.id ? { ...v, name: originalName! } : v);
+                                                                            updateReviewProduct('variants', updatedVariants);
+                                                                        }} className="p-1.5 bg-earth/5 rounded-full text-earth/50 hover:text-earth hover:bg-earth/10 transition-colors" title={`Reset to: ${originalName}`}>
+                                                                            <RotateCcw className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                {originalName && nameWasEdited && <p className="text-[10px] text-earth/40 ml-1 mb-2 truncate">Ref: {originalName}</p>}
+                                                                
+                                                                <div className="flex items-center gap-3 mt-2 text-xs font-bold pl-1">
+                                                                    <span className={variant.inStock ? 'text-green-600 bg-green-50 px-2 py-0.5 rounded-full' : 'text-red-500 bg-red-50 px-2 py-0.5 rounded-full'}>
+                                                                        {variant.inStock ? 'In Stock' : 'Out of Stock'}
+                                                                    </span>
+                                                                    {variant.priceAdjustment !== 0 && (
+                                                                        <span className={`${variant.priceAdjustment > 0 ? 'text-rose-600 bg-rose-50' : 'text-emerald-600 bg-emerald-50'} px-2 py-0.5 rounded-full`}>
+                                                                            {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-md
+                                                                ${isSelected ? 'bg-green-500 text-white scale-100' : 'bg-white border-2 border-earth/20 text-transparent scale-90'}`}>
+                                                                <Check className="w-5 h-5" />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {openImagePicker === `${currentProduct.id}:${variant.id}` && (
+                                                            <div className="border-t-2 border-earth/5 p-4 bg-white/95">
+                                                                <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-3">Assign specific image</p>
+                                                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                                                    {allImages.map((img, imgIdx) => (
+                                                                        <div key={imgIdx} onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
+                                                                            updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
+                                                                            setOpenImagePicker(null);
+                                                                        }} className={`w-16 h-16 flex-shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden hover:opacity-80 transition-all
+                                                                            ${allocatedIdx === imgIdx ? 'border-bronze ring-2 ring-transparent shadow-lg' : 'border-earth/10'}`}>
                                                                             <img src={img} alt={`Option ${imgIdx + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
                                                                         </div>
                                                                     ))}
                                                                 </div>
                                                                 {allocatedIdx !== undefined && (
-                                                                    <button
-                                                                        onClick={(e) => {
+                                                                    <div className="mt-3 flex justify-end">
+                                                                        <button onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             const newMap = { ...(currentProduct.variantImageMap || {}) };
                                                                             delete newMap[variant.id];
                                                                             updateReviewProduct('variantImageMap', newMap);
-                                                                            // Restore original variant image
                                                                             const origVariant = currentProduct.originalVariants?.find(ov => ov.id === variant.id);
-                                                                            const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                v.id === variant.id ? { ...v, image: origVariant?.image || undefined } : v
-                                                                            );
-                                                                            updateReviewProduct('variants', updatedVariants);
+                                                                            updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: origVariant?.image || undefined } : v));
                                                                             setOpenImagePicker(null);
-                                                                        }}
-                                                                        className="text-[9px] text-red-400 hover:text-red-600 mt-1 flex items-center gap-1"
-                                                                    >
-                                                                        <X className="w-2.5 h-2.5" /> Clear assignment
-                                                                    </button>
+                                                                        }} className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                                                                            <X className="w-3 h-3" /> Clear Assignment
+                                                                        </button>
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            <p className="text-[10px] text-earth/40 mt-3 italic">
-                                                Click variants to include/exclude · Click image thumbnails to assign specific images
-                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
+                            
+                            <div className="h-32 flex-shrink-0"></div> {/* Bottom spacer padding */}
                         </div>
                     </div>
                 </FadeIn>

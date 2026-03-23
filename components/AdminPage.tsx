@@ -413,21 +413,24 @@ export const AdminPage: React.FC = () => {
    if (!isAuthenticated) {
       if (isAuthLoading) {
          return (
-            <div className="min-h-screen bg-cream flex items-center justify-center">
+            <div className="min-h-screen bg-transparent flex items-center justify-center">
                <Loader2 className="w-8 h-8 text-bronze animate-spin" />
             </div>
          );
       }
       return (
-         <div className="min-h-screen bg-[#F5F2EB] flex items-center justify-center px-6 relative overflow-hidden font-sans">
-            {/* Animated Background */}
+         <div className="min-h-screen bg-gradient-to-br from-cream/30 to-white/10 flex items-center justify-center px-6 relative overflow-hidden font-sans">
+            {/* Hyper-glassmorphic Animated Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-               <div className="absolute top-0 -left-4 w-[600px] h-[600px] bg-bronze/5 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob" />
-               <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-sand/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000" />
+               <div className="absolute -top-20 -left-20 w-[800px] h-[800px] bg-bronze/10 rounded-full mix-blend-multiply filter blur-[100px] opacity-80 animate-blob" />
+               <div className="absolute top-40 right-0 w-[600px] h-[600px] bg-sand/20 rounded-full mix-blend-multiply filter blur-[100px] opacity-80 animate-blob animation-delay-2000" />
+               <div className="absolute -bottom-40 left-40 w-[600px] h-[600px] bg-earth/5 rounded-full mix-blend-multiply filter blur-[100px] opacity-80 animate-blob animation-delay-4000" />
+               <div className="absolute inset-0 backdrop-blur-[60px] bg-white/10" />
             </div>
 
-            <FadeIn className="w-full max-w-lg relative z-10">
-               <div className="bg-white/40 backdrop-blur-3xl p-12 shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-3xl text-center border border-white/60 relative overflow-hidden">
+            <FadeIn className="w-full max-w-lg relative z-20">
+               <div className="bg-white/20 backdrop-blur-3xl p-12 shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-[2.5rem] border border-white/50 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-50 pointer-events-none" />
 
                   {/* Decorative Header */}
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-bronze/30 to-transparent" />
@@ -497,12 +500,13 @@ export const AdminPage: React.FC = () => {
 
    // --- MAIN ADMIN INTERFACE ---
    return (
-      <div className="min-h-screen bg-[#F5F2EB] relative overflow-hidden flex font-sans text-earth selection:bg-bronze/20">
-         {/* Animated Background */}
+      <div className="min-h-screen bg-gradient-to-br from-cream/20 to-white/5 relative overflow-hidden flex font-sans text-earth selection:bg-bronze/20">
+         {/* Hyper-glassmorphic Animated Background */}
          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
-            <div className="absolute top-0 -left-4 w-[800px] h-[800px] bg-bronze/5 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob" />
-            <div className="absolute top-0 -right-4 w-[600px] h-[600px] bg-sand/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000" />
-            <div className="absolute -bottom-8 left-20 w-[600px] h-[600px] bg-cream-dark/20 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-4000" />
+            <div className="absolute -top-20 -left-20 w-[1000px] h-[1000px] bg-bronze/10 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob" />
+            <div className="absolute top-20 right-0 w-[800px] h-[800px] bg-sand/20 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-2000" />
+            <div className="absolute -bottom-40 left-40 w-[800px] h-[800px] bg-earth/5 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-4000" />
+            <div className="absolute inset-0 backdrop-blur-[80px] bg-white/5" />
          </div>
 
          {/* Mobile Top Bar */}
@@ -523,14 +527,21 @@ export const AdminPage: React.FC = () => {
          )}
 
          {/* Glassmorphic Sidebar */}
-         <aside className={`w-72 fixed h-[96vh] top-[2vh] left-4 z-[200] flex flex-col rounded-3xl overflow-hidden border border-white/40 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] backdrop-blur-2xl bg-earth/95 text-cream transition-all duration-500 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} md:translate-x-0`}>
+         <aside className={`w-72 fixed h-[96vh] top-[2vh] left-4 z-[200] flex flex-col rounded-[2rem] overflow-hidden border border-bronze/30 shadow-[0_40px_100px_rgba(139,90,43,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-3xl bg-gradient-to-b from-[#3a2a1a]/90 via-[#2d1f12]/85 to-[#1a130a]/90 text-cream transition-all duration-500 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} md:translate-x-0 relative`}>
+            {/* Glossy sheen overlay */}
+            <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-white/10 via-transparent to-bronze/5 pointer-events-none" />
+            {/* Inner Glass Highlight */}
+            <div className="absolute inset-0 rounded-[2rem] border border-white/10 pointer-events-none" />
+            {/* Warm ambient glow */}
+            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-bronze/10 to-transparent pointer-events-none" />
             {/* Header */}
-            <div className="p-8 border-b border-white/5 bg-white/5 relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
-               <h2 className="font-serif text-3xl italic tracking-wide relative z-10">The Atelier</h2>
-               <div className="flex items-center gap-2 mt-2 opacity-60">
+            <div className="p-8 border-b border-bronze/15 bg-gradient-to-r from-white/8 to-bronze/5 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/30 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+               <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-600/15 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none" />
+               <h2 className="font-serif text-3xl italic tracking-wide relative z-10 text-cream drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">The Atelier</h2>
+               <div className="flex items-center gap-2 mt-2 opacity-80">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
-                  <p className="text-[9px] uppercase tracking-[0.25em] relative z-10">Admin Console</p>
+                  <p className="text-[9px] uppercase tracking-[0.25em] relative z-10 text-cream/70">Admin Console</p>
                </div>
             </div>
 
@@ -693,8 +704,10 @@ export const AdminPage: React.FC = () => {
                      {/* Products Card */}
                      <div
                         onClick={() => { setActiveTab('products'); setFilterCollection('all'); setFilterCategory(null); }}
-                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/20 backdrop-blur-3xl border border-white/30 p-6 md:p-8 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
+                        {/* Glass Highlight Line */}
+                        <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none opacity-50" />
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
                            <ShoppingBag className="w-24 h-24 rotate-12" />
                         </div>
@@ -711,8 +724,9 @@ export const AdminPage: React.FC = () => {
                      {/* Collections Card */}
                      <div
                         onClick={() => setActiveTab('structure')}
-                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/20 backdrop-blur-3xl border border-white/30 p-6 md:p-8 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
+                        <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none opacity-50" />
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
                            <Layers className="w-24 h-24 rotate-12" />
                         </div>
@@ -729,8 +743,9 @@ export const AdminPage: React.FC = () => {
                      {/* Pages Card */}
                      <div
                         onClick={() => setActiveTab('pages')}
-                        className="group relative bg-white/40 backdrop-blur-xl border border-white/40 p-6 md:p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/20 backdrop-blur-3xl border border-white/30 p-6 md:p-8 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
+                        <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none opacity-50" />
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
                            <Layout className="w-24 h-24 rotate-12" />
                         </div>
@@ -746,32 +761,32 @@ export const AdminPage: React.FC = () => {
                   </div>
 
                   {/* Quick Actions Row */}
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                     <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-earth text-cream rounded-2xl p-4 md:p-6 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                     <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-earth/95 backdrop-blur-2xl text-cream border border-white/20 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-500 hover:-translate-y-1">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
-                           <div className="p-3 bg-white/10 rounded-full group-hover:scale-110 transition-transform duration-500"><Plus className="w-6 h-6" /></div>
+                        <div className="relative z-10 flex flex-col items-center text-center gap-4">
+                           <div className="p-4 bg-white/10 rounded-full group-hover:scale-110 transition-transform duration-500 border border-white/10 shadow-inner"><Plus className="w-6 h-6" /></div>
                            <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Add Product</span>
                         </div>
                      </button>
 
-                     <button onClick={handleCreateNewPost} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-4 md:p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
-                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
-                           <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><PenTool className="w-6 h-6 text-earth" /></div>
+                     <button onClick={handleCreateNewPost} className="group relative overflow-hidden bg-white/30 backdrop-blur-2xl border border-white/40 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/40">
+                        <div className="relative z-10 flex flex-col items-center text-center gap-4">
+                           <div className="p-4 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500 border border-white/40"><PenTool className="w-6 h-6 text-earth" /></div>
                            <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Write Journal</span>
                         </div>
                      </button>
 
-                     <button onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('campaigns'); handleCreateCampaign(); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-4 md:p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
-                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
-                           <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><Send className="w-6 h-6 text-earth" /></div>
+                     <button onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('campaigns'); handleCreateCampaign(); }} className="group relative overflow-hidden bg-white/30 backdrop-blur-2xl border border-white/40 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/40">
+                        <div className="relative z-10 flex flex-col items-center text-center gap-4">
+                           <div className="p-4 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500 border border-white/40"><Send className="w-6 h-6 text-earth" /></div>
                            <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Send Email</span>
                         </div>
                      </button>
 
-                     <button onClick={() => { setActiveTab('cj-settings'); }} className="group relative overflow-hidden bg-cream-dark/50 border border-earth/5 rounded-2xl p-4 md:p-6 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 hover:bg-cream-dark/80">
-                        <div className="relative z-10 flex flex-col items-center text-center gap-3">
-                           <div className="p-3 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500"><Settings className="w-6 h-6 text-earth" /></div>
+                     <button onClick={() => { setActiveTab('cj-settings'); }} className="group relative overflow-hidden bg-white/30 backdrop-blur-2xl border border-white/40 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/40">
+                        <div className="relative z-10 flex flex-col items-center text-center gap-4">
+                           <div className="p-4 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500 border border-white/40"><Settings className="w-6 h-6 text-earth" /></div>
                            <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Integration</span>
                         </div>
                      </button>
