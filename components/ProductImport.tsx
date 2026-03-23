@@ -631,10 +631,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         if (!currentProduct) return <div>Error: Product not found</div>;
 
         return (
-            <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 md:px-8 py-4 relative z-20 w-full">
+            <div className="min-h-[80vh] flex flex-col items-center justify-start py-4 relative z-20 w-full">
 
-                <FadeIn className="w-full max-w-5xl mx-auto" mobileFast>
-                    <div className="bg-white/20 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50">
+                <FadeIn className="w-full max-w-full" mobileFast>
+                    <div className="bg-white/20 backdrop-blur-3xl rounded-[2rem] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50">
                         {/* Header / Progress */}
                         <div className="bg-white/10 p-5 md:p-8 border-b border-white/20 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-center relative overflow-hidden backdrop-blur-xl">
                             <div className="absolute top-0 left-0 bottom-0 bg-gradient-to-r from-bronze/20 to-transparent transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
