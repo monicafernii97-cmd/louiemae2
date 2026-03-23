@@ -631,9 +631,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         if (!currentProduct) return <div>Error: Product not found</div>;
 
         return (
-            <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 md:p-8 relative z-20">
+            <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 md:px-8 py-4 relative z-20 w-full">
 
-                <FadeIn className="w-full max-w-6xl" mobileFast>
+                <FadeIn className="w-full max-w-5xl mx-auto" mobileFast>
                     <div className="bg-white/20 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50">
                         {/* Header / Progress */}
                         <div className="bg-white/10 p-5 md:p-8 border-b border-white/20 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-center relative overflow-hidden backdrop-blur-xl">
@@ -751,18 +751,23 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </div>
                         </div>
 
-                        <div className="flex flex-col h-[75vh] overflow-y-auto custom-scrollbar relative pb-12">
+                        <div className="flex flex-col overflow-y-auto custom-scrollbar relative pb-12" style={{ maxHeight: '75vh' }}>
                             {/* SECTION 1: VISUALS */}
                             <div className="w-full bg-white/30 backdrop-blur-md border-b border-white/20 flex flex-col relative">
-                                {/* Sticky Main Preview Area */}
-                                <div className="sticky top-0 z-10 bg-gradient-to-b from-white/90 via-white/80 to-white/0 pt-6 px-6 pb-2 mb-2 backdrop-blur-sm -mx-6 -mt-6">
-                                    <div className="aspect-square rounded-[2rem] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-white/60 bg-white relative group">
+                                {/* Section Title */}
+                                <div className="text-center pt-8 pb-4 px-6">
+                                    <h3 className="font-serif text-2xl text-earth">Step 1: Curate Visuals</h3>
+                                    <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto text-sm">Select, reorder, and preview the images for this product. The first image will be used as the main listing image.</p>
+                                </div>
+
+                                {/* Main Preview (compact — not aspect-square) */}
+                                <div className="px-6 md:px-12 pb-4">
+                                    <div className="max-w-md mx-auto rounded-[1.5rem] overflow-hidden shadow-[0_15px_30px_rgba(0,0,0,0.08)] border border-white/60 bg-white relative group" style={{ height: '280px' }}>
                                     {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
                                                 const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
                                                 if (allImages.length === 0) return null;
-                                                // Default to the ordered main image instead of raw index 0
                                                 const fallbackIdx = (() => {
                                                     const sel = currentProduct.selectedImages && currentProduct.selectedImages.length > 0
                                                         ? currentProduct.selectedImages
@@ -783,9 +788,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             alt="Main Preview"
                                                             referrerPolicy="no-referrer"
                                                             crossOrigin="anonymous"
-                                                            className="w-full h-full object-contain p-4"
+                                                            className="w-full h-full object-contain p-3"
                                                         />
-                                                        {/* Navigation arrows */}
                                                         {allImages.length > 1 && (
                                                             <>
                                                                 <button
@@ -810,7 +814,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 >
                                                                     ›
                                                                 </button>
-                                                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm">
                                                                     {currentIdx + 1} / {allImages.length}
                                                                 </div>
                                                             </>
@@ -824,24 +828,20 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             onClick={() => imageUploadRef.current?.click()}
                                             className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-bronze/5 transition-colors"
                                         >
-                                            <ImageIcon className="w-16 h-16 text-earth/10 mb-4" />
+                                            <ImageIcon className="w-12 h-12 text-earth/10 mb-3" />
                                             <p className="text-sm text-earth/30 font-medium">No images yet</p>
                                             <p className="text-xs text-earth/20 mt-1">Tap to upload</p>
                                         </div>
                                     )}
                                     {(currentProduct.images?.length ?? 0) > 0 && (
-                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-bold text-earth shadow-[0_5px_15px_rgba(0,0,0,0.1)] border border-white border-opacity-50 tracking-widest uppercase">
+                                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold text-earth shadow-sm border border-white/50 tracking-widest uppercase">
                                             {(currentProduct.selectedImages?.length || currentProduct.images?.length || 0)} / {(currentProduct.images?.length || 0) + (currentProduct.descriptionImages?.length || 0)} Selected
                                         </div>
                                     )}
+                                    </div>
                                 </div>
-                                <div className="text-center mt-6 mb-2">
-                                    <h3 className="font-serif text-3xl text-earth">Step 1: Curate Visuals</h3>
-                                    <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Select, reorder, and preview the images for this product. The first image will be used as the main listing image.</p>
-                                </div>
-                                </div> {/* End Sticky Header */}
                                 
-                                <div className="p-6 md:p-12 max-w-5xl mx-auto w-full">
+                                <div className="px-6 md:px-10 pb-8 w-full">
                                 {/* Selectable Image Grid - CLICK TO SELECT */}
                                 <div className="mb-4">
                                     <p className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold mb-2">Select Images for Import</p>
@@ -1106,7 +1106,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </div>
 
                             {/* SECTION 2: PRODUCT DETAILS */}
-                            <div className="w-full bg-white/40 backdrop-blur-md p-6 md:p-12 max-w-5xl mx-auto border-b border-earth/10">
+                            <div className="w-full bg-white/40 backdrop-blur-md p-6 md:p-10 border-b border-earth/10">
                                 <div className="text-center mb-10">
                                     <h3 className="font-serif text-3xl text-earth">Step 2: Details & Story</h3>
                                     <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Enhance the product name, set your pricing margins, and generate a compelling description.</p>
@@ -1257,7 +1257,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             
                             {/* SECTION 3: VARIANTS */}
                             {currentProduct.variants && currentProduct.variants.length > 0 && (
-                                <div className="w-full p-6 md:p-12 max-w-5xl mx-auto mt-6">
+                                <div className="w-full p-6 md:p-10 mt-4">
                                     <div className="text-center mb-10">
                                         <h3 className="font-serif text-3xl text-earth">Step 3: Variants</h3>
                                         <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Manage styles, sizes, their specific stock status, and assign allocated images.</p>
