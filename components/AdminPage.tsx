@@ -527,16 +527,16 @@ export const AdminPage: React.FC = () => {
          )}
 
          {/* Glassmorphic Sidebar */}
-         <aside className={`w-72 fixed h-[96vh] top-[2vh] left-4 z-[200] flex flex-col rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] backdrop-blur-3xl bg-earth/80 text-cream transition-all duration-500 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} md:translate-x-0 relative`}>
+         <aside className={`w-72 fixed h-[96vh] top-[2vh] left-4 z-[200] flex flex-col rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_40px_100px_rgba(0,0,0,0.4)] backdrop-blur-3xl bg-black/60 text-cream transition-all duration-500 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} md:translate-x-0 relative`}>
             {/* Inner Glass Highlight */}
             <div className="absolute inset-0 rounded-[2rem] border border-white/10 pointer-events-none" />
             {/* Header */}
             <div className="p-8 border-b border-white/5 bg-white/5 relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
-               <h2 className="font-serif text-3xl italic tracking-wide relative z-10">The Atelier</h2>
-               <div className="flex items-center gap-2 mt-2 opacity-60">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/30 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+               <h2 className="font-serif text-3xl italic tracking-wide relative z-10 text-white">The Atelier</h2>
+               <div className="flex items-center gap-2 mt-2 opacity-80">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
-                  <p className="text-[9px] uppercase tracking-[0.25em] relative z-10">Admin Console</p>
+                  <p className="text-[9px] uppercase tracking-[0.25em] relative z-10 text-white/70">Admin Console</p>
                </div>
             </div>
 

@@ -751,9 +751,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </div>
                         </div>
 
-                        <div className="flex flex-col lg:flex-row h-[75vh]">
-                            {/* Left: Product Images & Basic Info */}
-                            <div className="w-full lg:w-[45%] bg-white/30 backdrop-blur-md border-r border-white/20 overflow-y-auto custom-scrollbar relative flex flex-col">
+                        <div className="flex flex-col h-[75vh] overflow-y-auto custom-scrollbar relative pb-12">
+                            {/* SECTION 1: VISUALS */}
+                            <div className="w-full bg-white/30 backdrop-blur-md border-b border-white/20 flex flex-col relative">
                                 {/* Sticky Main Preview Area */}
                                 <div className="sticky top-0 z-10 bg-gradient-to-b from-white/90 via-white/80 to-white/0 pt-6 px-6 pb-2 mb-2 backdrop-blur-sm -mx-6 -mt-6">
                                     <div className="aspect-square rounded-[2rem] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-white/60 bg-white relative group">
@@ -835,9 +835,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </div>
                                     )}
                                 </div>
+                                <div className="text-center mt-6 mb-2">
+                                    <h3 className="font-serif text-3xl text-earth">Step 1: Curate Visuals</h3>
+                                    <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Select, reorder, and preview the images for this product. The first image will be used as the main listing image.</p>
+                                </div>
                                 </div> {/* End Sticky Header */}
-
-                                <div className="p-6 pt-0 flex-1">
+                                
+                                <div className="p-6 md:p-12 max-w-5xl mx-auto w-full">
                                 {/* Selectable Image Grid - CLICK TO SELECT */}
                                 <div className="mb-4">
                                     <p className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold mb-2">Select Images for Import</p>
@@ -1098,13 +1102,17 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </span>
                                     </div>
                                 </div>
-                                </div> {/* End Left Column Scroll Content */}
+                                </div> {/* End Visuals Section Content */}
                             </div>
 
-                            {/* Right: Customization Form */}
-                            <div className="w-full lg:w-[55%] p-6 md:p-10 space-y-8 overflow-y-auto bg-white/40 backdrop-blur-md custom-scrollbar">
-                                <div className="flex gap-4">
-                                    <div className="flex-1 space-y-6">
+                            {/* SECTION 2: PRODUCT DETAILS */}
+                            <div className="w-full bg-white/40 backdrop-blur-md p-6 md:p-12 max-w-5xl mx-auto border-b border-earth/10">
+                                <div className="text-center mb-10">
+                                    <h3 className="font-serif text-3xl text-earth">Step 2: Details & Story</h3>
+                                    <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Enhance the product name, set your pricing margins, and generate a compelling description.</p>
+                                </div>
+                                
+                                <div className="space-y-12">
                                         {/* Product Name */}
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
@@ -1245,215 +1253,171 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             />
                                         </div>
                                     </div>
-
-                                    {/* Variants Sidebar (if any) - CLICKABLE SELECTION + IMAGE ALLOCATION */}
-                                    {currentProduct.variants && currentProduct.variants.length > 0 && (
-                                        <div className="w-full lg:w-[400px] bg-white/40 backdrop-blur-md p-5 md:p-6 rounded-[2rem] border border-white/40 shadow-xl h-fit flex-shrink-0">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <h4 className="text-[10px] uppercase tracking-[0.2em] text-earth/60 font-bold">
-                                                    Select Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
-                                                </h4>
-                                                <button
-                                                    onClick={() => {
-                                                        const allIds = currentProduct.variants!.map(v => v.id);
-                                                        const currentSelected = currentProduct.selectedVariants;
-                                                        // Toggle: select all → undefined (all), deselect all → []
-                                                        const allCurrentlySelected =
-                                                            currentSelected === undefined || currentSelected.length === allIds.length;
-                                                        const newSelected = allCurrentlySelected ? [] : undefined;
-                                                        updateReviewProduct('selectedVariants', newSelected);
-                                                    }}
-                                                    className="text-[10px] text-bronze hover:underline font-medium"
-                                                >
-                                                    {(currentProduct.selectedVariants?.length ?? currentProduct.variants.length) === currentProduct.variants.length ? 'Deselect All' : 'Select All'}
-                                                </button>
-                                            </div>
-                                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {currentProduct.variants.map((variant) => {
-                                                    const isSelected = currentProduct.selectedVariants
-                                                        ? currentProduct.selectedVariants.includes(variant.id)
-                                                        : true;
-                                                    // Find original name for revert
-                                                    const originalName = currentProduct.originalVariants?.find(ov => ov.id === variant.id)?.name;
-                                                    const nameWasEdited = originalName && variant.name !== originalName;
-                                                    // All available images (main + description/marketing)
-                                                    const allImages = [
-                                                        ...(currentProduct.images || []),
-                                                        ...(currentProduct.descriptionImages || []),
-                                                    ];
-                                                    // Allocated image for this variant
-                                                    const allocatedIdx = currentProduct.variantImageMap?.[variant.id];
-                                                    const allocatedImage = allocatedIdx !== undefined ? allImages[allocatedIdx] : undefined;
-                                                    const displayImage = allocatedImage || variant.image || currentProduct.images?.[0];
-                                                    return (
+                                </div>
+                            
+                            {/* SECTION 3: VARIANTS */}
+                            {currentProduct.variants && currentProduct.variants.length > 0 && (
+                                <div className="w-full p-6 md:p-12 max-w-5xl mx-auto mt-6">
+                                    <div className="text-center mb-10">
+                                        <h3 className="font-serif text-3xl text-earth">Step 3: Variants</h3>
+                                        <p className="text-earth/60 font-light mt-2 max-w-lg mx-auto">Manage styles, sizes, their specific stock status, and assign allocated images.</p>
+                                    </div>
+                                    
+                                    <div className="w-full bg-white/40 backdrop-blur-md p-8 md:p-10 rounded-[2.5rem] border border-white/40 shadow-xl overflow-hidden">
+                                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-earth/10">
+                                            <h4 className="text-xs uppercase tracking-[0.2em] text-earth font-bold">
+                                                Active Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
+                                            </h4>
+                                            <button
+                                                onClick={() => {
+                                                    const allIds = currentProduct.variants!.map(v => v.id);
+                                                    const currentSelected = currentProduct.selectedVariants;
+                                                    const allCurrentlySelected = currentSelected === undefined || currentSelected.length === allIds.length;
+                                                    const newSelected = allCurrentlySelected ? [] : undefined;
+                                                    updateReviewProduct('selectedVariants', newSelected);
+                                                }}
+                                                className="text-xs text-bronze hover:underline font-bold tracking-widest uppercase bg-bronze/10 px-4 py-2 rounded-full transition-all"
+                                            >
+                                                {(currentProduct.selectedVariants?.length ?? currentProduct.variants.length) === currentProduct.variants.length ? 'Deselect All' : 'Select All'}
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {currentProduct.variants.map((variant) => {
+                                                const isSelected = currentProduct.selectedVariants ? currentProduct.selectedVariants.includes(variant.id) : true;
+                                                const originalName = currentProduct.originalVariants?.find(ov => ov.id === variant.id)?.name;
+                                                const nameWasEdited = originalName && variant.name !== originalName;
+                                                const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
+                                                const allocatedIdx = currentProduct.variantImageMap?.[variant.id];
+                                                const allocatedImage = allocatedIdx !== undefined ? allImages[allocatedIdx] : undefined;
+                                                const displayImage = allocatedImage || variant.image || currentProduct.images?.[0];
+                                                
+                                                return (
+                                                    <div
+                                                        key={variant.id}
+                                                        className={`rounded-3xl transition-all border-4 overflow-hidden relative
+                                                            ${isSelected
+                                                                ? 'bg-white border-green-500 shadow-lg'
+                                                                : 'bg-white/30 border-white/40 opacity-60 hover:opacity-100 hover:border-earth/20'}`}
+                                                    >
                                                         <div
-                                                            key={variant.id}
-                                                            className={`rounded-2xl transition-all border-[3px] overflow-hidden
-                                                                ${isSelected
-                                                                    ? 'bg-white/80 border-green-500 shadow-[0_5px_15px_rgba(34,197,94,0.15)]'
-                                                                    : 'bg-white/30 border-white/40 opacity-60 hover:opacity-100 hover:border-earth/20 hover:bg-white/50'}`}
+                                                            onClick={() => {
+                                                                const allIds = currentProduct.variants!.map(v => v.id);
+                                                                const currentSelected = currentProduct.selectedVariants || allIds;
+                                                                const newSelected = isSelected ? currentSelected.filter(id => id !== variant.id) : [...currentSelected, variant.id];
+                                                                updateReviewProduct('selectedVariants', newSelected);
+                                                            }}
+                                                            className="flex items-center gap-4 p-5 cursor-pointer"
                                                         >
-                                                            {/* Main variant row — click to select/deselect */}
+                                                            {/* Variant Image */}
                                                             <div
-                                                                onClick={() => {
-                                                                    const allIds = currentProduct.variants!.map(v => v.id);
-                                                                    const currentSelected = currentProduct.selectedVariants || allIds;
-                                                                    const newSelected = isSelected
-                                                                        ? currentSelected.filter(id => id !== variant.id)
-                                                                        : [...currentSelected, variant.id];
-                                                                    updateReviewProduct('selectedVariants', newSelected);
+                                                                className="w-20 h-20 rounded-2xl border-2 border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:border-bronze shadow-sm"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const pickerKey = `${currentProduct.id}:${variant.id}`;
+                                                                    setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
                                                                 }}
-                                                                className="flex items-center gap-3 text-sm p-2 cursor-pointer"
                                                             >
-                                                                {/* Variant image — click to open image picker */}
-                                                                <div
-                                                                    className="w-12 h-12 rounded-lg border border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:ring-2 hover:ring-bronze/30"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        const pickerKey = `${currentProduct.id}:${variant.id}`;
-                                                                        setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
-                                                                    }}
-                                                                    title="Click to assign image to this variant"
-                                                                >
-                                                                    {displayImage ? (
-                                                                        <img
-                                                                            src={displayImage}
-                                                                            alt={variant.name}
-                                                                            referrerPolicy="no-referrer"
-                                                                            crossOrigin="anonymous"
-                                                                            className="w-full h-full object-cover"
-                                                                        />
-                                                                    ) : (
-                                                                        <Package className="w-4 h-4 text-gray-300" />
-                                                                    )}
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                                                        <ImageIcon className="w-4 h-4 text-white" />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={variant.name}
-                                                                            onClick={(e) => e.stopPropagation()}
-                                                                            onChange={(e) => {
-                                                                                const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                    v.id === variant.id ? { ...v, name: e.target.value } : v
-                                                                                );
-                                                                                updateReviewProduct('variants', updatedVariants);
-                                                                            }}
-                                                                            onBlur={(e) => {
-                                                                                // Auto-revert to original name if cleared
-                                                                                if (!e.target.value.trim() && originalName) {
-                                                                                    const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                        v.id === variant.id ? { ...v, name: originalName } : v
-                                                                                    );
-                                                                                    updateReviewProduct('variants', updatedVariants);
-                                                                                }
-                                                                            }}
-                                                                            className="w-full bg-transparent font-medium text-earth text-xs border-b border-transparent hover:border-earth/20 focus:border-bronze focus:outline-none truncate px-0 py-0.5 transition-colors"
-                                                                            title="Click to edit variant name"
-                                                                            placeholder={originalName || 'Variant name'}
-                                                                        />
-                                                                        {/* Reset button — only show if name was edited */}
-                                                                        {nameWasEdited && (
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                        v.id === variant.id ? { ...v, name: originalName! } : v
-                                                                                    );
-                                                                                    updateReviewProduct('variants', updatedVariants);
-                                                                                }}
-                                                                                className="flex-shrink-0 text-earth/40 hover:text-bronze transition-colors"
-                                                                                title={`Reset to: ${originalName}`}
-                                                                            >
-                                                                                <RotateCcw className="w-3 h-3" />
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                    {/* Show original name as reference */}
-                                                                    {originalName && nameWasEdited && (
-                                                                        <p className="text-[9px] text-earth/30 truncate" title={originalName}>
-                                                                            Original: {originalName}
-                                                                        </p>
-                                                                    )}
-                                                                    <div className="flex items-center gap-2 text-[10px]">
-                                                                        <span className={variant.inStock ? 'text-green-600' : 'text-red-500'}>
-                                                                            {variant.inStock ? '● In Stock' : '○ Out of Stock'}
-                                                                        </span>
-                                                                        {variant.priceAdjustment !== 0 && (
-                                                                            <span className={variant.priceAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}>
-                                                                                {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors shadow-sm
-                                                                    ${isSelected ? 'bg-green-500 text-white' : 'bg-white border-2 border-earth/10'}`}>
-                                                                    {isSelected && <Check className="w-3.5 h-3.5" />}
+                                                                {displayImage ? (
+                                                                    <img src={displayImage} alt={variant.name} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <Package className="w-8 h-8 text-earth/20" />
+                                                                )}
+                                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                                    <ImageIcon className="w-6 h-6 text-white" />
                                                                 </div>
                                                             </div>
-                                                            {/* Image picker dropdown for variant-image allocation */}
-                                                            {openImagePicker === `${currentProduct.id}:${variant.id}` && (
-                                                            <div className="border-t border-earth/10 p-2 bg-white/80">
-                                                                <p className="text-[9px] uppercase tracking-widest text-earth/40 font-bold mb-1">Assign image to this variant</p>
-                                                                <div className="grid grid-cols-5 gap-1 max-h-24 overflow-y-auto">
-                                                                    {allImages.map((img, imgIdx) => (
-                                                                        <div
-                                                                            key={imgIdx}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                const newMap = { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx };
-                                                                                updateReviewProduct('variantImageMap', newMap);
-                                                                                // Also update the variant's image field directly
-                                                                                const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                    v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v
-                                                                                );
+                                                            
+                                                            <div className="flex-1 min-w-0 pr-4">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={variant.name}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onChange={(e) => {
+                                                                            const updatedVariants = currentProduct.variants!.map(v => v.id === variant.id ? { ...v, name: e.target.value } : v);
+                                                                            updateReviewProduct('variants', updatedVariants);
+                                                                        }}
+                                                                        onBlur={(e) => {
+                                                                            if (!e.target.value.trim() && originalName) {
+                                                                                const updatedVariants = currentProduct.variants!.map(v => v.id === variant.id ? { ...v, name: originalName } : v);
                                                                                 updateReviewProduct('variants', updatedVariants);
-                                                                                // Close picker
-                                                                                setOpenImagePicker(null);
-                                                                            }}
-                                                                            className={`aspect-square rounded border cursor-pointer overflow-hidden hover:ring-2 hover:ring-bronze/40 transition-all
-                                                                                ${allocatedIdx === imgIdx ? 'ring-2 ring-bronze border-bronze' : 'border-earth/10'}`}
-                                                                        >
+                                                                            }
+                                                                        }}
+                                                                        className="w-full bg-earth/5 font-medium text-earth text-sm border border-transparent hover:border-earth/20 focus:border-bronze focus:bg-white focus:outline-none truncate px-3 py-1 rounded-lg transition-all"
+                                                                        placeholder={originalName || 'Variant name'}
+                                                                    />
+                                                                    {nameWasEdited && (
+                                                                        <button onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const updatedVariants = currentProduct.variants!.map(v => v.id === variant.id ? { ...v, name: originalName! } : v);
+                                                                            updateReviewProduct('variants', updatedVariants);
+                                                                        }} className="p-1.5 bg-earth/5 rounded-full text-earth/50 hover:text-earth hover:bg-earth/10 transition-colors" title={`Reset to: ${originalName}`}>
+                                                                            <RotateCcw className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                {originalName && nameWasEdited && <p className="text-[10px] text-earth/40 ml-1 mb-2 truncate">Ref: {originalName}</p>}
+                                                                
+                                                                <div className="flex items-center gap-3 mt-2 text-xs font-bold pl-1">
+                                                                    <span className={variant.inStock ? 'text-green-600 bg-green-50 px-2 py-0.5 rounded-full' : 'text-red-500 bg-red-50 px-2 py-0.5 rounded-full'}>
+                                                                        {variant.inStock ? 'In Stock' : 'Out of Stock'}
+                                                                    </span>
+                                                                    {variant.priceAdjustment !== 0 && (
+                                                                        <span className={`${variant.priceAdjustment > 0 ? 'text-rose-600 bg-rose-50' : 'text-emerald-600 bg-emerald-50'} px-2 py-0.5 rounded-full`}>
+                                                                            {variant.priceAdjustment > 0 ? '+' : ''}${variant.priceAdjustment.toFixed(2)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-md
+                                                                ${isSelected ? 'bg-green-500 text-white scale-100' : 'bg-white border-2 border-earth/20 text-transparent scale-90'}`}>
+                                                                <Check className="w-5 h-5" />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {openImagePicker === `${currentProduct.id}:${variant.id}` && (
+                                                            <div className="border-t-2 border-earth/5 p-4 bg-white/95">
+                                                                <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-3">Assign specific image</p>
+                                                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                                                    {allImages.map((img, imgIdx) => (
+                                                                        <div key={imgIdx} onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
+                                                                            updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
+                                                                            setOpenImagePicker(null);
+                                                                        }} className={`w-16 h-16 flex-shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden hover:opacity-80 transition-all
+                                                                            ${allocatedIdx === imgIdx ? 'border-bronze ring-2 ring-transparent shadow-lg' : 'border-earth/10'}`}>
                                                                             <img src={img} alt={`Option ${imgIdx + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
                                                                         </div>
                                                                     ))}
                                                                 </div>
                                                                 {allocatedIdx !== undefined && (
-                                                                    <button
-                                                                        onClick={(e) => {
+                                                                    <div className="mt-3 flex justify-end">
+                                                                        <button onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             const newMap = { ...(currentProduct.variantImageMap || {}) };
                                                                             delete newMap[variant.id];
                                                                             updateReviewProduct('variantImageMap', newMap);
-                                                                            // Restore original variant image
                                                                             const origVariant = currentProduct.originalVariants?.find(ov => ov.id === variant.id);
-                                                                            const updatedVariants = currentProduct.variants!.map(v =>
-                                                                                v.id === variant.id ? { ...v, image: origVariant?.image || undefined } : v
-                                                                            );
-                                                                            updateReviewProduct('variants', updatedVariants);
+                                                                            updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: origVariant?.image || undefined } : v));
                                                                             setOpenImagePicker(null);
-                                                                        }}
-                                                                        className="text-[9px] text-red-400 hover:text-red-600 mt-1 flex items-center gap-1"
-                                                                    >
-                                                                        <X className="w-2.5 h-2.5" /> Clear assignment
-                                                                    </button>
+                                                                        }} className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                                                                            <X className="w-3 h-3" /> Clear Assignment
+                                                                        </button>
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            <p className="text-[10px] text-earth/40 mt-3 italic">
-                                                Click variants to include/exclude · Click image thumbnails to assign specific images
-                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
+                            
+                            <div className="h-32 flex-shrink-0"></div> {/* Bottom spacer padding */}
                         </div>
                     </div>
                 </FadeIn>
