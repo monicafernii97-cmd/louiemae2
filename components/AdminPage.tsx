@@ -684,7 +684,7 @@ export const AdminPage: React.FC = () => {
          </aside>
 
          {/* Main Content Area */}
-         <main className="ml-0 md:ml-80 flex-1 p-4 md:p-8 pt-24 md:pt-8 h-screen overflow-y-auto no-scrollbar relative">
+         <main className="ml-0 md:ml-[19rem] flex-1 p-4 md:px-6 md:py-6 pt-24 md:pt-6 h-screen overflow-y-auto no-scrollbar relative">
 
             {/* DASHBOARD VIEW */}
             {activeTab === 'dashboard' && (
