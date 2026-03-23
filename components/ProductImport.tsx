@@ -237,8 +237,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         hasCustomPrice: boolean,
     ): number => {
         const raw = calculateCostStackPrice(variantPrice1688, collection).sellingPrice;
-        // When user set a custom price, scale; use ceil-0.01 to match the .99 pattern
-        const scaled = hasCustomPrice ? Math.ceil(raw * markupRatio) - 0.01 : raw;
+        // Preserve the user's exact base price when scaling variant selling prices.
+        const scaled = hasCustomPrice ? raw * markupRatio : raw;
         return Number(scaled.toFixed(2));
     };
 
@@ -597,8 +597,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
                 estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
                 pricingStage: 'estimated' as const,
-                sourceCurrency: (p as any).sourceCurrency,
-                sourcePriceOriginal: (p as any).sourcePriceOriginal,
+                sourceCurrency: p.sourceCurrency,
+                sourcePriceOriginal: p.sourcePriceOriginal,
                 // Subcategory — clear if collection changed to avoid stale category
                 subcategory: collectionChanged ? undefined : (productSubcategory || undefined),
             };
@@ -1821,16 +1821,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 const genId = `gen_${Date.now()}`;
                 // Convert non-USD prices to approximate USD
                 let importPrice = data.price || 0;
-                let sourceCurrency: string | undefined;
-                let sourcePriceOriginal: number | undefined;
-                if (data.currency && String(data.currency).toUpperCase() !== 'USD') {
-                    const code = String(data.currency).toUpperCase();
-                    const { usd, rate } = convertToUsd(importPrice, code);
-                    sourceCurrency = code;
-                    sourcePriceOriginal = importPrice;
+                const rawCurrencyCode = data.currency ? String(data.currency).toUpperCase().trim() : 'USD';
+                const rawPriceOriginal = importPrice;
+                if (rawCurrencyCode !== 'USD') {
+                    const { usd, rate } = convertToUsd(importPrice, rawCurrencyCode);
                     importPrice = usd;
-                    console.log(`[URL Import] Converted ${sourcePriceOriginal} ${code} → $${importPrice} USD (rate: ${rate})`);
-                    toast.info(`Price converted: ${sourcePriceOriginal} ${code} → $${importPrice} USD`);
+                    console.log(`[URL Import] Converted ${rawPriceOriginal} ${rawCurrencyCode} → $${importPrice} USD (rate: ${rate})`);
+                    toast.info(`Price converted: ${rawPriceOriginal} ${rawCurrencyCode} → $${importPrice} USD`);
                 }
                 importableProduct = {
                     id: genId,
@@ -1853,8 +1850,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     selected: true,
                     targetCollection: targetCollection as CollectionType,
                     customPrice: calculateFinalPrice(importPrice),
-                    // Store original currency metadata for audit trail
-                    ...(sourceCurrency && { sourceCurrency, sourcePriceOriginal }),
+                    // Always populate audit fields for downstream visibility
+                    sourceCurrency: rawCurrencyCode,
+                    sourcePriceOriginal: rawPriceOriginal,
                 } as any;
             }
 
