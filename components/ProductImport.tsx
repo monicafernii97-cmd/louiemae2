@@ -633,12 +633,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         return (
             <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 md:p-8 relative z-20">
 
-
                 <FadeIn className="w-full max-w-6xl" mobileFast>
-                    <div className="glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl border border-white/60">
+                    <div className="bg-white/20 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50">
                         {/* Header / Progress */}
-                        <div className="bg-cream/50 p-4 md:p-8 border-b border-earth/5 flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-center relative overflow-hidden">
-                            <div className="absolute top-0 left-0 bottom-0 bg-bronze/10 transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
+                        <div className="bg-white/10 p-5 md:p-8 border-b border-white/20 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-center relative overflow-hidden backdrop-blur-xl">
+                            <div className="absolute top-0 left-0 bottom-0 bg-gradient-to-r from-bronze/20 to-transparent transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
                             <div className="relative z-10 flex items-center gap-4">
                                 <button
                                     onClick={() => setImportStep('search')}
@@ -730,21 +729,21 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 <button
                                     onClick={() => setReviewIndex(prev => Math.max(0, prev - 1))}
                                     disabled={reviewIndex === 0}
-                                    className="px-6 py-2 rounded-full border border-earth/10 hover:bg-white disabled:opacity-30 transition-all text-xs uppercase tracking-widest font-bold"
+                                    className="px-6 py-3 rounded-full border border-white/40 bg-white/20 backdrop-blur-md hover:bg-white/40 disabled:opacity-30 transition-all text-xs uppercase tracking-widest font-bold text-earth"
                                 >
                                     Previous
                                 </button>
                                 {reviewIndex < selectedProducts.length - 1 ? (
                                     <button
                                         onClick={() => setReviewIndex(prev => Math.min(selectedProducts.length - 1, prev + 1))}
-                                        className="px-8 py-2 rounded-full bg-earth text-cream hover:bg-bronze transition-all text-xs uppercase tracking-widest font-bold shadow-lg"
+                                        className="px-8 py-3 rounded-full bg-earth text-cream hover:bg-bronze transition-all text-xs uppercase tracking-widest font-bold shadow-[0_10px_30px_rgba(0,0,0,0.15)] hover:-translate-y-0.5"
                                     >
                                         Next Item
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => setImportStep('final-review')}
-                                        className="px-8 py-2 rounded-full bg-green-700 text-white hover:bg-green-600 transition-all text-xs uppercase tracking-widest font-bold shadow-lg shadow-green-900/20"
+                                        className="px-8 py-3 rounded-full bg-green-600 border border-green-500/50 text-white hover:bg-green-500 transition-all text-xs uppercase tracking-widest font-bold shadow-[0_10px_30px_rgba(34,197,94,0.3)] hover:-translate-y-0.5"
                                     >
                                         Final Review → ({selectedProducts.length})
                                     </button>
@@ -752,10 +751,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             </div>
                         </div>
 
-                        <div className="flex flex-col lg:flex-row h-[70vh]">
+                        <div className="flex flex-col lg:flex-row h-[75vh]">
                             {/* Left: Product Images & Basic Info */}
-                            <div className="w-full lg:w-1/3 bg-white/40 p-4 md:p-10 border-r border-earth/5 overflow-y-auto">
-                                <div className="aspect-square rounded-2xl overflow-hidden mb-6 shadow-md border border-earth/5 bg-white relative group">
+                            <div className="w-full lg:w-[45%] bg-white/30 backdrop-blur-md border-r border-white/20 overflow-y-auto custom-scrollbar relative flex flex-col">
+                                {/* Sticky Main Preview Area */}
+                                <div className="sticky top-0 z-10 bg-gradient-to-b from-white/90 via-white/80 to-white/0 pt-6 px-6 pb-2 mb-2 backdrop-blur-sm -mx-6 -mt-6">
+                                    <div className="aspect-square rounded-[2rem] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-white/60 bg-white relative group">
                                     {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
@@ -829,17 +830,19 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </div>
                                     )}
                                     {(currentProduct.images?.length ?? 0) > 0 && (
-                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-earth shadow-sm">
+                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-bold text-earth shadow-[0_5px_15px_rgba(0,0,0,0.1)] border border-white border-opacity-50 tracking-widest uppercase">
                                             {(currentProduct.selectedImages?.length || currentProduct.images?.length || 0)} / {(currentProduct.images?.length || 0) + (currentProduct.descriptionImages?.length || 0)} Selected
                                         </div>
                                     )}
                                 </div>
+                                </div> {/* End Sticky Header */}
 
+                                <div className="p-6 pt-0 flex-1">
                                 {/* Selectable Image Grid - CLICK TO SELECT */}
                                 <div className="mb-4">
-                                    <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Click to Select Images</p>
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold mb-2">Select Images for Import</p>
                                 </div>
-                                <div className="grid grid-cols-4 gap-2 max-h-52 overflow-y-auto">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     {(currentProduct.images || []).map((img, i) => {
                                         const isSelected = currentProduct.selectedImages
                                             ? currentProduct.selectedImages.includes(i)
@@ -848,33 +851,46 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         return (
                                             <div
                                                 key={i}
-                                                onClick={() => setPreviewImageIdx(i)}
-                                                className={`aspect-square rounded-lg border-2 overflow-hidden bg-white cursor-pointer transition-all relative
-                                                    ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
-                                                    ${isSelected ? 'border-bronze' : 'border-earth/10 opacity-50 hover:opacity-80'}`}
+                                                // Make the whole card toggle selection
+                                                onClick={() => {
+                                                    const currentSelected = currentProduct.selectedImages ||
+                                                        (currentProduct.images || []).map((_, idx) => idx);
+                                                    const newSelected = isSelected
+                                                        ? currentSelected.filter(idx => idx !== i)
+                                                        : [...currentSelected, i].sort((a, b) => a - b);
+                                                    if (newSelected.length > 0) {
+                                                        updateReviewProduct('selectedImages', newSelected);
+                                                    }
+                                                }}
+                                                className={`aspect-square rounded-[1.5rem] border-[3px] overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group
+                                                    ${isPreviewing ? 'ring-4 ring-bronze/30 shadow-lg' : ''}
+                                                    ${isSelected ? 'border-green-500 shadow-[0_10px_20px_rgba(34,197,94,0.2)]' : 'border-white/40 opacity-50 hover:opacity-100 hover:border-earth/20'}`}
                                             >
-                                                <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                {/* Selection checkbox */}
+                                                <img src={img} alt={`Product image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                                
+                                                {/* Selection Overlay */}
+                                                <div className={`absolute inset-0 transition-opacity duration-300 ${isSelected ? 'bg-green-500/10' : 'bg-black/0 group-hover:bg-black/5'}`} />
+
+                                                {/* Preview Button (Overlay) */}
                                                 <button
                                                     type="button"
-                                                    aria-pressed={isSelected}
-                                                    aria-label={`${isSelected ? 'Deselect' : 'Select'} product image ${i + 1}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        const currentSelected = currentProduct.selectedImages ||
-                                                            (currentProduct.images || []).map((_, idx) => idx);
-                                                        const newSelected = isSelected
-                                                            ? currentSelected.filter(idx => idx !== i)
-                                                            : [...currentSelected, i].sort((a, b) => a - b);
-                                                        if (newSelected.length > 0) {
-                                                            updateReviewProduct('selectedImages', newSelected);
-                                                        }
+                                                        setPreviewImageIdx(i);
                                                     }}
-                                                    className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors
-                                                        ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                    className="absolute inset-0 m-auto w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-xl text-earth hover:text-bronze"
+                                                    title="Preview Image"
                                                 >
-                                                    {isSelected && <Check className="w-3 h-3" />}
+                                                    <Search className="w-5 h-5" />
                                                 </button>
+
+                                                {/* Checkbox Icon */}
+                                                <div
+                                                    className={`absolute top-3 right-3 rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-all duration-300 transform
+                                                        ${isSelected ? 'bg-green-500 text-white scale-100' : 'bg-white/80 backdrop-blur border border-earth/10 text-earth/20 scale-90 group-hover:scale-100'}`}
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -882,14 +898,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     {/* Upload Image Button */}
                                     <div
                                         onClick={() => !isUploadingImage && imageUploadRef.current?.click()}
-                                        className="aspect-square rounded-lg border-2 border-dashed border-earth/20 bg-white/50 cursor-pointer hover:border-bronze/40 hover:bg-bronze/5 transition-all flex flex-col items-center justify-center gap-1"
+                                        className="aspect-square rounded-[1.5rem] border-2 border-dashed border-earth/20 bg-white/30 backdrop-blur-sm cursor-pointer hover:border-bronze/40 hover:bg-white/50 transition-all duration-300 flex flex-col items-center justify-center gap-3 shadow-inner"
                                     >
                                         {isUploadingImage ? (
-                                            <Loader2 className="w-5 h-5 text-bronze animate-spin" />
+                                            <Loader2 className="w-8 h-8 text-bronze animate-spin" />
                                         ) : (
                                             <>
-                                                <Upload className="w-4 h-4 text-earth/30" />
-                                                <span className="text-[8px] uppercase tracking-widest text-earth/30 font-bold">Add</span>
+                                                <div className="p-4 bg-white/50 rounded-full shadow-sm"><Upload className="w-6 h-6 text-earth/50" /></div>
+                                                <span className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold">Upload</span>
                                             </>
                                         )}
                                     </div>
@@ -1008,11 +1024,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 )}
                                 {/* Description/Marketing Images from 1688 */}
                                 {currentProduct.descriptionImages && currentProduct.descriptionImages.length > 0 && (
-                                    <div className="mt-4">
-                                        <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">
-                                            Marketing Images ({currentProduct.descriptionImages.length})
-                                        </h4>
-                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                                    <div className="mt-8">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <h4 className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold">
+                                                Additional Details ({currentProduct.descriptionImages.length})
+                                            </h4>
+                                            <div className="h-px flex-1 bg-gradient-to-r from-earth/10 to-transparent" />
+                                        </div>
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                             {currentProduct.descriptionImages.map((img, idx) => {
                                                 // Marketing images are offset by main images count for selection indices
                                                 const globalIdx = (currentProduct.images?.length || 0) + idx;
@@ -1023,44 +1042,44 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 return (
                                                     <div
                                                         key={`mktg-${idx}`}
-                                                        className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer group transition-all border-2
-                                                            ${isPreviewing ? 'ring-2 ring-blue-400 border-blue-400' : ''}
-                                                            ${isSelected ? 'border-bronze ring-2 ring-bronze/30 scale-[1.02]' : 'border-transparent hover:border-earth/20'}`}
-                                                        onClick={() => setPreviewImageIdx(globalIdx)}
+                                                        className={`aspect-square rounded-[1.5rem] border-[3px] overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group
+                                                            ${isPreviewing ? 'ring-4 ring-bronze/30 shadow-lg' : ''}
+                                                            ${isSelected ? 'border-green-500 shadow-[0_10px_20px_rgba(34,197,94,0.2)]' : 'border-white/40 opacity-50 hover:opacity-100 hover:border-earth/20'}`}
                                                     >
                                                         <img
                                                             src={img}
                                                             alt={`Marketing ${idx + 1}`}
                                                             referrerPolicy="no-referrer"
                                                             crossOrigin="anonymous"
-                                                            className="w-full h-full object-cover"
+                                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                                         />
-                                                        {/* Selection checkbox */}
+                                                        
+                                                        <div className={`absolute inset-0 transition-opacity duration-300 ${isSelected ? 'bg-green-500/10' : 'bg-black/0 group-hover:bg-black/5'}`} />
+
+                                                        {/* Preview Button (Overlay) */}
                                                         <button
                                                             type="button"
-                                                            aria-pressed={isSelected}
-                                                            aria-label={`${isSelected ? 'Deselect' : 'Select'} marketing image ${idx + 1}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                const current = currentProduct.selectedImages || Array.from({ length: (currentProduct.images || []).length }, (_, i) => i);
-                                                                const newSelected = isSelected
-                                                                    ? current.filter(i => i !== globalIdx)
-                                                                    : [...current, globalIdx];
-                                                                if (newSelected.length > 0) {
-                                                                    updateReviewProduct('selectedImages', newSelected);
-                                                                }
+                                                                setPreviewImageIdx(globalIdx);
                                                             }}
-                                                            className={`absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors z-10
-                                                                ${isSelected ? 'bg-bronze text-white' : 'bg-white/80 border border-earth/20 hover:border-bronze'}`}
+                                                            className="absolute inset-0 m-auto w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-xl text-earth hover:text-bronze"
+                                                            title="Preview Image"
                                                         >
-                                                            {isSelected && <Check className="w-3 h-3" />}
+                                                            <Search className="w-5 h-5" />
                                                         </button>
-                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+
+                                                        {/* Checkbox Icon */}
+                                                        <div
+                                                            className={`absolute top-3 right-3 rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-all duration-300 transform
+                                                                ${isSelected ? 'bg-green-500 text-white scale-100' : 'bg-white/80 backdrop-blur border border-earth/10 text-earth/20 scale-90 group-hover:scale-100'}`}
+                                                        >
+                                                            <Check className="w-4 h-4" />
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
                                         </div>
-                                        <p className="text-[9px] text-earth/30 mt-1 italic">Click to select marketing images for import</p>
                                     </div>
                                 )}
 
@@ -1079,10 +1098,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         </span>
                                     </div>
                                 </div>
+                                </div> {/* End Left Column Scroll Content */}
                             </div>
 
                             {/* Right: Customization Form */}
-                            <div className="w-full lg:w-2/3 p-10 space-y-8 overflow-y-auto bg-white/60">
+                            <div className="w-full lg:w-[55%] p-6 md:p-10 space-y-8 overflow-y-auto bg-white/40 backdrop-blur-md custom-scrollbar">
                                 <div className="flex gap-4">
                                     <div className="flex-1 space-y-6">
                                         {/* Product Name */}
@@ -1101,7 +1121,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 type="text"
                                                 value={currentProduct.customName || currentProduct.name}
                                                 onChange={(e) => updateReviewProduct('customName', e.target.value)}
-                                                className="w-full p-4 bg-white border border-earth/10 rounded-xl font-serif text-lg text-earth focus:ring-2 ring-bronze/20 focus:border-bronze transition-all shadow-sm"
+                                                className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl font-serif text-lg text-earth focus:bg-white/80 focus:ring-2 ring-bronze/30 focus:border-bronze transition-all shadow-md placeholder-earth/40"
                                             />
                                         </div>
 
@@ -1123,11 +1143,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             ).sellingPrice;
                                                             updateReviewProduct('customPrice', newPrice);
                                                         }}
-                                                        className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth appearance-none focus:ring-2 ring-bronze/20 shadow-sm font-medium"
+                                                        className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-sm text-earth appearance-none focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md font-medium transition-all"
                                                     >
                                                         {collections.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                                                     </select>
-                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/30 pointer-events-none" />
+                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/40 pointer-events-none" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
@@ -1136,14 +1156,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     <select
                                                         value={currentProduct.targetSubcategory || targetSubcategory}
                                                         onChange={(e) => updateReviewProduct('targetSubcategory', e.target.value)}
-                                                        className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth appearance-none focus:ring-2 ring-bronze/20 shadow-sm font-medium"
+                                                        className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-sm text-earth appearance-none focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md font-medium transition-all"
                                                     >
                                                         <option value="">Select Sub-Category</option>
                                                         {getSubcategoriesForCollection(currentProduct.targetCollection || targetCollection as string).map(s => (
                                                             <option key={s.id} value={s.id}>{s.title}</option>
                                                         ))}
                                                     </select>
-                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/30 pointer-events-none" />
+                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/40 pointer-events-none" />
                                                 </div>
                                             </div>
                                         </div>
@@ -1156,7 +1176,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 typeof currentProduct.customPrice === 'number' && Number.isFinite(currentProduct.customPrice);
                                             const displayPrice = hasCustomPrice ? currentProduct.customPrice! : pStack.sellingPrice;
                                             return (
-                                                <div className="bg-cream/30 p-4 md:p-6 rounded-2xl border border-earth/5 space-y-3">
+                                                <div className="bg-white/40 backdrop-blur-md p-5 md:p-8 rounded-[2rem] border border-white/40 shadow-lg space-y-4">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                                         <div className="space-y-2">
                                                             <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Your Price ($)</label>
@@ -1167,7 +1187,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     const value = Number(e.target.value);
                                                                     updateReviewProduct('customPrice', Number.isFinite(value) ? value : undefined);
                                                                 }}
-                                                                className="w-full p-3 bg-white border border-earth/10 rounded-xl font-serif text-xl text-bronze font-bold focus:ring-2 ring-bronze/20 shadow-sm"
+                                                                className="w-full p-4 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl font-serif text-2xl text-bronze font-bold focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md transition-all"
                                                             />
                                                         </div>
                                                         <div className="space-y-1 flex flex-col justify-center">
@@ -1221,16 +1241,16 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 rows={6}
                                                 value={currentProduct.customDescription || currentProduct.description || ''}
                                                 onChange={(e) => updateReviewProduct('customDescription', e.target.value)}
-                                                className="w-full p-4 bg-white border border-earth/10 rounded-xl text-sm text-earth/80 focus:ring-2 ring-bronze/20 shadow-sm resize-none"
+                                                className="w-full p-5 bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl text-sm text-earth/90 focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-md resize-none transition-all"
                                             />
                                         </div>
                                     </div>
 
                                     {/* Variants Sidebar (if any) - CLICKABLE SELECTION + IMAGE ALLOCATION */}
                                     {currentProduct.variants && currentProduct.variants.length > 0 && (
-                                        <div className="w-full lg:w-80 bg-white p-4 md:p-6 rounded-2xl border border-earth/10 shadow-sm h-fit">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">
+                                        <div className="w-full lg:w-[400px] bg-white/40 backdrop-blur-md p-5 md:p-6 rounded-[2rem] border border-white/40 shadow-xl h-fit flex-shrink-0">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <h4 className="text-[10px] uppercase tracking-[0.2em] text-earth/60 font-bold">
                                                     Select Variants ({currentProduct.selectedVariants?.length ?? currentProduct.variants.length}/{currentProduct.variants.length})
                                                 </h4>
                                                 <button
@@ -1268,10 +1288,10 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     return (
                                                         <div
                                                             key={variant.id}
-                                                            className={`rounded-lg transition-all border-2 overflow-hidden
+                                                            className={`rounded-2xl transition-all border-[3px] overflow-hidden
                                                                 ${isSelected
-                                                                    ? 'bg-bronze/5 border-bronze/30'
-                                                                    : 'bg-gray-50 border-transparent opacity-50 hover:opacity-75'}`}
+                                                                    ? 'bg-white/80 border-green-500 shadow-[0_5px_15px_rgba(34,197,94,0.15)]'
+                                                                    : 'bg-white/30 border-white/40 opacity-60 hover:opacity-100 hover:border-earth/20 hover:bg-white/50'}`}
                                                         >
                                                             {/* Main variant row — click to select/deselect */}
                                                             <div
@@ -1369,9 +1389,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
-                                                                    ${isSelected ? 'bg-bronze text-white' : 'bg-gray-200'}`}>
-                                                                    {isSelected && <Check className="w-3 h-3" />}
+                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors shadow-sm
+                                                                    ${isSelected ? 'bg-green-500 text-white' : 'bg-white border-2 border-earth/10'}`}>
+                                                                    {isSelected && <Check className="w-3.5 h-3.5" />}
                                                                 </div>
                                                             </div>
                                                             {/* Image picker dropdown for variant-image allocation */}
