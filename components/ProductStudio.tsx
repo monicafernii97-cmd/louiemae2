@@ -59,7 +59,8 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
         setIsSaving(true);
         try {
             await Promise.resolve(onSave(product));
-        } catch {
+        } catch (err) {
+            console.error('Product save failed:', err);
             toast.error('Failed to save product');
         } finally {
             setIsSaving(false);
