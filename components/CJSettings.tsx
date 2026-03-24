@@ -300,7 +300,7 @@ export const CJSettings: React.FC = () => {
                                         <span className="text-cream/50 uppercase tracking-widest text-[10px]">Access Token</span>
                                         <span className={`font-mono text-[11px] ${tokenStatus.accessTokenValid ? 'text-green-400 drop-shadow-[0_0_2px_rgba(74,222,128,0.5)]' : 'text-amber-400 drop-shadow-[0_0_2px_rgba(251,191,36,0.5)]'}`}>
                                             {tokenStatus.accessTokenValid
-                                                ? `Valid to ${new Date(tokenStatus.accessTokenExpiresAt!).toLocaleDateString()}`
+                                                ? `Valid to ${tokenStatus.accessTokenExpiresAt ? new Date(tokenStatus.accessTokenExpiresAt).toLocaleDateString() : 'N/A'}`
                                                 : 'Expired (auto-refreshes)'
                                             }
                                         </span>
@@ -309,7 +309,7 @@ export const CJSettings: React.FC = () => {
                                         <span className="text-cream/50 uppercase tracking-widest text-[10px]">Refresh Token</span>
                                         <span className={`font-mono text-[11px] ${tokenStatus.refreshTokenValid ? 'text-green-400 drop-shadow-[0_0_2px_rgba(74,222,128,0.5)]' : 'text-red-400 drop-shadow-[0_0_2px_rgba(248,113,113,0.5)]'}`}>
                                             {tokenStatus.refreshTokenValid
-                                                ? `Valid to ${new Date(tokenStatus.refreshTokenExpiresAt!).toLocaleDateString()}`
+                                                ? `Valid to ${tokenStatus.refreshTokenExpiresAt ? new Date(tokenStatus.refreshTokenExpiresAt).toLocaleDateString() : 'N/A'}`
                                                 : 'Expired - reconnect'
                                             }
                                         </span>

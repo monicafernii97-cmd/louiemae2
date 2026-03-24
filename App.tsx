@@ -108,7 +108,7 @@ const AppContent = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activePage, setActivePage] = useState<string>('home');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [, setSelectedProductId] = useState<string | null>(null);
+  const [, setSelectedProductId] = useState<string | null>(null); // TODO: Wire to product detail navigation
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -588,15 +588,15 @@ const AppContent = () => {
               <div>
                 <h4 className="font-serif text-xl mb-6 text-white/90">Follow Us</h4>
                 <div className="flex gap-5">
-                  <div className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all cursor-pointer">
+                  <a href="#" aria-label="Instagram" className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all">
                     <Instagram className="w-5 h-5 text-cream" />
-                  </div>
-                  <div className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all cursor-pointer">
+                  </a>
+                  <a href="#" aria-label="Facebook" className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all">
                     <Facebook className="w-5 h-5 text-cream" />
-                  </div>
-                  <div className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all cursor-pointer">
+                  </a>
+                  <a href="#" aria-label="Twitter" className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all">
                     <Twitter className="w-5 h-5 text-cream" />
-                  </div>
+                  </a>
                 </div>
               </div>
             </div>

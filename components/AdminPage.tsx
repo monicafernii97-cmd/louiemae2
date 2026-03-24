@@ -511,7 +511,7 @@ export const AdminPage: React.FC = () => {
 
          {/* Mobile Top Bar */}
          <div className="fixed top-0 left-0 right-0 h-14 z-[60] md:hidden bg-[#1A130E]/95 backdrop-blur-xl flex items-center justify-between px-4 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 text-cream/80 hover:text-cream transition-colors">
+            <button onClick={() => setSidebarOpen(true)} aria-label="Open navigation" aria-expanded={sidebarOpen} className="p-2 text-cream/80 hover:text-cream transition-colors">
                <Menu className="w-6 h-6" />
             </button>
             <h2 className="font-serif text-xl text-cream italic drop-shadow-md">The Atelier</h2>
@@ -535,7 +535,7 @@ export const AdminPage: React.FC = () => {
             {/* Warm ambient glow */}
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-bronze/10 to-transparent pointer-events-none" />
             {/* Header */}
-            <div className="p-8 border-b border-bronze/15 bg-gradient-to-r from-white/8 to-bronze/5 relative overflow-hidden group">
+            <div className="p-8 border-b border-bronze/15 bg-gradient-to-r from-white/[0.08] to-bronze/5 relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/30 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
                <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-600/15 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none" />
                <h2 className="font-serif text-3xl italic tracking-wide relative z-10 text-cream drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">The Atelier</h2>
@@ -691,7 +691,7 @@ export const AdminPage: React.FC = () => {
                <FadeIn>
                   {/* Premium Header */}
                   <div className="mb-10 md:mb-16 relative mt-2 md:mt-0">
-                     <div className="absolute -left-4 md:-left-10 -top-4 md:-top-10 w-32 md:w-40 h-32 md:h-40 bg-bronze/20 rounded-full blur-3xl mix-blend-screen opacity-50 animate-blob pointer-events-none" />
+                     <div className="absolute -left-4 md:-left-10 -top-4 md:-top-10 w-32 md:w-40 h-32 md:h-40 bg-bronze/20 rounded-full blur-3xl mix-blend-screen opacity-50 animate-blob motion-reduce:animate-none pointer-events-none" />
                      <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-3 md:mb-4 block font-medium relative z-10 pl-1 drop-shadow-sm">Executive Overview</span>
                      <h1 className="font-serif text-4xl md:text-5xl text-cream relative z-10 tracking-tight leading-tight md:leading-tight drop-shadow-md">
                         Welcome Back,<br className="md:hidden" /> <span className="italic text-bronze/90 drop-shadow-[0_0_15px_rgba(139,90,43,0.3)]">Monica.</span>
@@ -1093,7 +1093,11 @@ export const AdminPage: React.FC = () => {
                               <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-2xl group-hover:border-white/20 transition-colors" />
 
                               <div className="w-16 h-16 bg-black/40 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 shadow-inner z-10">
-                                 <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700" />
+                                 {product.images?.[0] ? (
+                                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700" />
+                                 ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-white/30"><Package className="w-5 h-5" aria-hidden="true" /></div>
+                                 )}
                               </div>
                               <div className="flex-1 z-10">
                                  <h4 className="font-serif text-lg text-cream drop-shadow-sm group-hover:text-white transition-colors">{product.name}</h4>
@@ -1103,9 +1107,9 @@ export const AdminPage: React.FC = () => {
                                     <span className={product.inStock ? 'text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]' : 'text-red-400'}>{product.inStock ? 'In Stock' : 'Out of Stock'}</span>
                                  </div>
                               </div>
-                              <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 z-10">
-                                 <button onClick={() => handleEditProduct(product)} className="p-2 hover:bg-white/20 rounded-full text-cream"><Edit3 className="w-4 h-4" /></button>
-                                 <button onClick={() => handleDeleteProduct(product.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full"><Trash2 className="w-4 h-4" /></button>
+                              <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity flex-shrink-0 z-10">
+                                 <button onClick={() => handleEditProduct(product)} aria-label={`Edit ${product.name}`} className="p-2 hover:bg-white/20 rounded-full text-cream"><Edit3 className="w-4 h-4" /></button>
+                                 <button onClick={() => handleDeleteProduct(product.id)} aria-label={`Delete ${product.name}`} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full"><Trash2 className="w-4 h-4" /></button>
                               </div>
                            </div>
                         ))
@@ -1138,9 +1142,9 @@ export const AdminPage: React.FC = () => {
                               <p className="font-sans text-sm text-cream/60 line-clamp-2 mb-4 leading-relaxed">{post.excerpt}</p>
                               <span className={`text-[9px] uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm border ${post.status === 'published' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-white/10 text-cream/60 border-white/20'}`}>{post.status}</span>
                            </div>
-                           <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex-shrink-0 z-10">
-                              <button onClick={() => handleEditPost(post)} className="p-2 hover:bg-white/20 rounded-full text-cream transition-colors"><Edit3 className="w-4 h-4" /></button>
-                              <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button>
+                           <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 transition-opacity flex-shrink-0 z-10">
+                              <button onClick={() => handleEditPost(post)} aria-label={`Edit ${post.title}`} className="p-2 hover:bg-white/20 rounded-full text-cream transition-colors"><Edit3 className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeletePost(post.id)} aria-label={`Delete ${post.title}`} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button>
                            </div>
                         </div>
                      ))}

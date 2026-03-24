@@ -25,21 +25,26 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onPro
         );
     });
 
+    const handleClose = () => {
+        setSearchTerm('');
+        onClose();
+    };
+
     // Auto-focus input when modal opens
     useEffect(() => {
-        if (isOpen && inputRef.current) {
-            setTimeout(() => inputRef.current?.focus(), 100);
-        }
-        if (!isOpen) {
+        if (!isOpen) return;
+        const timer = window.setTimeout(() => inputRef.current?.focus(), 100);
+        return () => {
+            window.clearTimeout(timer);
             setSearchTerm('');
-        }
+        };
     }, [isOpen]);
 
     // Handle escape key
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isOpen) {
-                onClose();
+                handleClose();
             }
         };
         document.addEventListener('keydown', handleEscape);
@@ -60,7 +65,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onPro
 
     const handleProductClick = (productId: string) => {
         onProductClick(productId);
-        onClose();
+        handleClose();
     };
 
     if (!isOpen) return null;

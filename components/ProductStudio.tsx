@@ -12,7 +12,7 @@ interface ProductStudioProps {
     isOpen: boolean;
     onClose: () => void;
     initialProduct?: Partial<Product> | null;
-    onSave: (product: Partial<Product>) => void;
+    onSave: (product: Partial<Product>) => Promise<void> | void;
     siteContent: SiteContent;
 }
 
@@ -33,8 +33,9 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     });
 
     // Reset when opening with new product
+    const wasOpenRef = useRef(false);
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !wasOpenRef.current) {
             setProduct({
                 name: '',
                 price: 0,
@@ -48,7 +49,8 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
             });
             setStep('essence');
         }
-    }, [isOpen, initialProduct, siteContent.collections]);
+        wasOpenRef.current = isOpen;
+    }, [isOpen, initialProduct]);
 
     // URL Scraper Action
     const scrapeProduct = useAction(api.scraper.scrapeProduct);
@@ -390,7 +392,7 @@ const EssenceStep: React.FC<{
                                 <div className={`w-9 h-5 rounded-full p-1 transition-colors border ${autoEnhance ? 'bg-bronze/40 border-bronze/50' : 'bg-black/40 border-white/10'}`}>
                                     <div className={`w-3 h-3 rounded-full shadow-sm transition-transform ${autoEnhance ? 'bg-amber-400 translate-x-4 shadow-[0_0_5px_currentColor]' : 'bg-cream/50 translate-x-0'}`} />
                                 </div>
-                                <input type="checkbox" checked={autoEnhance} onChange={(e) => setAutoEnhance(e.target.checked)} className="hidden" />
+                                <input type="checkbox" checked={autoEnhance} onChange={(e) => setAutoEnhance(e.target.checked)} className="sr-only peer" />
                                 <span className={`text-xs font-medium tracking-wide transition-colors ${autoEnhance ? 'text-amber-400 drop-shadow-sm' : 'text-cream/40'}`}>
                                     Auto-Enhance
                                 </span>
@@ -512,7 +514,7 @@ const EssenceStep: React.FC<{
                                 <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${product.isNew ? 'bg-bronze/40 border-bronze/50' : 'bg-black/40 border-white/10 group-hover:border-white/30'}`}>
                                     {product.isNew && <CheckCircle className="w-3.5 h-3.5 text-amber-400 shadow-[0_0_5px_currentColor]" />}
                                 </div>
-                                <input type="checkbox" checked={product.isNew || false} onChange={(e) => onChange({ ...product, isNew: e.target.checked })} className="hidden" />
+                                <input type="checkbox" checked={product.isNew || false} onChange={(e) => onChange({ ...product, isNew: e.target.checked })} className="sr-only peer" />
                                 <span className="text-xs uppercase tracking-widest text-cream/70 group-hover:text-cream">New Arrival</span>
                             </label>
 
@@ -520,7 +522,7 @@ const EssenceStep: React.FC<{
                                 <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${product.inStock ? 'bg-green-500/20 border-green-500/30' : 'bg-black/40 border-white/10 group-hover:border-white/30'}`}>
                                     {product.inStock && <CheckCircle className="w-3.5 h-3.5 text-green-400 shadow-[0_0_5px_currentColor]" />}
                                 </div>
-                                <input type="checkbox" checked={product.inStock || false} onChange={(e) => onChange({ ...product, inStock: e.target.checked })} className="hidden" />
+                                <input type="checkbox" checked={product.inStock || false} onChange={(e) => onChange({ ...product, inStock: e.target.checked })} className="sr-only peer" />
                                 <span className="text-xs uppercase tracking-widest text-cream/70 group-hover:text-cream">In Stock</span>
                             </label>
                         </div>
@@ -562,7 +564,7 @@ const VisualsStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
         <div className="h-full flex flex-col items-center p-8 animate-fade-in-up">
             <div className="w-full max-w-6xl space-y-8">
                 <div className="flex items-center gap-4 mb-4">
-                    <button onClick={onBack} className="text-cream/40 hover:text-cream p-2 rounded-full hover:bg-white/10 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+                    <button onClick={onBack} aria-label="Go back" className="text-cream/40 hover:text-cream p-2 rounded-full hover:bg-white/10 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                     <div>
                         <h2 className="font-serif text-3xl text-cream drop-shadow-md">Curate Visuals</h2>
                         <p className="text-cream/60 font-light">Upload high-quality imagery to showcase this piece.</p>
@@ -587,10 +589,11 @@ const VisualsStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => v
                         <div key={idx} className="relative aspect-[3/4] bg-black/20 group rounded-[2rem] overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] border border-white/10 hover:border-white/20 hover:-translate-y-2 transition-all duration-300">
                             <div className="absolute inset-0 border border-white/5 mix-blend-overlay pointer-events-none rounded-[2rem] z-20"></div>
                             <img src={img} alt={`Product ${idx}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700" />
-                            <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/60 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
                                 <button
                                     onClick={() => removeImage(idx)}
-                                    className="p-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full hover:bg-red-500/40 hover:text-red-300 transition-colors shadow-lg backdrop-blur-md"
+                                    aria-label={`Delete image ${idx + 1}`}
+                                    className="p-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full hover:bg-red-500/40 hover:text-red-300 transition-colors shadow-lg backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                                 >
                                     <Trash2 className="w-5 h-5" />
                                 </button>
@@ -641,7 +644,7 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
             <div className="w-full md:w-1/2 p-4 md:p-12 border-b md:border-b-0 md:border-r border-white/10 flex flex-col md:h-full bg-transparent relative">
                 <div className="flex items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
-                        <button onClick={onBack} className="text-cream/40 hover:text-cream p-2 rounded-full hover:bg-white/10 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+                        <button onClick={onBack} aria-label="Go back" className="text-cream/40 hover:text-cream p-2 rounded-full hover:bg-white/10 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                         <div>
                             <h2 className="font-serif text-3xl text-cream drop-shadow-md">Craft the Story</h2>
                             <p className="text-cream/60 font-light">Describe the details that make this unique.</p>
@@ -700,7 +703,7 @@ const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => vo
         <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in-up">
             <div className="w-full max-w-5xl space-y-10">
                 <div className="flex items-center gap-4 mb-4 justify-center relative">
-                    <button onClick={onBack} className="text-cream/40 hover:text-cream p-2 rounded-full hover:bg-white/10 transition-colors absolute left-0 md:left-8"><ArrowLeft className="w-6 h-6" /></button>
+                    <button onClick={onBack} aria-label="Go back" className="text-cream/40 hover:text-cream p-2 rounded-full hover:bg-white/10 transition-colors absolute left-0 md:left-8"><ArrowLeft className="w-6 h-6" /></button>
                     <div className="text-center">
                         <h2 className="font-serif text-3xl text-cream drop-shadow-md">Ready to Launch?</h2>
                         <p className="text-cream/60 font-light">Review the final card as it will appear on the site.</p>

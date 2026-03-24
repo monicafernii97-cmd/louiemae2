@@ -168,11 +168,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         }
     };
 
-    // Get subcategories for the currently selected collection
-    const currentCollectionSubcategories = useMemo(() => {
-        const collection = collections.find(c => c.id === targetCollection);
-        return collection?.subcategories || [];
-    }, [collections, targetCollection]);
 
     // Get subcategories for a specific collection (for per-product selection)
     const getSubcategoriesForCollection = (collectionId: string) => {
@@ -898,7 +893,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         e.stopPropagation();
                                                         setPreviewImageIdx(i);
                                                     }}
-                                                    className="absolute inset-0 m-auto w-8 h-8 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-lg text-earth hover:text-bronze"
+                                                    className="absolute inset-0 m-auto w-8 h-8 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-lg text-earth hover:text-bronze"
                                                     title="Preview Image"
                                                 >
                                                     <Search className="w-3.5 h-3.5" />
@@ -1106,7 +1101,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 e.stopPropagation();
                                                                 setPreviewImageIdx(globalIdx);
                                                             }}
-                                                            className="absolute inset-0 m-auto w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-xl text-earth hover:text-bronze"
+                                                            className="absolute inset-0 m-auto w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100 shadow-xl text-earth hover:text-bronze"
                                                             title="Preview Image"
                                                         >
                                                             <Search className="w-5 h-5" />
@@ -1229,10 +1224,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                             <label className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">Your Price ($)</label>
                                                             <input
                                                                 type="number"
-                                                                value={displayPrice}
-                                                                onChange={(e) => {
+                                                                min="0.01"
+                                                                defaultValue={displayPrice}
+                                                                key={`price-${currentProduct.id}-${displayPrice}`}
+                                                                onBlur={(e) => {
                                                                     const value = Number(e.target.value);
-                                                                    updateReviewProduct('customPrice', Number.isFinite(value) ? value : undefined);
+                                                                    updateReviewProduct('customPrice', Number.isFinite(value) && value > 0 ? value : undefined);
                                                                 }}
                                                                 className="w-full p-3 bg-white/60 backdrop-blur-sm border border-white/40 rounded-lg font-serif text-lg text-bronze font-bold focus:bg-white/80 focus:ring-2 ring-bronze/30 shadow-sm transition-all"
                                                             />
@@ -1350,11 +1347,22 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         >
                                                             {/* Variant Image */}
                                                             <div
-                                                                className="w-20 h-20 rounded-2xl border-2 border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:border-bronze shadow-sm"
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                aria-label={`Assign image for ${variant.name}`}
+                                                                className="w-20 h-20 rounded-2xl border-2 border-earth/10 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 relative group/img cursor-pointer hover:border-bronze shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     const pickerKey = `${currentProduct.id}:${variant.id}`;
                                                                     setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
+                                                                }}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        const pickerKey = `${currentProduct.id}:${variant.id}`;
+                                                                        setOpenImagePicker(prev => prev === pickerKey ? null : pickerKey);
+                                                                    }
                                                                 }}
                                                             >
                                                                 {displayImage ? (
@@ -1421,12 +1429,27 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-3">Assign specific image</p>
                                                                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                                                                     {allImages.map((img, imgIdx) => (
-                                                                        <div key={imgIdx} onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
-                                                                            updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
-                                                                            setOpenImagePicker(null);
-                                                                        }} className={`w-16 h-16 flex-shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden hover:opacity-80 transition-all
+                                                                        <div
+                                                                            key={imgIdx}
+                                                                            role="button"
+                                                                            tabIndex={0}
+                                                                            aria-label={`Assign image ${imgIdx + 1} to variant`}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
+                                                                                updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
+                                                                                setOpenImagePicker(null);
+                                                                            }}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
+                                                                                    updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
+                                                                                    setOpenImagePicker(null);
+                                                                                }
+                                                                            }}
+                                                                            className={`w-16 h-16 flex-shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden hover:opacity-80 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50
                                                                             ${allocatedIdx === imgIdx ? 'border-bronze ring-2 ring-transparent shadow-lg' : 'border-earth/10'}`}>
                                                                             <img src={img} alt={`Option ${imgIdx + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
                                                                         </div>

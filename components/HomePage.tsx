@@ -428,9 +428,9 @@ export const HomePage: React.FC = () => {
       {/* Product Modal - Frosted Glass Upgrade */}
       {selectedProduct && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8">
-          <div className="absolute inset-0 backdrop-blur-xl bg-black/50" onClick={() => setSelectedProduct(null)}></div>
+          <div className="absolute inset-0 backdrop-blur-xl motion-reduce:backdrop-blur-none bg-black/50" onClick={() => setSelectedProduct(null)}></div>
 
-          <div className="bg-white/95 backdrop-blur-3xl w-full max-w-5xl h-[90vh] md:h-auto md:max-h-[85vh] rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.3)] relative flex flex-col md:flex-row overflow-hidden animate-fade-in-up border border-white/60">
+          <div className="bg-white/95 backdrop-blur-xl w-full max-w-5xl h-[90vh] md:h-auto md:max-h-[85vh] rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.3)] relative flex flex-col md:flex-row overflow-hidden animate-fade-in-up border border-white/60">
             <button
               onClick={() => setSelectedProduct(null)}
               className="absolute top-4 right-4 z-20 p-2 bg-black/5 hover:bg-black/10 rounded-full transition-colors backdrop-blur-md"

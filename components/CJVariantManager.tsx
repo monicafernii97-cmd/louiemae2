@@ -84,7 +84,11 @@ export const CJVariantManager: React.FC = () => {
         }
     };
 
-    if (!products?.length) {
+    if (products === undefined) {
+        return null; // Still loading
+    }
+
+    if (products.length === 0) {
         return (
             <FadeIn delay={600}>
                 <div className="backdrop-blur-2xl bg-black/40 border border-white/10 rounded-[2rem] p-6 shadow-[0_15px_30px_rgba(0,0,0,0.3)] relative overflow-hidden">
