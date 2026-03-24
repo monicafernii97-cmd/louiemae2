@@ -584,7 +584,7 @@ const EssenceStep: React.FC<{
                                     value={product.price ?? ''}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        onChange({ ...product, price: val === '' ? 0 : Number(val) });
+                                        onChange({ ...product, price: val === '' ? undefined : Number(val) });
                                     }}
                                     min="0"
                                     className="w-full text-3xl font-serif text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)] border-b border-white/10 py-2 pl-8 focus:outline-none focus:border-bronze bg-transparent placeholder:text-cream/10 transition-colors"
