@@ -2243,21 +2243,21 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                 {/* Empty State / Welcome - Moved and Toned Down */}
                 {!isSearching && searchResults.length === 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-60 mt-12">
-                        <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                        <div className="p-8 rounded-2xl border border-bronze/20 bg-white shadow-lg text-center">
                             <Globe className="w-8 h-8 mx-auto mb-3 text-bronze" />
-                            <h4 className="font-serif text-lg text-earth">Global Search</h4>
-                            <p className="text-xs text-earth/60 mt-1">Access millions of products worldwide.</p>
+                            <h4 className="font-serif text-lg text-earth font-medium">Global Search</h4>
+                            <p className="text-sm text-earth/70 mt-1">Access millions of products worldwide.</p>
                         </div>
-                        <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
-                            <Wand2 className="w-8 h-8 mx-auto mb-3 text-purple-600/60" />
-                            <h4 className="font-serif text-lg text-earth">Smart Curation</h4>
-                            <p className="text-xs text-earth/60 mt-1">Enhance descriptions and titles instantly.</p>
+                        <div className="p-8 rounded-2xl border border-purple-200 bg-white shadow-lg text-center">
+                            <Wand2 className="w-8 h-8 mx-auto mb-3 text-purple-600" />
+                            <h4 className="font-serif text-lg text-earth font-medium">Smart Curation</h4>
+                            <p className="text-sm text-earth/70 mt-1">Enhance descriptions and titles instantly.</p>
                         </div>
-                        <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
-                            <DollarSign className="w-8 h-8 mx-auto mb-3 text-green-600/60" />
-                            <h4 className="font-serif text-lg text-earth">Smart Pricing</h4>
-                            <p className="text-xs text-earth/60 mt-1">Automated markups and rounding rules.</p>
+                        <div className="p-8 rounded-2xl border border-green-200 bg-white shadow-lg text-center">
+                            <DollarSign className="w-8 h-8 mx-auto mb-3 text-green-600" />
+                            <h4 className="font-serif text-lg text-earth font-medium">Smart Pricing</h4>
+                            <p className="text-sm text-earth/70 mt-1">Automated markups and rounding rules.</p>
                         </div>
                     </div>
                 )}
