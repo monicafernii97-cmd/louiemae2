@@ -156,9 +156,11 @@ export const CJSettings: React.FC = () => {
 
     // Action Card Component (Refined & Minimalist)
     const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: { icon: React.FC<{ className?: string }>; title: string; description: string; loading: boolean; onClick: () => void; colorClass?: string }) => (
-        <div
-            onClick={loading ? undefined : onClick}
-            className="group relative backdrop-blur-xl bg-black/40 border border-white/10 p-4 md:p-6 shadow-[0_10px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.5)] transition-all duration-500 cursor-pointer overflow-hidden rounded-[2rem] hover:bg-white/5 active:scale-[0.98] md:hover:-translate-y-1"
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={loading}
+            className="group relative backdrop-blur-xl bg-black/40 border border-white/10 p-4 md:p-6 shadow-[0_10px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.5)] transition-all duration-500 cursor-pointer overflow-hidden rounded-[2rem] hover:bg-white/5 active:scale-[0.98] md:hover:-translate-y-1 text-left w-full disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50"
         >
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[2rem]" />
             <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none" />
@@ -182,7 +184,7 @@ export const CJSettings: React.FC = () => {
                     <Loader2 className="w-4 h-4 text-amber-500 animate-spin drop-shadow-[0_0_5px_currentColor]" />
                 </div>
             )}
-        </div>
+        </button>
     );
 
     return (
@@ -358,7 +360,6 @@ export const CJSettings: React.FC = () => {
                                     <div className="space-y-4 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                                         {pendingProducts.map((product) => {
                                             const timeSince = getTimeSinceSubmission(product.cjSubmittedAt);
-                                            const hasNoSourcingId = !product.cjSourcingId;
 
                                             return (
                                                 <div key={product._id} className="group/item bg-white/5 hover:bg-white/10 border border-white/10 p-4 rounded-2xl transition-all duration-300 shadow-inner hover:shadow-[0_5px_15px_rgba(0,0,0,0.3)]">

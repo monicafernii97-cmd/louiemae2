@@ -422,10 +422,10 @@ export const AdminPage: React.FC = () => {
          <div className="min-h-screen bg-gradient-to-br from-cream/30 to-white/10 flex items-center justify-center px-6 relative overflow-hidden font-sans">
             {/* Hyper-glassmorphic Animated Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-               <div className="absolute -top-20 -left-20 w-[800px] h-[800px] bg-bronze/10 rounded-full mix-blend-multiply filter blur-[100px] opacity-80 animate-blob" />
-               <div className="absolute top-40 right-0 w-[600px] h-[600px] bg-sand/20 rounded-full mix-blend-multiply filter blur-[100px] opacity-80 animate-blob animation-delay-2000" />
-               <div className="absolute -bottom-40 left-40 w-[600px] h-[600px] bg-earth/5 rounded-full mix-blend-multiply filter blur-[100px] opacity-80 animate-blob animation-delay-4000" />
-               <div className="absolute inset-0 backdrop-blur-[60px] bg-white/10" />
+               <div className="absolute -top-20 -left-20 w-[800px] h-[800px] bg-bronze/10 rounded-full mix-blend-multiply filter blur-[60px] md:blur-[100px] opacity-80 animate-blob motion-reduce:animate-none" />
+               <div className="absolute top-40 right-0 w-[600px] h-[600px] bg-sand/20 rounded-full mix-blend-multiply filter blur-[60px] md:blur-[100px] opacity-80 animate-blob motion-reduce:animate-none animation-delay-2000" />
+               <div className="absolute -bottom-40 left-40 w-[600px] h-[600px] bg-earth/5 rounded-full mix-blend-multiply filter blur-[60px] md:blur-[100px] opacity-80 animate-blob motion-reduce:animate-none animation-delay-4000" />
+               <div className="absolute inset-0 backdrop-blur-[30px] md:backdrop-blur-[60px] bg-white/10" />
             </div>
 
             <FadeIn className="w-full max-w-lg relative z-20">
@@ -503,10 +503,10 @@ export const AdminPage: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-[#120D09] via-[#1A130E] to-[#0A0705] relative overflow-hidden flex font-sans text-cream selection:bg-bronze/30">
          {/* Hyper-glassmorphic Animated Background (Dark Mode) */}
          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
-            <div className="absolute -top-20 -left-20 w-[1000px] h-[1000px] bg-bronze/10 rounded-full mix-blend-screen filter blur-[120px] opacity-40 animate-blob" />
-            <div className="absolute top-20 right-0 w-[800px] h-[800px] bg-[#3a2a1a]/20 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-blob animation-delay-2000" />
-            <div className="absolute -bottom-40 left-40 w-[800px] h-[800px] bg-[#2d1f12]/20 rounded-full mix-blend-screen filter blur-[120px] opacity-40 animate-blob animation-delay-4000" />
-            <div className="absolute inset-0 backdrop-blur-[100px] bg-black/10" />
+             <div className="absolute -top-20 -left-20 w-[1000px] h-[1000px] bg-bronze/10 rounded-full mix-blend-screen filter blur-[72px] md:blur-[120px] opacity-40 animate-blob motion-reduce:animate-none" />
+             <div className="absolute top-20 right-0 w-[800px] h-[800px] bg-[#3a2a1a]/20 rounded-full mix-blend-screen filter blur-[72px] md:blur-[120px] opacity-30 animate-blob motion-reduce:animate-none animation-delay-2000" />
+             <div className="absolute -bottom-40 left-40 w-[800px] h-[800px] bg-[#2d1f12]/20 rounded-full mix-blend-screen filter blur-[72px] md:blur-[120px] opacity-40 animate-blob motion-reduce:animate-none animation-delay-4000" />
+             <div className="absolute inset-0 backdrop-blur-[40px] md:backdrop-blur-[100px] bg-black/10" />
          </div>
 
          {/* Mobile Top Bar */}
@@ -698,70 +698,38 @@ export const AdminPage: React.FC = () => {
                      </h1>
                   </div>
 
-                  {/* Glass Metric Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-10 md:mb-16">
 
-                     {/* Products Card */}
-                     <div
-                        onClick={() => { setActiveTab('products'); setFilterCollection('all'); setFilterCategory(null); }}
-                        className="group relative bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer overflow-hidden"
-                     >
-                        {/* Glass Highlight Line */}
-                        <div className="absolute inset-0 rounded-[2.5rem] border-[2px] border-white/5 pointer-events-none transition-colors group-hover:border-white/10 mix-blend-overlay" />
-                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right text-white">
-                           <ShoppingBag className="w-24 h-24 rotate-12" />
-                        </div>
+                   {/* Glass Metric Cards */}
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 mb-10 md:mb-16">
+                      {[
+                         { title: 'Active Products', count: products.length, Icon: ShoppingBag, onClick: () => { setActiveTab('products'); setFilterCollection('all'); setFilterCategory(null); } },
+                         { title: 'Collections', count: siteContent.collections.length, Icon: Layers, onClick: () => setActiveTab('structure') },
+                         { title: 'Content Pages', count: 2 + siteContent.customPages.length, Icon: Layout, onClick: () => setActiveTab('pages') },
+                      ].map(({ title, count, Icon, onClick }) => (
+                         <button
+                            key={title}
+                            onClick={onClick}
+                            aria-label={`${count} ${title}`}
+                            className="group relative bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#120D09]"
+                         >
+                            {/* Glass Highlight Line */}
+                            <div className="absolute inset-0 rounded-[2.5rem] border-[2px] border-white/5 pointer-events-none transition-colors group-hover:border-white/10 mix-blend-overlay" />
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right text-white">
+                               <Icon className="w-24 h-24 rotate-12" />
+                            </div>
 
-                        <div className="relative z-10">
-                           <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-black/60 transition-all duration-500 border border-white/10">
-                              <ShoppingBag className="w-7 h-7 text-bronze drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
-                           </div>
-                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{products.length}</h3>
-                           <p className="text-xs uppercase tracking-[0.2em] text-cream/60 font-medium">Active Products</p>
-                        </div>
-                     </div>
-
-                     {/* Collections Card */}
-                     <div
-                        onClick={() => setActiveTab('structure')}
-                        className="group relative bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer overflow-hidden"
-                     >
-                        <div className="absolute inset-0 rounded-[2.5rem] border-[2px] border-white/5 pointer-events-none transition-colors group-hover:border-white/10 mix-blend-overlay" />
-                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right text-white">
-                           <Layers className="w-24 h-24 rotate-12" />
-                        </div>
-
-                        <div className="relative z-10">
-                           <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-black/60 transition-all duration-500 border border-white/10">
-                              <Layers className="w-7 h-7 text-bronze drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
-                           </div>
-                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{siteContent.collections.length}</h3>
-                           <p className="text-xs uppercase tracking-[0.2em] text-cream/60 font-medium">Collections</p>
-                        </div>
-                     </div>
-
-                     {/* Pages Card */}
-                     <div
-                        onClick={() => setActiveTab('pages')}
-                        className="group relative bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer overflow-hidden"
-                     >
-                        <div className="absolute inset-0 rounded-[2.5rem] border-[2px] border-white/5 pointer-events-none transition-colors group-hover:border-white/10 mix-blend-overlay" />
-                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right text-white">
-                           <Layout className="w-24 h-24 rotate-12" />
-                        </div>
-
-                        <div className="relative z-10">
-                           <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-black/60 transition-all duration-500 border border-white/10">
-                              <Layout className="w-7 h-7 text-bronze drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
-                           </div>
-                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{2 + siteContent.customPages.length}</h3>
-                           <p className="text-xs uppercase tracking-[0.2em] text-cream/60 font-medium">Content Pages</p>
-                        </div>
-                     </div>
-                  </div>
+                            <div className="relative z-10">
+                               <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-black/60 transition-all duration-500 border border-white/10">
+                                  <Icon className="w-7 h-7 text-bronze drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
+                               </div>
+                               <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{count}</h3>
+                               <p className="text-xs uppercase tracking-[0.2em] text-cream/60 font-medium">{title}</p>
+                            </div>
+                         </button>
+                      ))}</div>
 
                   {/* Quick Actions Row */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                      <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-white/5 backdrop-blur-2xl text-cream border border-white/10 rounded-[2rem] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:bg-white/10 hover:border-bronze/40 transition-all duration-500 hover:-translate-y-1">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative z-10 flex flex-col items-center text-center gap-4">
@@ -1190,22 +1158,24 @@ export const AdminPage: React.FC = () => {
                      </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-                     <div onClick={() => setActivePageEditor('home')} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative">
+                     <button onClick={() => setActivePageEditor('home')} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50">
                         <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-[2rem] group-hover:border-white/10 mix-blend-overlay" />
                         <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/10 group-hover:bg-black/60 group-hover:scale-110 transition-all duration-500 z-10"><Home className="w-8 h-8 text-bronze drop-shadow-sm group-hover:text-amber-400 transition-colors" /></div>
                         <h3 className="font-serif text-2xl text-cream mb-2 drop-shadow-sm z-10">Home Page</h3>
-                     </div>
-                     <div onClick={() => setActivePageEditor('story')} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative">
+                     </button>
+                     <button onClick={() => setActivePageEditor('story')} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50">
                         <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-[2rem] group-hover:border-white/10 mix-blend-overlay" />
                         <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/10 group-hover:bg-black/60 group-hover:scale-110 transition-all duration-500 z-10"><BookOpen className="w-8 h-8 text-bronze drop-shadow-sm group-hover:text-amber-400 transition-colors" /></div>
                         <h3 className="font-serif text-2xl text-cream mb-2 drop-shadow-sm z-10">Our Story</h3>
-                     </div>
+                     </button>
                      {siteContent.customPages.map(page => (
-                        <div key={page.id} onClick={() => setActivePageEditor(page.id)} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative">
-                           <div className="absolute top-4 right-4 z-20"><button onClick={(e) => { e.stopPropagation(); handleDeleteCustomPage(page.id); }} className="p-2 hover:bg-red-500/20 text-cream/30 hover:text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button></div>
-                           <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-[2rem] group-hover:border-white/10 mix-blend-overlay" />
-                           <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/10 group-hover:bg-black/60 group-hover:scale-110 transition-all duration-500 z-10"><FileText className="w-8 h-8 text-bronze drop-shadow-sm group-hover:text-amber-400 transition-colors" /></div>
-                           <h3 className="font-serif text-2xl text-cream mb-2 drop-shadow-sm z-10">{page.title}</h3>
+                        <div key={page.id} className="relative">
+                           <div className="absolute top-4 right-4 z-20"><button onClick={(e) => { e.stopPropagation(); handleDeleteCustomPage(page.id); }} className="p-2 hover:bg-red-500/20 text-cream/30 hover:text-red-400 rounded-full transition-colors" aria-label={`Delete ${page.title}`}><Trash2 className="w-4 h-4" /></button></div>
+                           <button onClick={() => setActivePageEditor(page.id)} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50">
+                              <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-[2rem] group-hover:border-white/10 mix-blend-overlay" />
+                              <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/10 group-hover:bg-black/60 group-hover:scale-110 transition-all duration-500 z-10"><FileText className="w-8 h-8 text-bronze drop-shadow-sm group-hover:text-amber-400 transition-colors" /></div>
+                              <h3 className="font-serif text-2xl text-cream mb-2 drop-shadow-sm z-10">{page.title}</h3>
+                           </button>
                         </div>
                      ))}
                   </div>

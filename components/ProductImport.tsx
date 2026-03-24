@@ -855,6 +855,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         return (
                                             <div
                                                 key={i}
+                                                role="button"
+                                                tabIndex={0}
+                                                aria-pressed={isSelected}
                                                 // Make the whole card toggle selection
                                                 onClick={() => {
                                                     const currentSelected = currentProduct.selectedImages ||
@@ -866,7 +869,20 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         updateReviewProduct('selectedImages', newSelected);
                                                     }
                                                 }}
-                                                className={`aspect-square rounded-lg border-2 overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault();
+                                                        const currentSelected = currentProduct.selectedImages ||
+                                                            (currentProduct.images || []).map((_, idx) => idx);
+                                                        const newSelected = isSelected
+                                                            ? currentSelected.filter(idx => idx !== i)
+                                                            : [...currentSelected, i].sort((a, b) => a - b);
+                                                        if (newSelected.length > 0) {
+                                                            updateReviewProduct('selectedImages', newSelected);
+                                                        }
+                                                    }
+                                                }}
+                                                className={`aspect-square rounded-lg border-2 overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50
                                                     ${isPreviewing ? 'ring-2 ring-bronze/30 shadow-md' : ''}
                                                     ${isSelected ? 'border-green-500 shadow-[0_4px_12px_rgba(34,197,94,0.15)]' : 'border-white/40 opacity-50 hover:opacity-100 hover:border-earth/20'}`}
                                             >
@@ -900,9 +916,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     })}
 
                                     {/* Upload Image Button */}
-                                    <div
+                                    <button
+                                        type="button"
                                         onClick={() => !isUploadingImage && imageUploadRef.current?.click()}
-                                        className="aspect-square rounded-lg border-2 border-dashed border-earth/20 bg-white/30 backdrop-blur-sm cursor-pointer hover:border-bronze/40 hover:bg-white/50 transition-all duration-300 flex flex-col items-center justify-center gap-1.5 shadow-inner"
+                                        disabled={isUploadingImage}
+                                        aria-label="Upload image"
+                                        className="aspect-square rounded-lg border-2 border-dashed border-earth/20 bg-white/30 backdrop-blur-sm cursor-pointer hover:border-bronze/40 hover:bg-white/50 transition-all duration-300 flex flex-col items-center justify-center gap-1.5 shadow-inner disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50"
                                     >
                                         {isUploadingImage ? (
                                             <Loader2 className="w-5 h-5 text-bronze animate-spin" />
@@ -912,7 +931,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 <span className="text-[10px] uppercase tracking-[0.2em] text-earth/50 font-bold">Upload</span>
                                             </>
                                         )}
-                                    </div>
+                                    </button>
                                     <input
                                         ref={imageUploadRef}
                                         type="file"
@@ -1046,7 +1065,27 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 return (
                                                     <div
                                                         key={`mktg-${idx}`}
-                                                        className={`aspect-square rounded-[1.5rem] border-[3px] overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        aria-pressed={isSelected}
+                                                        onClick={() => {
+                                                            const currentSelected = currentProduct.selectedImages || (currentProduct.images || []).map((_, i) => i);
+                                                            const newSelected = isSelected
+                                                                ? currentSelected.filter(id => id !== globalIdx)
+                                                                : [...currentSelected, globalIdx].sort((a, b) => a - b);
+                                                            updateReviewProduct('selectedImages', newSelected);
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                                e.preventDefault();
+                                                                const currentSelected = currentProduct.selectedImages || (currentProduct.images || []).map((_, i) => i);
+                                                                const newSelected = isSelected
+                                                                    ? currentSelected.filter(id => id !== globalIdx)
+                                                                    : [...currentSelected, globalIdx].sort((a, b) => a - b);
+                                                                updateReviewProduct('selectedImages', newSelected);
+                                                            }
+                                                        }}
+                                                        className={`aspect-square rounded-[1.5rem] border-[3px] overflow-hidden bg-white/50 cursor-pointer transition-all duration-300 relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50
                                                             ${isPreviewing ? 'ring-4 ring-bronze/30 shadow-lg' : ''}
                                                             ${isSelected ? 'border-green-500 shadow-[0_10px_20px_rgba(34,197,94,0.2)]' : 'border-white/40 opacity-50 hover:opacity-100 hover:border-earth/20'}`}
                                                     >
@@ -1299,14 +1338,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 ? 'bg-white border-green-500 shadow-lg'
                                                                 : 'bg-white/30 border-white/40 opacity-60 hover:opacity-100 hover:border-earth/20'}`}
                                                     >
-                                                        <div
+                                                        <button
+                                                            type="button"
                                                             onClick={() => {
                                                                 const allIds = currentProduct.variants!.map(v => v.id);
                                                                 const currentSelected = currentProduct.selectedVariants || allIds;
                                                                 const newSelected = isSelected ? currentSelected.filter(id => id !== variant.id) : [...currentSelected, variant.id];
                                                                 updateReviewProduct('selectedVariants', newSelected);
                                                             }}
-                                                            className="flex items-center gap-4 p-5 cursor-pointer"
+                                                            className="flex items-center gap-4 p-5 cursor-pointer w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bronze/50"
                                                         >
                                                             {/* Variant Image */}
                                                             <div
@@ -1374,7 +1414,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 ${isSelected ? 'bg-green-500 text-white scale-100' : 'bg-white border-2 border-earth/20 text-transparent scale-90'}`}>
                                                                 <Check className="w-5 h-5" />
                                                             </div>
-                                                        </div>
+                                                        </button>
                                                         
                                                         {openImagePicker === `${currentProduct.id}:${variant.id}` && (
                                                             <div className="border-t-2 border-earth/5 p-4 bg-white/95">

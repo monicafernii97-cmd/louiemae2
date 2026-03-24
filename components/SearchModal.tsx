@@ -66,18 +66,20 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onPro
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex flex-col backdrop-blur-3xl bg-gradient-to-br from-[#3a2a1a]/95 via-[#2d1f12]/95 to-[#1a130a]/95">
+        <div className="fixed inset-0 z-[60] flex flex-col backdrop-blur-3xl bg-gradient-to-br from-[#3a2a1a]/95 via-[#2d1f12]/95 to-[#1a130a]/95" role="dialog" aria-modal="true" aria-labelledby="search-modal-title">
             {/* Inner Sheen */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
             
             {/* Header */}
             <div className="flex justify-between items-center px-6 py-6 md:px-12 border-b border-white/10 relative z-10">
                 <div className="flex flex-col drop-shadow-md">
-                    <span className="font-serif text-3xl text-cream italic tracking-tight">Search</span>
+                    <span id="search-modal-title" className="font-serif text-3xl text-cream italic tracking-tight">Search</span>
                     <span className="text-[0.55rem] uppercase tracking-[0.3em] text-bronze">Find Products</span>
                 </div>
                 <button
+                    type="button"
                     onClick={onClose}
+                    aria-label="Close search"
                     className="group relative w-10 h-10 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/40 transition-all duration-300 shadow-lg"
                 >
                     <X className="w-5 h-5 text-cream group-hover:rotate-90 transition-transform duration-500" />
