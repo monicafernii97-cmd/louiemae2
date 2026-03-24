@@ -380,13 +380,15 @@ const EssenceStep: React.FC<{
                             </div>
                             <div>
                                 <h3 className="font-serif text-2xl text-cream drop-shadow-sm">Quick Start</h3>
-                                <p className="text-cream/60 font-light text-sm">Paste a URL to auto-fill details from any website.</p>
+                                <p className="text-cream/60 font-light text-sm">Paste a URL to auto-fill details from supported storefronts.</p>
                             </div>
                         </div>
 
                         <div className="flex gap-4 items-start">
                             <div className="flex-1 relative">
+                                <label htmlFor="product-import-url" className="sr-only">Product URL</label>
                                 <input
+                                    id="product-import-url"
                                     type="text"
                                     value={importUrl}
                                     onChange={(e) => setImportUrl(e.target.value)}
@@ -451,7 +453,7 @@ const EssenceStep: React.FC<{
 
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <label className="text-xs uppercase tracking-widest text-cream/40 glow-text">Product Name</label>
+                                <label htmlFor="product-name" className="text-xs uppercase tracking-widest text-cream/40 glow-text">Product Name</label>
                                 <button
                                     onClick={handleGenerateName}
                                     disabled={isGeneratingName}
@@ -462,6 +464,7 @@ const EssenceStep: React.FC<{
                                 </button>
                             </div>
                             <input
+                                id="product-name"
                                 type="text"
                                 value={product.name}
                                 onChange={(e) => onChange({ ...product, name: e.target.value })}
@@ -489,7 +492,7 @@ const EssenceStep: React.FC<{
                     <div className="space-y-8 bg-white/5 backdrop-blur-2xl p-8 rounded-[2rem] border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.2)]">
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <label className="text-xs uppercase tracking-widest text-cream/40 glow-text">Category</label>
+                                <label htmlFor="product-category" className="text-xs uppercase tracking-widest text-cream/40 glow-text">Category</label>
                                 <button
                                     onClick={handleAutoCategorize}
                                     disabled={isCategorizing || !product.name}
@@ -500,6 +503,7 @@ const EssenceStep: React.FC<{
                                 </button>
                             </div>
                             <select
+                                id="product-category"
                                 value={product.category || ''}
                                 onChange={(e) => onChange({ ...product, category: e.target.value })}
                                 className="w-full text-lg text-cream/80 border-b border-white/10 py-3 focus:outline-none focus:border-bronze bg-transparent transition-colors cursor-pointer appearance-none"
@@ -516,10 +520,11 @@ const EssenceStep: React.FC<{
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest text-cream/40 glow-text">Price</label>
+                            <label htmlFor="product-price" className="text-xs uppercase tracking-widest text-cream/40 glow-text">Price</label>
                             <div className="relative">
                                 <DollarSign className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 text-cream/20" />
                                 <input
+                                    id="product-price"
                                     type="number"
                                     value={product.price}
                                     onChange={(e) => onChange({ ...product, price: Number(e.target.value) })}
@@ -681,7 +686,9 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
                 </div>
 
                 <div className="flex-1 relative bg-black/20 rounded-2xl backdrop-blur-xl border border-white/5 shadow-inner">
+                    <label htmlFor="product-description" className="sr-only">Description</label>
                     <textarea
+                        id="product-description"
                         value={product.description}
                         onChange={(e) => onChange({ ...product, description: e.target.value })}
                         placeholder="Start writing..."
