@@ -6,7 +6,7 @@ import { useSite } from '../contexts/BlogContext';
 import { RichTextEditor } from './RichTextEditor';
 import { useNewsletter } from '../contexts/NewsletterContext';
 import { FadeIn } from './FadeIn';
-import { Plus, Edit3, Trash2, LogOut, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Sparkles, Loader2, FileText, ShoppingBag, Tag, ChevronDown, Layers, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, BarChart2, Package, Lock, ChevronLeft } from 'lucide-react';
+import { Plus, Edit3, Trash2, LogOut, X, Image as ImageIcon, Layout, ArrowLeft, PenTool, BookOpen, Home, Settings, Wand2 as WandIcon, Loader2, FileText, ShoppingBag, Tag, ChevronDown, Layers, Menu, Upload, Grid, Maximize, Type, Mail, Users, Send, BarChart2, Package, Lock, ChevronLeft } from 'lucide-react';
 import { BlogPost, CustomPage, PageSection, Product, CollectionType, CollectionConfig, EmailCampaign } from '../types';
 import { generatePageStructure } from '../services/geminiService';
 import { AdminOrders } from './AdminOrders';
@@ -1186,7 +1186,7 @@ export const AdminPage: React.FC = () => {
                   <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-white/10 pb-4 md:pb-6">
                      <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block glow-text">Site Design</span><h1 className="font-serif text-2xl md:text-4xl text-cream drop-shadow-md">Select Page to Edit</h1></div>
                      <button onClick={() => setShowPageGenerator(true)} className="bg-white/10 text-cream border border-white/20 px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 transition-all shadow-[0_4px_15px_rgba(0,0,0,0.3)] flex items-center gap-2 rounded-lg backdrop-blur-md">
-                        <Sparkles className="w-3 h-3 text-bronze" /> AI New Page
+                        <WandIcon className="w-3 h-3 text-bronze" /> Smart New Page
                      </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
@@ -1214,7 +1214,7 @@ export const AdminPage: React.FC = () => {
 
             {/* Existing AI Page Generator Modal */}
             {showPageGenerator && (
-               <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6"><div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-2xl relative animate-fade-in-up"><button onClick={() => setShowPageGenerator(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button><div className="text-center mb-8"><h2 className="font-serif text-2xl text-earth">Design AI Concierge</h2></div><div className="space-y-6"><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Page Title</label><input type="text" value={generatorPrompt.title} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, title: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none rounded-lg" /></div><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Description</label><textarea value={generatorPrompt.description} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, description: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none h-32 rounded-lg" /></div><button onClick={handleGeneratePage} disabled={isGenerating} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors flex items-center justify-center gap-2 disabled:opacity-70 rounded-lg">{isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}{isGenerating ? 'Designing...' : 'Generate Page'}</button></div></div></div>
+               <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6"><div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-2xl relative animate-fade-in-up"><button onClick={() => setShowPageGenerator(false)} className="absolute top-4 right-4 text-earth/30 hover:text-earth"><X className="w-5 h-5" /></button><div className="text-center mb-8"><h2 className="font-serif text-2xl text-earth">Design Concierge</h2></div><div className="space-y-6"><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Page Title</label><input type="text" value={generatorPrompt.title} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, title: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none rounded-lg" /></div><div><label className="block text-[10px] uppercase tracking-widest text-earth/40 mb-2">Description</label><textarea value={generatorPrompt.description} onChange={(e) => setGeneratorPrompt({ ...generatorPrompt, description: e.target.value })} className="w-full p-3 border border-earth/10 bg-cream/20 text-earth focus:border-bronze focus:outline-none h-32 rounded-lg" /></div><button onClick={handleGeneratePage} disabled={isGenerating} className="w-full bg-earth text-cream py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors flex items-center justify-center gap-2 disabled:opacity-70 rounded-lg">{isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandIcon className="w-4 h-4" />}{isGenerating ? 'Designing...' : 'Generate Page'}</button></div></div></div>
             )}
 
             {/* --- UNIFIED PAGE EDITOR (Home or Custom) --- */}
@@ -1857,14 +1857,14 @@ ${plainText.slice(0, 3000)}`,
                                     {excerptGenerating ? (
                                        <><Loader2 className="w-3 h-3 animate-spin" /> Generating...</>
                                     ) : (
-                                       <><Sparkles className="w-3 h-3" /> Generate Excerpts</>
+                                       <><WandIcon className="w-3 h-3" /> Generate Excerpts</>
                                     )}
                                  </button>
                               )}
                            </div>
                            <textarea value={editingPost.excerpt} onChange={(e) => setEditingPost({ ...editingPost, excerpt: e.target.value })} className="w-full bg-cream/30 p-3 border border-earth/10 h-24" />
 
-                           {/* AI Excerpt Options */}
+                           {/* Smart Excerpt Options */}
                            {excerptOptions.length > 0 && (
                               <div className="mt-3 space-y-2">
                                  <p className="text-[9px] uppercase tracking-widest text-earth/30 mb-2">Choose an excerpt:</p>

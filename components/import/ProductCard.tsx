@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Sparkles, ExternalLink, Check } from 'lucide-react';
+import { Star, Wand2, ExternalLink, Check } from 'lucide-react';
 import { AliExpressProduct } from '../../services/aliexpressService';
 import { CollectionType } from '../../types';
 import { FadeIn } from '../FadeIn';
@@ -59,9 +59,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         <button
                             onClick={(e) => { e.stopPropagation(); enhanceProductWithAI(product.id); }}
                             className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-purple-600 hover:text-purple-700 shadow-md hover:scale-110 transition-transform"
-                            title="AI Enhance"
+                            title="Smart Enhance"
                         >
-                            <Sparkles className="w-5 h-5" />
+                            <Wand2 className="w-5 h-5" />
                         </button>
                         {product.productUrl && (
                             <a

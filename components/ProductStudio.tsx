@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Wand2, Send, ChevronRight, Layout, Type, Image as ImageIcon, CheckCircle, Clock, AlertCircle, ArrowLeft, Eye, Smartphone, Monitor, Loader2, Grid, Upload, Trash2, Box, Tag, DollarSign, Shirt } from 'lucide-react';
+import { X, Wand2, Send, ChevronRight, Layout, Type, Image as ImageIcon, CheckCircle, Clock, AlertCircle, ArrowLeft, Eye, Smartphone, Monitor, Loader2, Grid, Upload, Trash2, Box, Tag, DollarSign, Shirt } from 'lucide-react';
 import { Product, SiteContent } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, suggestProductCategory } from '../services/geminiService';
 import { FadeIn } from './FadeIn';
@@ -356,7 +356,7 @@ const EssenceStep: React.FC<{
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="p-2 bg-gradient-to-br from-bronze/20 to-bronze/5 border border-bronze/30 rounded-xl text-amber-400 shadow-[0_0_15px_rgba(193,154,107,0.3)]">
-                                <Sparkles className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" />
+                                <Wand2 className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" />
                             </div>
                             <div>
                                 <h3 className="font-serif text-2xl text-cream drop-shadow-sm">Quick Start</h3>
@@ -392,7 +392,7 @@ const EssenceStep: React.FC<{
                                 </div>
                                 <input type="checkbox" checked={autoEnhance} onChange={(e) => setAutoEnhance(e.target.checked)} className="hidden" />
                                 <span className={`text-xs font-medium tracking-wide transition-colors ${autoEnhance ? 'text-amber-400 drop-shadow-sm' : 'text-cream/40'}`}>
-                                    Auto-Enhance with AI
+                                    Auto-Enhance
                                 </span>
                             </label>
                             <span className="text-[10px] text-cream/30">(Writes descriptions for you)</span>
@@ -436,7 +436,7 @@ const EssenceStep: React.FC<{
                                     disabled={isGeneratingName}
                                     className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-bronze hover:text-amber-400 transition-colors disabled:opacity-50"
                                 >
-                                    {isGeneratingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                    {isGeneratingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                                     Suggest Names
                                 </button>
                             </div>
@@ -653,7 +653,7 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
                         disabled={isGenerating || !product.name}
                         className="flex items-center gap-2 bg-bronze/20 border border-bronze/30 text-amber-400 px-4 py-2 rounded-xl text-xs uppercase tracking-widest hover:bg-bronze hover:text-white transition-all disabled:opacity-50 shadow-[0_0_15px_rgba(193,154,107,0.2)] shrink-0"
                     >
-                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                         Generate
                     </button>
                 </div>

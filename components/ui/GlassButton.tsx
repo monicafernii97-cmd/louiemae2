@@ -38,16 +38,16 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 "uppercase tracking-[0.2em] font-light",
 
                 // Glass Effect Base (Clear Glass)
-                "border shadow-lg backdrop-blur-xl", // Restored strong backdrop blur
+                "border shadow-lg", // No backdrop-blur on primary to avoid frosted look
 
                 // Hover Transformation
-                "hover:-translate-y-1 hover:shadow-2xl active:scale-95",
+                "hover:scale-[1.03] hover:shadow-xl active:scale-95",
 
                 // Variants
                 variant === "primary" && [
-                    "bg-white/10 text-earth border-white/60", // Radiant clear glass
-                    "shadow-[0_15px_30px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.4)]",
-                    "hover:bg-white/30 hover:border-bronze/50 hover:text-bronze",
+                    "bg-earth/20 text-white border-white/30", // Tinted glass + stronger border
+                    "bg-gradient-to-b from-white/10 to-transparent", // Glossy reflection
+                    "hover:bg-earth/30 hover:border-white/50",
                 ],
 
                 variant === "secondary" && [

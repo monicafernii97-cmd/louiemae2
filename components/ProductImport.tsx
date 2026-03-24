@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Sparkles, Filter, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Filter, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
@@ -1122,7 +1122,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     disabled={currentProduct.isEnhancing}
                                                     className="text-[10px] uppercase tracking-widest text-purple-600 flex items-center gap-1 hover:text-purple-700 font-bold disabled:opacity-50"
                                                 >
-                                                    <Wand2 className="w-3 h-3" /> AI Name
+                                                    <Wand2 className="w-3 h-3" /> Smart Name
                                                 </button>
                                             </div>
                                             <input
@@ -1242,7 +1242,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                     disabled={currentProduct.isEnhancing}
                                                     className="text-[10px] uppercase tracking-widest text-purple-600 flex items-center gap-1 hover:text-purple-700 font-bold disabled:opacity-50"
                                                 >
-                                                    <Wand2 className="w-3 h-3" /> AI Description
+                                                    <Wand2 className="w-3 h-3" /> Smart Description
                                                 </button>
                                             </div>
                                             <textarea
@@ -1982,8 +1982,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 }
             `}</style>
 
-            {/* Background Ambience - Slightly darker for contrast */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#F9F7F2]/30">
+            {/* Background Ambience */}
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
                 <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-bronze/10 to-transparent rounded-full blur-[100px] opacity-40 animate-float" />
                 <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-earth/10 to-transparent rounded-full blur-[80px] opacity-30 animate-float-delay" />
             </div>
@@ -2023,7 +2023,6 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 <div className={`absolute top-0.5 bottom-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${autoEnhanceAi ? 'left-4.5' : 'left-0.5'}`} />
                                             </div>
                                             <span className={`text-[10px] uppercase tracking-widest font-bold transition-colors ${autoEnhanceAi ? 'text-purple-600' : 'text-earth/40 group-hover:text-earth/60'}`}>
-                                                <Sparkles className="w-3 h-3 inline mr-1" />
                                                 Auto-Enhance
                                             </span>
                                             <input
@@ -2189,7 +2188,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white hover:text-purple-600 transition-colors disabled:opacity-20"
                                     title="Auto-Enhance Selected"
                                 >
-                                    <Sparkles className="w-4 h-4" />
+                                    <Wand2 className="w-4 h-4" />
                                 </button>
 
                                 <button
@@ -2251,8 +2250,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             <p className="text-xs text-earth/60 mt-1">Access millions of products worldwide.</p>
                         </div>
                         <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
-                            <Sparkles className="w-8 h-8 mx-auto mb-3 text-purple-600/60" />
-                            <h4 className="font-serif text-lg text-earth">AI Curation</h4>
+                            <Wand2 className="w-8 h-8 mx-auto mb-3 text-purple-600/60" />
+                            <h4 className="font-serif text-lg text-earth">Smart Curation</h4>
                             <p className="text-xs text-earth/60 mt-1">Enhance descriptions and titles instantly.</p>
                         </div>
                         <div className="p-6 rounded-2xl border border-earth/10 bg-white/30 text-center">
