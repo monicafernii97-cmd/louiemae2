@@ -375,7 +375,7 @@ const EssenceStep: React.FC<{
 
         } catch (err) {
             console.error(err);
-            toast.error("Failed to import URL");
+            toast.error(err instanceof Error ? err.message : 'Failed to import URL');
         } finally {
             setIsImporting(false);
         }
@@ -384,29 +384,39 @@ const EssenceStep: React.FC<{
     const handleGenerateName = async () => {
         setIsGeneratingName(true);
         setNameSuggestions([]);
-        const collectionName = collections.find(c => c.id === product.collection)?.title || product.collection || 'Furniture';
+        try {
+            const collectionName = collections.find(c => c.id === product.collection)?.title || product.collection || 'Furniture';
 
-        // Call the service - generateProductName returns a single name string, let's get multiple suggestions
-        const context: ProductContext = {
-            originalName: product.name || '',
-            originalDescription: product.description || '',
-            category: product.category || '',
-            collection: collectionName,
-        };
-        const name = await generateProductNameV2(context);
-
-        setNameSuggestions([name]);
-        setIsGeneratingName(false);
+            const context: ProductContext = {
+                originalName: product.name || '',
+                originalDescription: product.description || '',
+                category: product.category || '',
+                collection: collectionName,
+            };
+            const name = await generateProductNameV2(context);
+            setNameSuggestions([name]);
+        } catch (err) {
+            console.error('Name generation failed:', err);
+            toast.error('Failed to generate name suggestions');
+        } finally {
+            setIsGeneratingName(false);
+        }
     };
 
     const handleAutoCategorize = async () => {
         if (!product.name) return;
         setIsCategorizing(true);
-        const category = await suggestProductCategory(product.name, product.description || '');
-        if (category) {
-            onChange({ ...product, category });
+        try {
+            const category = await suggestProductCategory(product.name, product.description || '');
+            if (category) {
+                onChange({ ...product, category });
+            }
+        } catch (err) {
+            console.error('Auto-categorize failed:', err);
+            toast.error('Failed to detect category');
+        } finally {
+            setIsCategorizing(false);
         }
-        setIsCategorizing(false);
     };
 
     return (
@@ -571,8 +581,12 @@ const EssenceStep: React.FC<{
                                 <input
                                     id="product-price"
                                     type="number"
-                                    value={product.price}
-                                    onChange={(e) => onChange({ ...product, price: Number(e.target.value) })}
+                                    value={product.price ?? ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        onChange({ ...product, price: val === '' ? 0 : Number(val) });
+                                    }}
+                                    min="0"
                                     className="w-full text-3xl font-serif text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)] border-b border-white/10 py-2 pl-8 focus:outline-none focus:border-bronze bg-transparent placeholder:text-cream/10 transition-colors"
                                 />
                             </div>
