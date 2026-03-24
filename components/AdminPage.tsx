@@ -500,7 +500,7 @@ export const AdminPage: React.FC = () => {
 
    // --- MAIN ADMIN INTERFACE ---
    return (
-      <div className="min-h-screen bg-gradient-to-br from-cream/20 to-white/5 relative overflow-hidden font-sans text-earth selection:bg-bronze/20">
+      <div className="min-h-screen bg-gradient-to-br from-cream/20 to-white/5 relative overflow-hidden flex font-sans text-earth selection:bg-bronze/20">
          {/* Hyper-glassmorphic Animated Background */}
          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
             <div className="absolute -top-20 -left-20 w-[1000px] h-[1000px] bg-bronze/10 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob" />
@@ -527,7 +527,7 @@ export const AdminPage: React.FC = () => {
          )}
 
          {/* Glassmorphic Sidebar */}
-         <aside className={`w-72 fixed h-[96vh] top-[2vh] left-4 z-[200] flex flex-col rounded-[2rem] overflow-hidden border border-bronze/30 shadow-[0_40px_100px_rgba(139,90,43,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-3xl bg-gradient-to-b from-[#3a2a1a]/90 via-[#2d1f12]/85 to-[#1a130a]/90 text-cream transition-all duration-500 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} md:translate-x-0 relative`}>
+         <aside className={`w-72 fixed h-[96vh] top-[2vh] left-4 z-[200] flex flex-col rounded-[2rem] overflow-hidden border border-bronze/30 shadow-[0_40px_100px_rgba(139,90,43,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-3xl bg-gradient-to-b from-[#3a2a1a]/90 via-[#2d1f12]/85 to-[#1a130a]/90 text-cream transition-all duration-500 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} md:translate-x-0`}>
             {/* Glossy sheen overlay */}
             <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-white/10 via-transparent to-bronze/5 pointer-events-none" />
             {/* Inner Glass Highlight */}
@@ -684,7 +684,7 @@ export const AdminPage: React.FC = () => {
          </aside>
 
          {/* Main Content Area */}
-         <main className="ml-0 md:ml-[19.5rem] p-4 md:px-6 md:py-6 pt-24 md:pt-6 h-screen overflow-y-auto no-scrollbar relative">
+         <main className="ml-0 md:ml-[19.5rem] flex-1 p-4 md:px-6 md:py-6 pt-24 md:pt-6 min-h-screen overflow-y-auto no-scrollbar relative">
 
             {/* DASHBOARD VIEW */}
             {activeTab === 'dashboard' && (
