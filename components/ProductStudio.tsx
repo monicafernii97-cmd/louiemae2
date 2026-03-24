@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Wand2, Send, ChevronRight, Layout, Type, Image as ImageIcon, CheckCircle, Clock, AlertCircle, ArrowLeft, Eye, Smartphone, Monitor, Loader2, Grid, Upload, Trash2, Box, Tag, DollarSign, Shirt } from 'lucide-react';
 import { Product, SiteContent } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, suggestProductCategory } from '../services/geminiService';
@@ -35,6 +35,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
 
     // Reset when opening with new product
     const wasOpenRef = useRef(false);
+    const previousFocusRef = useRef<HTMLElement | null>(null);
     useEffect(() => {
         if (isOpen && !wasOpenRef.current) {
             setProduct({
@@ -49,9 +50,52 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                 ...initialProduct
             });
             setStep('essence');
+            setIsSaving(false);
+            previousFocusRef.current = document.activeElement as HTMLElement;
+        }
+        if (!isOpen && wasOpenRef.current && previousFocusRef.current) {
+            previousFocusRef.current.focus();
+            previousFocusRef.current = null;
         }
         wasOpenRef.current = isOpen;
     }, [isOpen, initialProduct]);
+
+    // Focus trap + Escape handler
+    const dialogRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!isOpen) return;
+        // Focus the dialog on open
+        const timer = setTimeout(() => dialogRef.current?.focus(), 50);
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+                return;
+            }
+            if (e.key === 'Tab' && dialogRef.current) {
+                const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+                    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                );
+                if (focusable.length === 0) return;
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, onClose]);
 
     // Shared save handler — prevents duplicate concurrent saves
     const handleSave = async () => {
@@ -73,7 +117,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-0 md:p-6 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="product-studio-title">
+        <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-0 md:p-6 animate-fade-in outline-none" role="dialog" aria-modal="true" aria-labelledby="product-studio-title">
             {/* Centered Modal Container */}
             <div className="w-full h-full md:h-auto md:max-w-6xl md:max-h-[90vh] bg-gradient-to-br from-[#120D09] to-[#0A0705] md:rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden relative border border-white/10 animate-fade-in-up">
                 
