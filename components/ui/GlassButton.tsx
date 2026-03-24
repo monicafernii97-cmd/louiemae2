@@ -38,28 +38,28 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 "uppercase tracking-[0.2em] font-light",
 
                 // Glass Effect Base (Clear Glass)
-                "border shadow-lg", // Removed backdrop-blur-md per user request
+                "border shadow-lg backdrop-blur-xl", // Restored strong backdrop blur
 
                 // Hover Transformation
-                "hover:scale-[1.03] hover:shadow-xl active:scale-95",
+                "hover:-translate-y-1 hover:shadow-2xl active:scale-95",
 
                 // Variants
                 variant === "primary" && [
-                    "bg-earth/20 text-white border-white/30", // Tinted glass + stronger border
-                    "bg-gradient-to-b from-white/10 to-transparent", // Glossy reflection
-                    "hover:bg-earth/30 hover:border-white/50",
+                    "bg-white/10 text-earth border-white/60", // Radiant clear glass
+                    "shadow-[0_15px_30px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.4)]",
+                    "hover:bg-white/30 hover:border-bronze/50 hover:text-bronze",
                 ],
 
                 variant === "secondary" && [
-                    "bg-black/20 text-white border-white/10",
-                    "hover:bg-black/30 hover:border-white/30",
+                    "bg-cream/40 text-earth border border-white/50",
+                    "hover:bg-cream/60 hover:border-bronze/40 hover:text-bronze shadow-md",
                 ],
 
                 variant === "dark" && [
-                    "bg-[rgba(74,59,50,0.9)] text-white", // Earth brown base
-                    "border border-white/20", // Subtle light border
-                    "shadow-[0_4px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]", // Outer shadow + top gloss
-                    "hover:bg-[rgba(74,59,50,1)] hover:shadow-[0_6px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]",
+                    "bg-gradient-to-b from-[#3a2a1a]/90 via-[#2d1f12]/85 to-[#1a130a]/90 text-cream", // Vibrant earthy gradient
+                    "border border-bronze/30", // Warm bronze border
+                    "shadow-[0_20px_50px_rgba(139,90,43,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]", // Outer glow + top glass highlight
+                    "hover:from-[#4a3622]/95 hover:via-[#3a2817]/90 hover:to-[#22190d]/95 hover:border-bronze/50 hover:shadow-[0_30px_60px_rgba(139,90,43,0.35),inset_0_1px_0_rgba(255,255,255,0.25)]",
                 ],
 
                 // Sizes
@@ -78,9 +78,18 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 {children}
             </span>
 
+            {/* Multi-layered Glass Highlights (Dark variant only) */}
+            {variant === "dark" && (
+                <>
+                    <div className="absolute inset-0 rounded-md bg-gradient-to-br from-white/10 via-transparent to-bronze/5 pointer-events-none" />
+                    <div className="absolute inset-0 rounded-md border border-white/10 pointer-events-none mix-blend-overlay" />
+                    <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-bronze/20 to-transparent pointer-events-none rounded-b-md" />
+                </>
+            )}
+
             {/* Shimmer Effect Overlay */}
             <div
-                className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
+                className="absolute inset-0 -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-12 pointer-events-none"
                 aria-hidden="true"
             />
         </Component>

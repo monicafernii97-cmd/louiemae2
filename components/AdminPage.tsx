@@ -500,21 +500,21 @@ export const AdminPage: React.FC = () => {
 
    // --- MAIN ADMIN INTERFACE ---
    return (
-      <div className="min-h-screen bg-gradient-to-br from-cream/20 to-white/5 relative overflow-hidden flex font-sans text-earth selection:bg-bronze/20">
-         {/* Hyper-glassmorphic Animated Background */}
+      <div className="min-h-screen bg-gradient-to-br from-[#120D09] via-[#1A130E] to-[#0A0705] relative overflow-hidden flex font-sans text-cream selection:bg-bronze/30">
+         {/* Hyper-glassmorphic Animated Background (Dark Mode) */}
          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
-            <div className="absolute -top-20 -left-20 w-[1000px] h-[1000px] bg-bronze/10 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob" />
-            <div className="absolute top-20 right-0 w-[800px] h-[800px] bg-sand/20 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-2000" />
-            <div className="absolute -bottom-40 left-40 w-[800px] h-[800px] bg-earth/5 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-4000" />
-            <div className="absolute inset-0 backdrop-blur-[80px] bg-white/5" />
+            <div className="absolute -top-20 -left-20 w-[1000px] h-[1000px] bg-bronze/10 rounded-full mix-blend-screen filter blur-[120px] opacity-40 animate-blob" />
+            <div className="absolute top-20 right-0 w-[800px] h-[800px] bg-[#3a2a1a]/20 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-blob animation-delay-2000" />
+            <div className="absolute -bottom-40 left-40 w-[800px] h-[800px] bg-[#2d1f12]/20 rounded-full mix-blend-screen filter blur-[120px] opacity-40 animate-blob animation-delay-4000" />
+            <div className="absolute inset-0 backdrop-blur-[100px] bg-black/10" />
          </div>
 
          {/* Mobile Top Bar */}
-         <div className="fixed top-0 left-0 right-0 h-14 z-[60] md:hidden bg-earth/95 backdrop-blur-xl flex items-center justify-between px-4 border-b border-white/10">
+         <div className="fixed top-0 left-0 right-0 h-14 z-[60] md:hidden bg-[#1A130E]/95 backdrop-blur-xl flex items-center justify-between px-4 border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
             <button onClick={() => setSidebarOpen(true)} className="p-2 text-cream/80 hover:text-cream transition-colors">
                <Menu className="w-6 h-6" />
             </button>
-            <h2 className="font-serif text-xl text-cream italic">The Atelier</h2>
+            <h2 className="font-serif text-xl text-cream italic drop-shadow-md">The Atelier</h2>
             <div className="w-10" /> {/* spacer for centering */}
          </div>
 
@@ -684,17 +684,17 @@ export const AdminPage: React.FC = () => {
          </aside>
 
          {/* Main Content Area */}
-         <main className="ml-0 md:ml-[19.5rem] flex-1 p-4 md:px-6 md:py-6 pt-24 md:pt-6 min-h-screen overflow-y-auto no-scrollbar relative">
+         <main className="ml-0 md:ml-[19.5rem] flex-1 p-4 md:px-6 md:py-6 pt-24 md:pt-6 min-h-screen overflow-y-auto custom-scrollbar relative">
 
             {/* DASHBOARD VIEW */}
             {activeTab === 'dashboard' && (
                <FadeIn>
                   {/* Premium Header */}
                   <div className="mb-10 md:mb-16 relative mt-2 md:mt-0">
-                     <div className="absolute -left-4 md:-left-10 -top-4 md:-top-10 w-32 md:w-40 h-32 md:h-40 bg-bronze/10 rounded-full blur-3xl mix-blend-multiply opacity-50 animate-blob" />
-                     <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-3 md:mb-4 block font-medium relative z-10 pl-1">Executive Overview</span>
-                     <h1 className="font-serif text-4xl md:text-5xl text-earth relative z-10 tracking-tight leading-tight md:leading-tight">
-                        Welcome Back,<br className="md:hidden" /> <span className="italic text-bronze/80">Monica.</span>
+                     <div className="absolute -left-4 md:-left-10 -top-4 md:-top-10 w-32 md:w-40 h-32 md:h-40 bg-bronze/20 rounded-full blur-3xl mix-blend-screen opacity-50 animate-blob pointer-events-none" />
+                     <span className="text-bronze text-[10px] uppercase tracking-[0.4em] mb-3 md:mb-4 block font-medium relative z-10 pl-1 drop-shadow-sm">Executive Overview</span>
+                     <h1 className="font-serif text-4xl md:text-5xl text-cream relative z-10 tracking-tight leading-tight md:leading-tight drop-shadow-md">
+                        Welcome Back,<br className="md:hidden" /> <span className="italic text-bronze/90 drop-shadow-[0_0_15px_rgba(139,90,43,0.3)]">Monica.</span>
                      </h1>
                   </div>
 
@@ -704,90 +704,90 @@ export const AdminPage: React.FC = () => {
                      {/* Products Card */}
                      <div
                         onClick={() => { setActiveTab('products'); setFilterCollection('all'); setFilterCategory(null); }}
-                        className="group relative bg-white/20 backdrop-blur-3xl border border-white/30 p-6 md:p-8 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
                         {/* Glass Highlight Line */}
-                        <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none opacity-50" />
-                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
+                        <div className="absolute inset-0 rounded-[2.5rem] border-[2px] border-white/5 pointer-events-none transition-colors group-hover:border-white/10 mix-blend-overlay" />
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right text-white">
                            <ShoppingBag className="w-24 h-24 rotate-12" />
                         </div>
 
                         <div className="relative z-10">
-                           <div className="w-14 h-14 rounded-2xl bg-white/60 backdrop-blur-md shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/50">
-                              <ShoppingBag className="w-7 h-7 text-bronze" />
+                           <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-black/60 transition-all duration-500 border border-white/10">
+                              <ShoppingBag className="w-7 h-7 text-bronze drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
                            </div>
-                           <h3 className="font-serif text-4xl text-earth mb-2">{products.length}</h3>
-                           <p className="text-xs uppercase tracking-[0.2em] text-earth/60 font-medium">Active Products</p>
+                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{products.length}</h3>
+                           <p className="text-xs uppercase tracking-[0.2em] text-cream/60 font-medium">Active Products</p>
                         </div>
                      </div>
 
                      {/* Collections Card */}
                      <div
                         onClick={() => setActiveTab('structure')}
-                        className="group relative bg-white/20 backdrop-blur-3xl border border-white/30 p-6 md:p-8 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
-                        <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none opacity-50" />
-                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
+                        <div className="absolute inset-0 rounded-[2.5rem] border-[2px] border-white/5 pointer-events-none transition-colors group-hover:border-white/10 mix-blend-overlay" />
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right text-white">
                            <Layers className="w-24 h-24 rotate-12" />
                         </div>
 
                         <div className="relative z-10">
-                           <div className="w-14 h-14 rounded-2xl bg-white/60 backdrop-blur-md shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/50">
-                              <Layers className="w-7 h-7 text-bronze" />
+                           <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-black/60 transition-all duration-500 border border-white/10">
+                              <Layers className="w-7 h-7 text-bronze drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
                            </div>
-                           <h3 className="font-serif text-4xl text-earth mb-2">{siteContent.collections.length}</h3>
-                           <p className="text-xs uppercase tracking-[0.2em] text-earth/60 font-medium">Collections</p>
+                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{siteContent.collections.length}</h3>
+                           <p className="text-xs uppercase tracking-[0.2em] text-cream/60 font-medium">Collections</p>
                         </div>
                      </div>
 
                      {/* Pages Card */}
                      <div
                         onClick={() => setActiveTab('pages')}
-                        className="group relative bg-white/20 backdrop-blur-3xl border border-white/30 p-6 md:p-8 rounded-[2.5rem] shadow-[0_20px_40px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                        className="group relative bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-8 rounded-[2.5rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer overflow-hidden"
                      >
-                        <div className="absolute inset-0 rounded-[2.5rem] border border-white/40 pointer-events-none opacity-50" />
-                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right">
+                        <div className="absolute inset-0 rounded-[2.5rem] border-[2px] border-white/5 pointer-events-none transition-colors group-hover:border-white/10 mix-blend-overlay" />
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 scale-125 group-hover:scale-150 transform origin-top-right text-white">
                            <Layout className="w-24 h-24 rotate-12" />
                         </div>
 
                         <div className="relative z-10">
-                           <div className="w-14 h-14 rounded-2xl bg-white/60 backdrop-blur-md shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-white/50">
-                              <Layout className="w-7 h-7 text-bronze" />
+                           <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(255,255,255,0.1)] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-black/60 transition-all duration-500 border border-white/10">
+                              <Layout className="w-7 h-7 text-bronze drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
                            </div>
-                           <h3 className="font-serif text-4xl text-earth mb-2">{2 + siteContent.customPages.length}</h3>
-                           <p className="text-xs uppercase tracking-[0.2em] text-earth/60 font-medium">Content Pages</p>
+                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{2 + siteContent.customPages.length}</h3>
+                           <p className="text-xs uppercase tracking-[0.2em] text-cream/60 font-medium">Content Pages</p>
                         </div>
                      </div>
                   </div>
 
                   {/* Quick Actions Row */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                     <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-earth/95 backdrop-blur-2xl text-cream border border-white/20 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-500 hover:-translate-y-1">
+                     <button onClick={handleCreateProduct} className="group relative overflow-hidden bg-white/5 backdrop-blur-2xl text-cream border border-white/10 rounded-[2rem] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:bg-white/10 hover:border-bronze/40 transition-all duration-500 hover:-translate-y-1">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative z-10 flex flex-col items-center text-center gap-4">
-                           <div className="p-4 bg-white/10 rounded-full group-hover:scale-110 transition-transform duration-500 border border-white/10 shadow-inner"><Plus className="w-6 h-6" /></div>
-                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Add Product</span>
+                           <div className="p-4 bg-black/30 rounded-full group-hover:bg-black/50 group-hover:scale-110 transition-all duration-500 border border-white/5 shadow-[inset_0_1px_10px_rgba(255,255,255,0.05)]"><Plus className="w-6 h-6 text-cream" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-cream/90 group-hover:text-cream transition-colors">Add Product</span>
                         </div>
                      </button>
 
-                     <button onClick={handleCreateNewPost} className="group relative overflow-hidden bg-white/30 backdrop-blur-2xl border border-white/40 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/40">
+                     <button onClick={handleCreateNewPost} className="group relative overflow-hidden bg-white/5 backdrop-blur-2xl text-cream border border-white/10 rounded-[2rem] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:bg-white/10 hover:border-bronze/40 transition-all duration-500 hover:-translate-y-1">
                         <div className="relative z-10 flex flex-col items-center text-center gap-4">
-                           <div className="p-4 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500 border border-white/40"><PenTool className="w-6 h-6 text-earth" /></div>
-                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Write Journal</span>
+                           <div className="p-4 bg-black/30 rounded-full group-hover:bg-black/50 group-hover:scale-110 transition-all duration-500 border border-white/5 shadow-[inset_0_1px_10px_rgba(255,255,255,0.05)]"><PenTool className="w-6 h-6 text-cream" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-cream/90 group-hover:text-cream transition-colors">Write Journal</span>
                         </div>
                      </button>
 
-                     <button onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('campaigns'); handleCreateCampaign(); }} className="group relative overflow-hidden bg-white/30 backdrop-blur-2xl border border-white/40 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/40">
+                     <button onClick={() => { setActiveTab('newsletter'); setNewsletterSubTab('campaigns'); handleCreateCampaign(); }} className="group relative overflow-hidden bg-white/5 backdrop-blur-2xl text-cream border border-white/10 rounded-[2rem] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:bg-white/10 hover:border-bronze/40 transition-all duration-500 hover:-translate-y-1">
                         <div className="relative z-10 flex flex-col items-center text-center gap-4">
-                           <div className="p-4 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500 border border-white/40"><Send className="w-6 h-6 text-earth" /></div>
-                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Send Email</span>
+                           <div className="p-4 bg-black/30 rounded-full group-hover:bg-black/50 group-hover:scale-110 transition-all duration-500 border border-white/5 shadow-[inset_0_1px_10px_rgba(255,255,255,0.05)]"><Send className="w-6 h-6 text-cream" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-cream/90 group-hover:text-cream transition-colors">Send Email</span>
                         </div>
                      </button>
 
-                     <button onClick={() => { setActiveTab('cj-settings'); }} className="group relative overflow-hidden bg-white/30 backdrop-blur-2xl border border-white/40 rounded-[2rem] p-6 hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/40">
+                     <button onClick={() => { setActiveTab('cj-settings'); }} className="group relative overflow-hidden bg-white/5 backdrop-blur-2xl text-cream border border-white/10 rounded-[2rem] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:bg-white/10 hover:border-bronze/40 transition-all duration-500 hover:-translate-y-1">
                         <div className="relative z-10 flex flex-col items-center text-center gap-4">
-                           <div className="p-4 bg-white/50 rounded-full shadow-sm group-hover:scale-110 transition-transform duration-500 border border-white/40"><Settings className="w-6 h-6 text-earth" /></div>
-                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-earth">Integration</span>
+                           <div className="p-4 bg-black/30 rounded-full group-hover:bg-black/50 group-hover:scale-110 transition-all duration-500 border border-white/5 shadow-[inset_0_1px_10px_rgba(255,255,255,0.05)]"><Settings className="w-6 h-6 text-cream" /></div>
+                           <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-cream/90 group-hover:text-cream transition-colors">Integration</span>
                         </div>
                      </button>
                   </div>
@@ -841,27 +841,27 @@ export const AdminPage: React.FC = () => {
             {/* NEWSLETTER TAB */}
             {activeTab === 'newsletter' && (
                <FadeIn>
-                  <div className="mb-12 border-b border-earth/10 pb-6 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-end">
+                  <div className="mb-12 border-b border-white/10 pb-6 flex flex-col md:flex-row gap-4 md:gap-0 justify-between md:items-end">
                      <div>
-                        <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Communications</span>
-                        <h1 className="font-serif text-2xl md:text-4xl text-earth">The Mae Letter</h1>
+                        <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block glow-text">Communications</span>
+                        <h1 className="font-serif text-2xl md:text-4xl text-cream drop-shadow-md">The Mae Letter</h1>
                      </div>
-                     <div className="flex flex-wrap gap-2 md:gap-4">
+                     <div className="flex flex-wrap gap-2 md:gap-4 bg-black/20 p-1.5 rounded-xl border border-white/5 backdrop-blur-md">
                         <button
                            onClick={() => setNewsletterSubTab('overview')}
-                           className={`px-4 py-2 text-xs uppercase tracking-widest ${newsletterSubTab === 'overview' ? 'text-earth border-b border-earth' : 'text-earth/40 hover:text-earth'}`}
+                           className={`px-4 py-2 text-xs uppercase tracking-widest rounded-lg transition-colors ${newsletterSubTab === 'overview' ? 'bg-white/10 text-cream shadow-sm border border-white/10' : 'text-cream/40 hover:text-cream hover:bg-white/5'}`}
                         >
                            Overview
                         </button>
                         <button
                            onClick={() => setNewsletterSubTab('campaigns')}
-                           className={`px-4 py-2 text-xs uppercase tracking-widest ${newsletterSubTab === 'campaigns' ? 'text-earth border-b border-earth' : 'text-earth/40 hover:text-earth'}`}
+                           className={`px-4 py-2 text-xs uppercase tracking-widest rounded-lg transition-colors ${newsletterSubTab === 'campaigns' ? 'bg-white/10 text-cream shadow-sm border border-white/10' : 'text-cream/40 hover:text-cream hover:bg-white/5'}`}
                         >
                            Campaigns
                         </button>
                         <button
                            onClick={() => setNewsletterSubTab('subscribers')}
-                           className={`px-4 py-2 text-xs uppercase tracking-widest ${newsletterSubTab === 'subscribers' ? 'text-earth border-b border-earth' : 'text-earth/40 hover:text-earth'}`}
+                           className={`px-4 py-2 text-xs uppercase tracking-widest rounded-lg transition-colors ${newsletterSubTab === 'subscribers' ? 'bg-white/10 text-cream shadow-sm border border-white/10' : 'text-cream/40 hover:text-cream hover:bg-white/5'}`}
                         >
                            Subscribers
                         </button>
@@ -871,20 +871,23 @@ export const AdminPage: React.FC = () => {
                   {/* NEWSLETTER: OVERVIEW */}
                   {newsletterSubTab === 'overview' && (
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="bg-white p-8 border border-earth/5 shadow-sm">
-                           <Users className="w-6 h-6 text-bronze mb-4" />
-                           <h3 className="font-serif text-3xl text-earth mb-1">{stats.totalSubscribers}</h3>
-                           <p className="text-xs uppercase tracking-widest text-earth/50">Total Subscribers</p>
+                        <div className="bg-white/5 backdrop-blur-3xl p-8 border border-white/10 rounded-3xl shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-transform overflow-hidden relative group">
+                           <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform pointer-events-none" />
+                           <Users className="w-8 h-8 text-bronze mb-6 drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
+                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{stats.totalSubscribers}</h3>
+                           <p className="text-xs uppercase tracking-widest text-cream/50 relative z-10">Total Subscribers</p>
                         </div>
-                        <div className="bg-white p-8 border border-earth/5 shadow-sm">
-                           <BarChart2 className="w-6 h-6 text-bronze mb-4" />
-                           <h3 className="font-serif text-3xl text-earth mb-1">{stats.avgOpenRate}%</h3>
-                           <p className="text-xs uppercase tracking-widest text-earth/50">Avg. Open Rate</p>
+                        <div className="bg-white/5 backdrop-blur-3xl p-8 border border-white/10 rounded-3xl shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-transform overflow-hidden relative group">
+                           <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform pointer-events-none" />
+                           <BarChart2 className="w-8 h-8 text-bronze mb-6 drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
+                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{stats.avgOpenRate}%</h3>
+                           <p className="text-xs uppercase tracking-widest text-cream/50 relative z-10">Avg. Open Rate</p>
                         </div>
-                        <div className="bg-white p-8 border border-earth/5 shadow-sm">
-                           <Send className="w-6 h-6 text-bronze mb-4" />
-                           <h3 className="font-serif text-3xl text-earth mb-1">{stats.totalEmailsSent}</h3>
-                           <p className="text-xs uppercase tracking-widest text-earth/50">Emails Sent</p>
+                        <div className="bg-white/5 backdrop-blur-3xl p-8 border border-white/10 rounded-3xl shadow-[0_15px_30px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-transform overflow-hidden relative group">
+                           <div className="absolute top-0 right-0 w-32 h-32 bg-bronze/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform pointer-events-none" />
+                           <Send className="w-8 h-8 text-bronze mb-6 drop-shadow-[0_0_8px_rgba(139,90,43,0.5)]" />
+                           <h3 className="font-serif text-4xl text-cream mb-2 drop-shadow-sm">{stats.totalEmailsSent}</h3>
+                           <p className="text-xs uppercase tracking-widest text-cream/50 relative z-10">Emails Sent</p>
                         </div>
                      </div>
                   )}
@@ -931,20 +934,20 @@ export const AdminPage: React.FC = () => {
                   {newsletterSubTab === 'campaigns' && (
                      <div>
                         <div className="flex justify-end mb-8">
-                           <button onClick={() => { handleCreateCampaign(); setEditingCampaign({ subject: '', content: '', status: 'draft', type: 'newsletter' }); }} className="bg-earth text-cream px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2">
+                           <button onClick={() => { handleCreateCampaign(); setEditingCampaign({ subject: '', content: '', status: 'draft', type: 'newsletter' }); }} className="bg-white/10 text-cream border border-white/20 px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 transition-all shadow-[0_4px_15px_rgba(0,0,0,0.3)] flex items-center gap-2 rounded-lg backdrop-blur-md hover:-translate-y-1">
                               <Plus className="w-3 h-3" /> New Campaign
                            </button>
                         </div>
 
                         <div className="space-y-4">
                            {campaigns.map(camp => (
-                              <div key={camp.id} className="bg-white p-4 md:p-6 border border-earth/5 flex flex-col md:flex-row justify-between md:items-center group gap-3">
+                              <div key={camp.id} className="bg-white/5 backdrop-blur-xl p-4 md:p-6 border border-white/10 rounded-2xl flex flex-col md:flex-row justify-between md:items-center group gap-3 hover:bg-white/10 transition-colors shadow-lg">
                                  <div>
                                     <div className="flex items-center gap-3 mb-2">
-                                       <span className={`w-2 h-2 rounded-full ${camp.status === 'sent' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
-                                       <h3 className="font-serif text-xl text-earth">{camp.subject}</h3>
+                                       <span className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] ${camp.status === 'sent' ? 'bg-green-400 text-green-400' : 'bg-amber-400 text-amber-400'}`}></span>
+                                       <h3 className="font-serif text-xl text-cream drop-shadow-sm">{camp.subject}</h3>
                                     </div>
-                                    <div className="flex gap-6 text-xs text-earth/50">
+                                    <div className="flex gap-6 text-xs text-cream/50">
                                        <span>{camp.status === 'sent' ? `Sent: ${camp.sentDate}` : 'Draft'}</span>
                                        {camp.status === 'sent' && (
                                           <>
@@ -957,9 +960,9 @@ export const AdminPage: React.FC = () => {
                                  </div>
                                  <div className="flex gap-2">
                                     {camp.status === 'draft' && (
-                                       <button onClick={() => setEditingCampaign(camp)} className="p-2 hover:bg-earth/10 rounded-full text-earth"><Edit3 className="w-4 h-4" /></button>
+                                       <button onClick={() => setEditingCampaign(camp)} className="p-2 hover:bg-white/20 rounded-full text-cream transition-colors"><Edit3 className="w-4 h-4" /></button>
                                     )}
-                                    <button onClick={() => deleteCampaign(camp.id)} className="p-2 hover:bg-red-50 text-red-800 rounded-full"><Trash2 className="w-4 h-4" /></button>
+                                    <button onClick={() => deleteCampaign(camp.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button>
                                  </div>
                               </div>
                            ))}
@@ -973,32 +976,34 @@ export const AdminPage: React.FC = () => {
             {/* STRUCTURE TAB */}
             {activeTab === 'structure' && (
                <FadeIn>
-                  <div className="mb-12">
-                     <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Site Configuration</span>
-                     <h1 className="font-serif text-2xl md:text-4xl text-earth">Structure & Navigation</h1>
+                  <div className="mb-12 border-b border-white/10 pb-6 flex flex-col md:flex-row gap-4 justify-between items-end">
+                     <div>
+                        <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block glow-text">Site Configuration</span>
+                        <h1 className="font-serif text-2xl md:text-4xl text-cream drop-shadow-md">Structure & Navigation</h1>
+                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
                      {/* COLLECTIONS MANAGER */}
-                     <div className="bg-white p-8 border border-earth/5 shadow-sm">
-                        <div className="flex justify-between items-center mb-6 border-b border-earth/10 pb-4">
-                           <h3 className="font-serif text-2xl text-earth">Collections</h3>
-                           <button onClick={handleCreateCollection} className="text-[10px] uppercase tracking-[0.2em] bg-earth text-cream px-4 py-2 hover:bg-bronze transition-colors flex items-center gap-2">
+                     <div className="bg-white/5 backdrop-blur-3xl p-8 border border-white/10 rounded-[2rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)]">
+                        <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                           <h3 className="font-serif text-2xl text-cream">Collections</h3>
+                           <button onClick={handleCreateCollection} className="text-[10px] uppercase tracking-[0.2em] bg-white/10 text-cream px-4 py-2 hover:bg-white/20 transition-colors flex items-center gap-2 rounded-lg border border-white/20 shadow-sm">
                               <Plus className="w-3 h-3" /> New
                            </button>
                         </div>
 
                         <div className="space-y-4">
                            {siteContent.collections.map(col => (
-                              <div key={col.id} className="bg-cream/30 p-4 border border-earth/10 flex justify-between items-center group">
+                              <div key={col.id} className="bg-black/20 p-4 border border-white/5 rounded-xl flex justify-between items-center group hover:bg-white/5 transition-colors shadow-inner">
                                  <div>
-                                    <h4 className="font-serif text-lg text-earth">{col.title}</h4>
-                                    <p className="text-[10px] uppercase tracking-widest text-earth/40">{col.subcategories.length} Subcategories</p>
+                                    <h4 className="font-serif text-lg text-cream">{col.title}</h4>
+                                    <p className="text-[10px] uppercase tracking-widest text-cream/40">{col.subcategories.length} Subcategories</p>
                                  </div>
                                  <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => setEditingCollection(col)} className="p-2 hover:bg-earth/10 rounded-full"><Edit3 className="w-4 h-4 text-earth" /></button>
-                                    <button onClick={() => handleDeleteCollection(col.id)} className="p-2 hover:bg-red-50 text-red-800 rounded-full"><Trash2 className="w-4 h-4" /></button>
+                                    <button onClick={() => setEditingCollection(col)} className="p-2 hover:bg-white/20 rounded-full text-cream"><Edit3 className="w-4 h-4" /></button>
+                                    <button onClick={() => handleDeleteCollection(col.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full"><Trash2 className="w-4 h-4" /></button>
                                  </div>
                               </div>
                            ))}
@@ -1006,20 +1011,20 @@ export const AdminPage: React.FC = () => {
                      </div>
 
                      {/* NAVIGATION MANAGER (Simple view) */}
-                     <div className="bg-white p-8 border border-earth/5 shadow-sm opacity-70 relative">
+                     <div className="bg-white/5 backdrop-blur-3xl p-8 border border-white/10 rounded-[2rem] shadow-[0_15px_30px_rgba(0,0,0,0.3)] opacity-80 relative">
                         {/* Overlay for "Coming Soon" or simplified editor */}
-                        <div className="flex justify-between items-center mb-6 border-b border-earth/10 pb-4">
-                           <h3 className="font-serif text-2xl text-earth">Main Menu</h3>
+                        <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                           <h3 className="font-serif text-2xl text-cream">Main Menu</h3>
                         </div>
                         <div className="space-y-2">
                            {siteContent.navLinks.map((link, i) => (
-                              <div key={i} className="p-3 border-b border-earth/5 font-serif text-lg text-earth/60 flex justify-between">
+                              <div key={i} className="p-3 border-b border-white/5 font-serif text-lg text-cream/70 flex justify-between bg-black/10 rounded-lg">
                                  {link.label}
-                                 <span className="text-xs font-sans text-earth/30">{link.href}</span>
+                                 <span className="text-xs font-sans text-cream/30">{link.href}</span>
                               </div>
                            ))}
                         </div>
-                        <div className="mt-6 text-center text-xs text-earth/40 italic">
+                        <div className="mt-6 text-center text-xs text-cream/40 italic">
                            Menu structure is currently managed via code constants for stability.
                         </div>
                      </div>
@@ -1097,39 +1102,42 @@ export const AdminPage: React.FC = () => {
             {/* PRODUCTS TAB */}
             {activeTab === 'products' && (
                <FadeIn>
-                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-earth/10 pb-4 md:pb-6">
+                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-white/10 pb-4 md:pb-6">
                      <div>
-                        <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">{getCollectionTitle(filterCollection)}</span>
-                        <h1 className="font-serif text-2xl md:text-4xl text-earth">{filterCategory || 'All Items'}</h1>
+                        <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block glow-text">{getCollectionTitle(filterCollection)}</span>
+                        <h1 className="font-serif text-2xl md:text-4xl text-cream drop-shadow-md">{filterCategory || 'All Items'}</h1>
                      </div>
-                     <button onClick={handleCreateProduct} className="bg-earth text-cream px-5 md:px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2 rounded-lg w-fit">
+                     <button onClick={handleCreateProduct} className="bg-white/10 text-cream border border-white/20 px-5 md:px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 transition-all shadow-[0_4px_15px_rgba(0,0,0,0.3)] flex items-center gap-2 rounded-lg w-fit backdrop-blur-md">
                         <Plus className="w-3 h-3" /> Add Product
                      </button>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
                      {filteredProducts.length === 0 ? (
-                        <div className="text-center py-20 bg-white border border-earth/5">
-                           <p className="font-serif text-2xl text-earth/40">No products found in this collection.</p>
-                           <button onClick={handleCreateProduct} className="mt-4 text-bronze underline text-xs uppercase tracking-widest">Add your first item</button>
+                        <div className="text-center py-20 bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-2xl shadow-xl">
+                           <p className="font-serif text-2xl text-cream/40">No products found in this collection.</p>
+                           <button onClick={handleCreateProduct} className="mt-4 text-bronze hover:text-white transition-colors underline text-xs uppercase tracking-widest">Add your first item</button>
                         </div>
                      ) : (
                         filteredProducts.map(product => (
-                           <div key={product.id} className="bg-white p-4 border border-earth/5 flex gap-4 md:gap-6 items-center group hover:shadow-md transition-all">
-                              <div className="w-16 h-16 bg-cream flex-shrink-0">
-                                 <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                           <div key={product.id} className="bg-white/5 backdrop-blur-xl p-4 md:p-5 border border-white/10 rounded-2xl flex gap-4 md:gap-6 items-center group hover:bg-white/10 hover:-translate-y-1 hover:shadow-[0_15px_30px_rgba(0,0,0,0.4)] transition-all overflow-hidden relative">
+                              {/* Inner Highlight Overlay */}
+                              <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-2xl group-hover:border-white/20 transition-colors" />
+
+                              <div className="w-16 h-16 bg-black/40 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 shadow-inner z-10">
+                                 <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700" />
                               </div>
-                              <div className="flex-1">
-                                 <h4 className="font-serif text-lg text-earth">{product.name}</h4>
-                                 <div className="flex gap-4 text-[10px] uppercase tracking-widest text-earth/50">
+                              <div className="flex-1 z-10">
+                                 <h4 className="font-serif text-lg text-cream drop-shadow-sm group-hover:text-white transition-colors">{product.name}</h4>
+                                 <div className="flex gap-4 text-[10px] uppercase tracking-widest text-cream/50 mt-1">
                                     <span>{product.category}</span>
-                                    <span>${product.price}</span>
-                                    <span className={product.inStock ? 'text-green-700' : 'text-red-700'}>{product.inStock ? 'In Stock' : 'Out of Stock'}</span>
+                                    <span className="text-bronze font-medium">${product.price}</span>
+                                    <span className={product.inStock ? 'text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]' : 'text-red-400'}>{product.inStock ? 'In Stock' : 'Out of Stock'}</span>
                                  </div>
                               </div>
-                              <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                 <button onClick={() => handleEditProduct(product)} className="p-2 hover:bg-earth/10 rounded-full"><Edit3 className="w-4 h-4 text-earth" /></button>
-                                 <button onClick={() => handleDeleteProduct(product.id)} className="p-2 hover:bg-red-50 text-red-800 rounded-full"><Trash2 className="w-4 h-4" /></button>
+                              <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 z-10">
+                                 <button onClick={() => handleEditProduct(product)} className="p-2 hover:bg-white/20 rounded-full text-cream"><Edit3 className="w-4 h-4" /></button>
+                                 <button onClick={() => handleDeleteProduct(product.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full"><Trash2 className="w-4 h-4" /></button>
                               </div>
                            </div>
                         ))
@@ -1141,23 +1149,30 @@ export const AdminPage: React.FC = () => {
             {/* JOURNAL TAB */}
             {activeTab === 'journal' && (
                <FadeIn>
-                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-earth/10 pb-4 md:pb-6">
-                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Content Marketing</span><h1 className="font-serif text-2xl md:text-4xl text-earth">Simply Mae Journal</h1></div>
-                     <button onClick={handleCreateNewPost} className="bg-earth text-cream px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2"><Plus className="w-3 h-3" /> New Story</button>
+                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-white/10 pb-4 md:pb-6">
+                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block glow-text">Content Marketing</span><h1 className="font-serif text-2xl md:text-4xl text-cream drop-shadow-md">Simply Mae Journal</h1></div>
+                     <button onClick={handleCreateNewPost} className="bg-white/10 text-cream border border-white/20 px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 transition-all shadow-[0_4px_15px_rgba(0,0,0,0.3)] flex items-center gap-2 rounded-lg backdrop-blur-md">
+                        <Plus className="w-3 h-3" /> New Story
+                     </button>
                   </div>
                   <div className="grid grid-cols-1 gap-6">
                      {posts.map(post => (
-                        <div key={post.id} className="bg-white p-4 md:p-6 border border-earth/5 flex gap-4 md:gap-8 items-start group hover:shadow-md transition-all">
-                           <div className="w-20 md:w-32 aspect-[3/4] bg-cream flex-shrink-0"><img src={post.image} className="w-full h-full object-cover" /></div>
-                           <div className="flex-1">
-                              <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-bronze mb-2"><span>{post.category}</span><span className="w-1 h-1 rounded-full bg-bronze/40"></span><span>{post.date}</span></div>
-                              <h3 className="font-serif text-2xl text-earth mb-3">{post.title}</h3>
-                              <p className="font-sans text-sm text-earth/60 line-clamp-2 mb-4">{post.excerpt}</p>
-                              <span className={`text-[10px] uppercase tracking-widest px-2 py-1 ${post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{post.status}</span>
+                        <div key={post.id} className="bg-white/5 backdrop-blur-xl p-4 md:p-6 border border-white/10 rounded-2xl flex gap-4 md:gap-8 items-start group hover:-translate-y-1 hover:bg-white/10 hover:shadow-[0_15px_30px_rgba(0,0,0,0.4)] transition-all overflow-hidden relative">
+                           {/* Inner Highlight Base Overlay */}
+                           <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-2xl group-hover:border-white/20 transition-colors" />
+
+                           <div className="w-20 md:w-32 aspect-[3/4] bg-black/40 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 shadow-inner z-10">
+                              <img src={post.image} className="w-full h-full object-cover opacity-90 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700" />
                            </div>
-                           <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                              <button onClick={() => handleEditPost(post)} className="p-2 hover:bg-earth/10 rounded-full"><Edit3 className="w-4 h-4 text-earth" /></button>
-                              <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-red-50 text-red-800 rounded-full"><Trash2 className="w-4 h-4" /></button>
+                           <div className="flex-1 z-10">
+                              <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-bronze mb-2"><span>{post.category}</span><span className="w-1 h-1 rounded-full bg-bronze/40 shadow-[0_0_5px_currentColor]"></span><span>{post.date}</span></div>
+                              <h3 className="font-serif text-2xl text-cream mb-3 drop-shadow-sm group-hover:text-white transition-colors">{post.title}</h3>
+                              <p className="font-sans text-sm text-cream/60 line-clamp-2 mb-4 leading-relaxed">{post.excerpt}</p>
+                              <span className={`text-[9px] uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm border ${post.status === 'published' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-white/10 text-cream/60 border-white/20'}`}>{post.status}</span>
+                           </div>
+                           <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex-shrink-0 z-10">
+                              <button onClick={() => handleEditPost(post)} className="p-2 hover:bg-white/20 rounded-full text-cream transition-colors"><Edit3 className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeletePost(post.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button>
                            </div>
                         </div>
                      ))}
@@ -1168,15 +1183,30 @@ export const AdminPage: React.FC = () => {
             {/* PAGES TAB */}
             {activeTab === 'pages' && !activePageEditor && (
                <FadeIn>
-                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-earth/10 pb-4 md:pb-6">
-                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block">Site Design</span><h1 className="font-serif text-2xl md:text-4xl text-earth">Select Page to Edit</h1></div>
-                     <button onClick={() => setShowPageGenerator(true)} className="bg-earth text-cream px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-all shadow-lg flex items-center gap-2"><Sparkles className="w-3 h-3" /> AI New Page</button>
+                  <div className="flex flex-col md:flex-row gap-3 md:gap-0 justify-between md:items-end mb-8 md:mb-12 border-b border-white/10 pb-4 md:pb-6">
+                     <div><span className="text-bronze text-xs uppercase tracking-[0.4em] mb-2 block glow-text">Site Design</span><h1 className="font-serif text-2xl md:text-4xl text-cream drop-shadow-md">Select Page to Edit</h1></div>
+                     <button onClick={() => setShowPageGenerator(true)} className="bg-white/10 text-cream border border-white/20 px-6 py-3 text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 transition-all shadow-[0_4px_15px_rgba(0,0,0,0.3)] flex items-center gap-2 rounded-lg backdrop-blur-md">
+                        <Sparkles className="w-3 h-3 text-bronze" /> AI New Page
+                     </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-                     <div onClick={() => setActivePageEditor('home')} className="bg-white p-10 border border-earth/5 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col items-center text-center group"><div className="w-16 h-16 bg-cream rounded-full flex items-center justify-center mb-6 group-hover:bg-earth group-hover:text-cream transition-colors"><Home className="w-8 h-8 text-earth group-hover:text-cream" /></div><h3 className="font-serif text-2xl text-earth mb-2">Home Page</h3></div>
-                     <div onClick={() => setActivePageEditor('story')} className="bg-white p-10 border border-earth/5 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col items-center text-center group"><div className="w-16 h-16 bg-cream rounded-full flex items-center justify-center mb-6 group-hover:bg-earth group-hover:text-cream transition-colors"><BookOpen className="w-8 h-8 text-earth group-hover:text-cream" /></div><h3 className="font-serif text-2xl text-earth mb-2">Our Story</h3></div>
+                     <div onClick={() => setActivePageEditor('home')} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative">
+                        <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-[2rem] group-hover:border-white/10 mix-blend-overlay" />
+                        <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/10 group-hover:bg-black/60 group-hover:scale-110 transition-all duration-500 z-10"><Home className="w-8 h-8 text-bronze drop-shadow-sm group-hover:text-amber-400 transition-colors" /></div>
+                        <h3 className="font-serif text-2xl text-cream mb-2 drop-shadow-sm z-10">Home Page</h3>
+                     </div>
+                     <div onClick={() => setActivePageEditor('story')} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative">
+                        <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-[2rem] group-hover:border-white/10 mix-blend-overlay" />
+                        <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/10 group-hover:bg-black/60 group-hover:scale-110 transition-all duration-500 z-10"><BookOpen className="w-8 h-8 text-bronze drop-shadow-sm group-hover:text-amber-400 transition-colors" /></div>
+                        <h3 className="font-serif text-2xl text-cream mb-2 drop-shadow-sm z-10">Our Story</h3>
+                     </div>
                      {siteContent.customPages.map(page => (
-                        <div key={page.id} onClick={() => setActivePageEditor(page.id)} className="bg-white p-10 border border-earth/5 shadow-sm hover:shadow-lg transition-all cursor-pointer flex flex-col items-center text-center group relative"><div className="absolute top-4 right-4 z-10"><button onClick={(e) => { e.stopPropagation(); handleDeleteCustomPage(page.id); }} className="p-2 hover:bg-red-50 text-earth/20 hover:text-red-800 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button></div><div className="w-16 h-16 bg-cream rounded-full flex items-center justify-center mb-6 group-hover:bg-earth group-hover:text-cream transition-colors"><FileText className="w-8 h-8 text-earth group-hover:text-cream" /></div><h3 className="font-serif text-2xl text-earth mb-2">{page.title}</h3></div>
+                        <div key={page.id} onClick={() => setActivePageEditor(page.id)} className="bg-white/5 backdrop-blur-3xl p-10 border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rounded-[2rem] hover:-translate-y-2 hover:bg-white/10 hover:border-bronze/30 transition-all duration-500 cursor-pointer flex flex-col items-center text-center group overflow-hidden relative">
+                           <div className="absolute top-4 right-4 z-20"><button onClick={(e) => { e.stopPropagation(); handleDeleteCustomPage(page.id); }} className="p-2 hover:bg-red-500/20 text-cream/30 hover:text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button></div>
+                           <div className="absolute inset-0 border border-white/5 pointer-events-none rounded-[2rem] group-hover:border-white/10 mix-blend-overlay" />
+                           <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/10 group-hover:bg-black/60 group-hover:scale-110 transition-all duration-500 z-10"><FileText className="w-8 h-8 text-bronze drop-shadow-sm group-hover:text-amber-400 transition-colors" /></div>
+                           <h3 className="font-serif text-2xl text-cream mb-2 drop-shadow-sm z-10">{page.title}</h3>
+                        </div>
                      ))}
                   </div>
                </FadeIn>

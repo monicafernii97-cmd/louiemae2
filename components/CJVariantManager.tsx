@@ -87,19 +87,22 @@ export const CJVariantManager: React.FC = () => {
     if (!products?.length) {
         return (
             <FadeIn delay={600}>
-                <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-purple-50/50 backdrop-blur-md border border-purple-100 flex items-center justify-center">
-                            <Link2 className="w-5 h-5 text-purple-600/80" />
+                <div className="backdrop-blur-2xl bg-black/40 border border-white/10 rounded-[2rem] p-6 shadow-[0_15px_30px_rgba(0,0,0,0.3)] relative overflow-hidden">
+                    <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none z-0"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0"></div>
+
+                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-900/20 backdrop-blur-md border border-purple-500/30 flex items-center justify-center shadow-inner">
+                            <Link2 className="w-6 h-6 text-purple-400 drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]" />
                         </div>
                         <div>
-                            <h3 className="font-serif text-lg text-earth">Size Variant Mapping</h3>
-                            <span className="text-[10px] uppercase tracking-wider text-earth/50">
+                            <h3 className="font-serif text-xl text-cream drop-shadow-sm">Size Variant Mapping</h3>
+                            <span className="text-[10px] uppercase tracking-widest text-cream/50 mt-1 block">
                                 No products with CJ variants
                             </span>
                         </div>
                     </div>
-                    <p className="text-sm text-earth/50 text-center py-8">
+                    <p className="text-sm text-cream/40 text-center py-8 relative z-10 font-serif tracking-wide border border-white/5 bg-white/5 rounded-2xl shadow-inner">
                         When CJ approves products with multiple sizes, they'll appear here for mapping.
                     </p>
                 </div>
@@ -109,36 +112,42 @@ export const CJVariantManager: React.FC = () => {
 
     return (
         <FadeIn delay={600}>
-            <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl">
+            <div className="backdrop-blur-2xl bg-black/40 border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-[0_15px_30px_rgba(0,0,0,0.3)] relative overflow-hidden">
+                <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none z-0"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0"></div>
+
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-purple-50/50 backdrop-blur-md border border-purple-100 flex items-center justify-center">
-                        <Link2 className="w-5 h-5 text-purple-600/80" />
+                <div className="flex items-center gap-4 mb-8 relative z-10">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-900/20 backdrop-blur-md border border-purple-500/30 flex items-center justify-center shadow-inner">
+                        <Link2 className="w-6 h-6 text-purple-400 drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]" />
                     </div>
                     <div>
-                        <h3 className="font-serif text-lg text-earth">Size Variant Mapping</h3>
-                        <span className="text-[10px] uppercase tracking-wider text-earth/50">
-                            {products.length} products with CJ variants
-                        </span>
+                        <h3 className="font-serif text-xl text-cream drop-shadow-sm">Size Variant Mapping</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_5px_rgba(192,132,252,0.8)]" />
+                            <span className="text-[10px] uppercase tracking-widest text-cream/50 font-medium">
+                                {products.length} products with CJ variants
+                            </span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Status Messages */}
                 {error && (
-                    <div className="mb-4 p-3 bg-red-50/50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
-                        <AlertCircle className="w-4 h-4" />
+                    <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-2xl flex items-center gap-3 text-sm text-red-400 relative z-10 shadow-inner">
+                        <AlertCircle className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" />
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div className="mb-4 p-3 bg-green-50/50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-700">
-                        <CheckCircle className="w-4 h-4" />
+                    <div className="mb-6 p-4 bg-green-900/20 border border-green-500/30 rounded-2xl flex items-center gap-3 text-sm text-green-400 relative z-10 shadow-inner">
+                        <CheckCircle className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" />
                         {success}
                     </div>
                 )}
 
                 {/* Products List */}
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar relative z-10">
                     {products.map((product) => {
                         const isExpanded = expandedProduct === product._id;
                         const linkedCount = product.variants?.filter(v => v.cjVariantId).length || 0;
@@ -148,71 +157,75 @@ export const CJVariantManager: React.FC = () => {
                         return (
                             <div
                                 key={product._id}
-                                className="bg-white/50 backdrop-blur-md border border-white/40 rounded-xl overflow-hidden"
+                                className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-inner group transition-all"
                             >
                                 {/* Product Header - Clickable */}
                                 <button
                                     onClick={() => setExpandedProduct(isExpanded ? null : product._id)}
-                                    className="w-full p-4 flex items-center gap-4 hover:bg-white/30 transition-colors text-left"
+                                    className="w-full p-4 flex items-center gap-4 hover:bg-white/10 transition-colors text-left"
                                 >
                                     {/* Product Image */}
-                                    <div className="w-12 h-12 rounded-lg bg-white/50 border border-white/40 overflow-hidden flex-shrink-0">
+                                    <div className="w-14 h-14 rounded-xl bg-black/60 border border-white/10 overflow-hidden flex-shrink-0 relative shadow-inner">
                                         {product.images?.[0] ? (
-                                            <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                                            <img src={product.images[0]} alt="" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-earth/20">
-                                                <Package className="w-5 h-5" />
+                                            <div className="w-full h-full flex items-center justify-center text-cream/20">
+                                                <Package className="w-6 h-6" />
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Product Info */}
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-serif text-sm text-earth truncate">{product.name}</h4>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className={`text-[10px] uppercase tracking-wider font-medium ${allLinked ? 'text-green-600' : 'text-amber-600'
+                                        <h4 className="font-serif text-base text-cream truncate drop-shadow-sm mb-1">{product.name}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] uppercase tracking-widest font-medium border px-2 py-0.5 rounded-md ${allLinked ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
                                                 }`}>
                                                 {linkedCount}/{totalVariants} sizes linked
                                             </span>
-                                            {allLinked && <CheckCircle className="w-3 h-3 text-green-500" />}
+                                            {allLinked && <CheckCircle className="w-4 h-4 text-green-400 drop-shadow-[0_0_2px_currentColor]" />}
                                         </div>
                                     </div>
 
                                     {/* Expand Icon */}
-                                    {isExpanded ? (
-                                        <ChevronUp className="w-5 h-5 text-earth/30" />
-                                    ) : (
-                                        <ChevronDown className="w-5 h-5 text-earth/30" />
-                                    )}
+                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5 transition-colors group-hover:bg-white/10">
+                                        {isExpanded ? (
+                                            <ChevronUp className="w-4 h-4 text-cream/70" />
+                                        ) : (
+                                            <ChevronDown className="w-4 h-4 text-cream/70" />
+                                        )}
+                                    </div>
                                 </button>
 
                                 {/* Expanded Variant Mapping */}
                                 {isExpanded && (
-                                    <div className="p-4 pt-0 space-y-4 border-t border-white/30">
-                                        <p className="text-xs text-earth/50 mb-4">
-                                            Click a CJ variant to link it to a customer size option
-                                        </p>
+                                    <div className="p-4 md:p-6 pt-0 space-y-5 border-t border-white/5 bg-black/20">
+                                        <div className="pt-4 flex items-center gap-2">
+                                            <div className="h-px bg-white/10 flex-1"></div>
+                                            <p className="text-[10px] uppercase tracking-widest text-cream/40 px-2 font-medium">Customer Size &rarr; CJ Variant</p>
+                                            <div className="h-px bg-white/10 flex-1"></div>
+                                        </div>
 
                                         {/* Customer Variants (Sizes) */}
                                         {product.variants?.map((customerVar) => (
                                             <div
                                                 key={customerVar.id}
-                                                className="bg-white/40 rounded-lg p-3 border border-white/30"
+                                                className="bg-white/5 rounded-2xl p-4 border border-white/10 shadow-inner"
                                             >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="font-medium text-sm text-earth">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <span className="font-serif text-base text-cream drop-shadow-sm">
                                                         {customerVar.name}
                                                     </span>
                                                     {customerVar.cjVariantId && (
                                                         <button
                                                             onClick={() => handleUnlink(product._id, customerVar.id)}
                                                             disabled={linking === customerVar.id}
-                                                            className="text-xs text-red-500 hover:text-red-600 active:text-red-600 flex items-center gap-1.5 px-3 py-2 md:py-1 rounded-lg bg-red-50/50 hover:bg-red-100/50 active:bg-red-100/50 transition-colors"
+                                                            className="text-[11px] uppercase tracking-widest font-medium text-red-400 hover:text-red-300 active:text-red-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 transition-colors border border-red-500/30 shadow-inner"
                                                         >
                                                             {linking === customerVar.id ? (
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                                             ) : (
-                                                                <Unlink className="w-3 h-3" />
+                                                                <Unlink className="w-3.5 h-3.5" />
                                                             )}
                                                             Unlink
                                                         </button>
@@ -221,13 +234,13 @@ export const CJVariantManager: React.FC = () => {
 
                                                 {customerVar.cjVariantId ? (
                                                     // Show linked CJ variant
-                                                    <div className="bg-green-50/50 border border-green-200/50 rounded-lg p-2 flex items-center gap-2">
-                                                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                                    <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-3 flex items-center gap-3 shadow-inner">
+                                                        <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 drop-shadow-[0_0_3px_currentColor]" />
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-xs text-green-700 font-medium truncate">
+                                                            <p className="text-sm text-green-400 font-medium truncate drop-shadow-sm">
                                                                 {product.cjVariants?.find(v => v.vid === customerVar.cjVariantId)?.name || customerVar.cjVariantId}
                                                             </p>
-                                                            <p className="text-[10px] text-green-600/70 font-mono">
+                                                            <p className="text-[11px] text-green-400/60 font-mono mt-0.5">
                                                                 SKU: {customerVar.cjSku || 'N/A'}
                                                             </p>
                                                         </div>
@@ -247,38 +260,45 @@ export const CJVariantManager: React.FC = () => {
                                                                     onClick={() => handleLink(product._id, customerVar.id, cjVar)}
                                                                     disabled={isAlreadyLinked || isLinking}
                                                                     className={`
-                                                                        text-xs px-3 py-2 md:py-1.5 rounded-lg border transition-all flex items-center gap-1.5 active:scale-[0.97]
+                                                                        text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-2 active:scale-[0.98]
                                                                         ${isAlreadyLinked
-                                                                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                                                            : 'bg-white/50 text-earth border-white/40 hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700'
+                                                                            ? 'bg-white/5 text-white/20 border border-transparent cursor-not-allowed hidden'
+                                                                            : 'bg-white/10 text-cream border border-white/20 hover:bg-purple-500/20 hover:border-purple-500/40 hover:text-purple-300 shadow-inner hover:shadow-[0_0_15px_rgba(168,85,247,0.2)]'
                                                                         }
                                                                     `}
                                                                     title={isAlreadyLinked ? 'Already linked to another size' : `Link to ${cjVar.name}`}
                                                                 >
-                                                                    {isLinking ? (
-                                                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                                                    ) : (
-                                                                        <ArrowRight className="w-3 h-3" />
+                                                                    {!isAlreadyLinked && (
+                                                                        <>
+                                                                            {isLinking ? (
+                                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                                            ) : (
+                                                                                <ArrowRight className="w-4 h-4 opacity-70" />
+                                                                            )}
+                                                                            {cjVar.name}
+                                                                        </>
                                                                     )}
-                                                                    {cjVar.name}
                                                                 </button>
                                                             );
                                                         })}
+                                                        {product.cjVariants?.every(cjVar => product.variants?.some(v => v.cjVariantId === cjVar.vid && v.id !== customerVar.id)) && (
+                                                            <span className="text-[11px] text-cream/40 italic py-2">All available CJ sizes have been mapped to other variants.</span>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
                                         ))}
 
                                         {/* CJ Variants reference */}
-                                        <div className="mt-4 pt-4 border-t border-white/30">
-                                            <p className="text-[10px] uppercase tracking-wider text-earth/40 mb-2">
+                                        <div className="mt-6 pt-6 border-t border-white/5">
+                                            <p className="text-[10px] uppercase tracking-widest text-cream/40 mb-3 font-medium">
                                                 Available CJ Variants ({product.cjVariants?.length || 0})
                                             </p>
-                                            <div className="flex flex-wrap gap-1">
+                                            <div className="flex flex-wrap gap-2">
                                                 {product.cjVariants?.map(v => (
                                                     <span
                                                         key={v.vid}
-                                                        className="text-[10px] bg-white/50 px-2 py-0.5 rounded text-earth/60"
+                                                        className="text-[10px] bg-white/5 border border-white/10 px-2.5 py-1 rounded-md text-cream/60 font-mono shadow-inner"
                                                     >
                                                         {v.name}
                                                     </span>

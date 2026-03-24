@@ -40,11 +40,11 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({ link, handleNavigation, d
       <div key={child.label} className="w-full">
         <button
           onClick={() => handleNavigation(child.href)}
-          className={`w-full text-left font-serif text-earth transition-all duration-300 hover:text-bronze py-2 ${currentDepth === 1
-            ? 'text-lg pl-4 font-medium'
+          className={`w-full text-left font-serif transition-all duration-300 hover:text-bronze py-2 ${currentDepth === 1
+            ? 'text-lg pl-4 font-medium text-cream'
             : currentDepth === 2
-              ? 'text-base pl-6 text-earth/80'
-              : 'text-sm pl-8 text-earth/70'
+              ? 'text-base pl-6 text-cream/80'
+              : 'text-sm pl-8 text-cream/70'
             }`}
         >
           {child.label}
@@ -70,12 +70,12 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({ link, handleNavigation, d
               handleNavigation(link.href);
             }
           }}
-          className={`flex-1 text-left font-serif text-earth transition-all duration-300 group-hover:text-bronze ${depth === 0 ? 'text-4xl md:text-5xl' : 'text-xl md:text-2xl mt-4'}`}
+          className={`flex-1 text-left font-serif text-cream transition-all duration-300 hover:text-bronze group-hover:text-bronze ${depth === 0 ? 'text-4xl md:text-5xl drop-shadow-md' : 'text-xl md:text-2xl mt-4'}`}
         >
           {link.label}
         </button>
         {hasChildren && (
-          <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-earth/50">
+          <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-cream/50 hover:text-cream transition-colors">
             <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
           </button>
         )}
@@ -88,7 +88,7 @@ const MobileNavLink: React.FC<MobileNavLinkProps> = ({ link, handleNavigation, d
             {/* Clickable Parent Link inside submenu if it has separate destination */}
             <button
               onClick={() => handleNavigation(link.href)}
-              className="block text-left text-xs uppercase tracking-[0.25em] text-earth/60 hover:text-bronze transition-colors py-2 pl-4 italic"
+              className="block text-left text-xs uppercase tracking-[0.25em] text-bronze/80 hover:text-white transition-colors py-2 pl-4 italic"
             >
               View All {link.label}
             </button>
@@ -284,27 +284,29 @@ const AppContent = () => {
       {/* Only show Header/Footer if NOT in admin mode */}
       {activePage !== 'admin' && (
         <>
-          {/* Mobile Menu Overlay */}
+          {/* Mobile Menu Overlay - Hyper Glassmorphic */}
           <div
-            className={`fixed inset-0 z-50 flex flex-col bg-[#F9F7F2] transition-all duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${mobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-[20px] pointer-events-none'
+            className={`fixed inset-0 z-50 flex flex-col backdrop-blur-3xl bg-gradient-to-br from-[#3a2a1a]/95 via-[#2d1f12]/95 to-[#1a130a]/95 transition-all duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${mobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-[20px] pointer-events-none'
               }`}
           >
+            {/* Inner Sheen overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
             {/* Mobile Header */}
-            <div className="flex justify-between items-center px-6 py-6 md:px-12">
-              <div className="flex flex-col">
-                <span className="font-serif text-2xl text-earth italic tracking-tight">Louie Mae</span>
-                <span className="text-[0.5rem] uppercase tracking-[0.3em] text-bronze/70">Navigation</span>
+            <div className="flex justify-between items-center px-6 py-6 md:px-12 relative z-10 border-b border-white/10">
+              <div className="flex flex-col drop-shadow-lg">
+                <span className="font-serif text-3xl text-cream italic tracking-tight">Louie Mae</span>
+                <span className="text-[0.55rem] uppercase tracking-[0.3em] text-bronze">Navigation</span>
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="group relative w-10 h-10 flex items-center justify-center rounded-full border border-earth/10 hover:border-earth/30 transition-all duration-300"
+                className="group relative w-10 h-10 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/40 transition-all duration-300 shadow-lg"
               >
-                <X className="w-5 h-5 text-earth group-hover:rotate-90 transition-transform duration-500" />
+                <X className="w-5 h-5 text-cream group-hover:rotate-90 transition-transform duration-500" />
               </button>
             </div>
 
             {/* Mobile Links */}
-            <div className="flex-1 flex flex-col px-8 md:px-16 overflow-y-auto no-scrollbar">
+            <div className="flex-1 flex flex-col px-8 md:px-16 overflow-y-auto no-scrollbar relative z-10">
               <div className="space-y-6 md:space-y-8 flex flex-col items-start max-w-lg mx-auto w-full py-10">
                 {extendedNavLinks.map((link) => (
                   <MobileNavLink key={link.label} link={link} handleNavigation={handleNavigation} />
@@ -313,21 +315,22 @@ const AppContent = () => {
             </div>
 
             {/* Mobile Footer */}
-            <div className="px-8 py-8 md:px-12 border-t border-earth/5">
+            <div className="px-8 py-8 md:px-12 border-t border-white/10 relative z-10 bg-black/20">
               <div className="flex justify-between items-end">
                 <div className="space-y-2">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-earth/40">Connect</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-cream/40">Connect</p>
                   <div className="flex gap-6">
-                    <Instagram className="w-5 h-5 text-earth/60 hover:text-earth transition-colors" />
-                    <Facebook className="w-5 h-5 text-earth/60 hover:text-earth transition-colors" />
-                    <Twitter className="w-5 h-5 text-earth/60 hover:text-earth transition-colors" />
+                    <Instagram className="w-5 h-5 text-cream/60 hover:text-white transition-colors" />
+                    <Facebook className="w-5 h-5 text-cream/60 hover:text-white transition-colors" />
+                    <Twitter className="w-5 h-5 text-cream/60 hover:text-white transition-colors" />
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-3">
-                  <button onClick={() => handleNavigation('#admin')} className="text-[10px] uppercase tracking-[0.2em] text-earth/40 hover:text-bronze transition-colors">
-                    Admin Portal
+                  <button onClick={() => handleNavigation('#admin')} className="text-[10px] uppercase tracking-[0.2em] text-cream/40 hover:text-bronze transition-colors flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                    Atelier
                   </button>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-earth/30">Est. 2021</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-cream/30">Est. 2021</p>
                 </div>
               </div>
             </div>
@@ -335,7 +338,7 @@ const AppContent = () => {
 
           {/* Desktop Header */}
           <header
-            className={`fixed top-0 left-0 right-0 z-40 transition-all duration-700 border-b ${scrolled ? 'bg-cream/90 backdrop-blur-md py-3 border-sand/40 shadow-sm' : 'bg-transparent py-6 border-transparent'
+            className={`fixed top-0 left-0 right-0 z-40 transition-all duration-700 border-b ${scrolled ? 'bg-white/30 backdrop-blur-3xl py-3 border-white/40 shadow-[0_15px_30px_rgba(139,90,43,0.1)]' : 'bg-transparent py-6 border-transparent'
               }`}
           >
             <div className="w-full px-6 md:px-12 relative flex justify-between items-center min-h-[50px]">
@@ -361,11 +364,13 @@ const AppContent = () => {
                           {link.children && <ChevronDown className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />}
                         </button>
 
-                        {/* Level 1 Dropdown */}
+                        {/* Level 1 Dropdown - Hyper Glassmorphic Admin Gradient */}
                         {link.children && (
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200">
-                            <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-4 px-4 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[220px] max-h-[75vh] overflow-y-auto">
-                              <div className="flex flex-col gap-0.5">
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                            <div className="bg-gradient-to-br from-[#3a2a1a]/95 via-[#2d1f12]/95 to-[#1a130a]/95 backdrop-blur-3xl border border-white/20 py-5 px-5 shadow-[0_30px_60px_rgba(139,90,43,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] rounded-2xl min-w-[240px] max-h-[75vh] overflow-y-auto relative overflow-hidden text-cream">
+                              {/* Inner Glass Highlight */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-bronze/5 pointer-events-none" />
+                              <div className="flex flex-col gap-1 relative z-10">
                                 {link.children.map(child => (
                                   <div key={child.label} className="w-full">
                                     {/* Category Header */}
@@ -374,31 +379,31 @@ const AppContent = () => {
                                         e.stopPropagation();
                                         handleNavigation(child.href);
                                       }}
-                                      className="w-full text-left text-[0.7rem] uppercase tracking-[0.15em] text-earth font-medium py-2 px-2 hover:text-bronze transition-colors rounded-md hover:bg-white/40"
+                                      className="w-full text-left text-[0.7rem] uppercase tracking-[0.15em] font-medium py-2 px-3 hover:text-white transition-colors rounded-xl hover:bg-white/10 text-cream/90"
                                     >
                                       {child.label}
                                     </button>
 
                                     {/* Subcategories - Always visible */}
                                     {child.children && (
-                                      <div className="ml-3 mb-2 border-l border-bronze/15 pl-2">
+                                      <div className="ml-4 mb-3 border-l border-white/10 pl-3">
                                         {child.children.map(subChild => (
                                           <div key={subChild.label}>
                                             <button
                                               onClick={(e) => { e.stopPropagation(); handleNavigation(subChild.href); }}
-                                              className="w-full text-left text-[0.6rem] uppercase tracking-[0.12em] text-earth/70 py-1.5 px-2 hover:text-bronze transition-colors rounded hover:bg-white/30"
+                                              className="w-full text-left text-[0.6rem] uppercase tracking-[0.12em] text-cream/70 py-1.5 px-2 hover:text-white transition-colors rounded-md hover:bg-white/5 mt-1"
                                             >
                                               {subChild.label}
                                             </button>
 
                                             {/* Deep items - Always visible */}
                                             {subChild.children && (
-                                              <div className="ml-3 border-l border-bronze/10 pl-2">
+                                              <div className="ml-3 border-l border-white/5 pl-2">
                                                 {subChild.children.map(deepChild => (
                                                   <button
                                                     key={deepChild.label}
                                                     onClick={(e) => { e.stopPropagation(); handleNavigation(deepChild.href); }}
-                                                    className="w-full text-left text-[0.55rem] uppercase tracking-[0.1em] text-earth/60 py-1.5 px-2 hover:text-bronze transition-colors rounded hover:bg-white/20"
+                                                    className="w-full text-left text-[0.55rem] uppercase tracking-[0.1em] text-cream/50 py-1.5 px-2 hover:text-white transition-colors rounded-md hover:bg-white/5"
                                                   >
                                                     {deepChild.label}
                                                   </button>
@@ -547,47 +552,64 @@ const AppContent = () => {
         <>{currentView}</>
       )}
 
-      {/* Footer (Hidden on Admin) */}
+      {/* Hyper-Glassmorphic Footer */}
       {activePage !== 'admin' && (
-        <footer className="bg-earth text-cream pt-20 pb-10 px-6">
-          <div className="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-            <div>
-              <h4 className="font-serif text-2xl mb-6">Louie Mae</h4>
-              <p className="text-sm text-sand/70 font-sans leading-relaxed">
-                Curating a life you love through timeless design and authentic living.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-serif text-xl mb-6">Shop</h4>
-              <ul className="space-y-3 text-sm text-sand/70">
-                <li><button onClick={() => handleNavigation('#new-arrivals')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">New Arrivals</button></li>
-                <li><button onClick={() => handleNavigation('#collection/fashion')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Women's</button></li>
-                <li><button onClick={() => handleNavigation('#collection/furniture')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Furniture</button></li>
-                <li><button onClick={() => handleNavigation('#collection/decor')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Decor</button></li>
-                <li><button onClick={() => handleNavigation('#collection/kids')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Kids</button></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-serif text-xl mb-6">Support</h4>
-              <ul className="space-y-3 text-sm text-sand/70">
-                <li><button onClick={() => handleNavigation('#support/shipping')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Shipping & Returns</button></li>
-                <li><button onClick={() => handleNavigation('#support/faq')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">FAQ</button></li>
-                <li><button onClick={() => handleNavigation('#support/contact')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Contact Us</button></li>
-                <li><button onClick={() => handleNavigation('#support/privacy')} className="hover:text-white active:text-white text-left cursor-pointer touch-manipulation">Privacy Policy</button></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-serif text-xl mb-6">Follow Us</h4>
-              <div className="flex gap-4">
-                <Instagram className="w-5 h-5 text-sand hover:text-white cursor-pointer transition-colors" />
-                <Facebook className="w-5 h-5 text-sand hover:text-white cursor-pointer transition-colors" />
-                <Twitter className="w-5 h-5 text-sand hover:text-white cursor-pointer transition-colors" />
+        <footer className="relative bg-gradient-to-b from-[#2a1a0f] to-[#1a130a] text-cream border-t border-bronze/20 overflow-hidden">
+          {/* Decorative Glossy Glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-bronze/10 filter blur-[80px] rounded-full pointer-events-none" />
+          
+          <div className="container mx-auto pt-24 pb-12 px-6 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+              <div>
+                <h4 className="font-serif text-3xl mb-6 text-white drop-shadow-md">Louie Mae</h4>
+                <p className="text-sm text-cream/70 font-sans leading-relaxed">
+                  Curating a life you love through timeless design and authentic living.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-serif text-xl mb-6 text-white/90">Shop</h4>
+                <ul className="space-y-4 text-sm text-cream/70">
+                  <li><button onClick={() => handleNavigation('#new-arrivals')} className="hover:text-white transition-colors cursor-pointer w-full text-left">New Arrivals</button></li>
+                  <li><button onClick={() => handleNavigation('#collection/fashion')} className="hover:text-white transition-colors cursor-pointer w-full text-left">Women's</button></li>
+                  <li><button onClick={() => handleNavigation('#collection/furniture')} className="hover:text-white transition-colors cursor-pointer w-full text-left">Furniture</button></li>
+                  <li><button onClick={() => handleNavigation('#collection/decor')} className="hover:text-white transition-colors cursor-pointer w-full text-left">Decor</button></li>
+                  <li><button onClick={() => handleNavigation('#collection/kids')} className="hover:text-white transition-colors cursor-pointer w-full text-left">Kids</button></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-serif text-xl mb-6 text-white/90">Support</h4>
+                <ul className="space-y-4 text-sm text-cream/70">
+                  <li><button onClick={() => handleNavigation('#support/shipping')} className="hover:text-white transition-colors cursor-pointer w-full text-left">Shipping & Returns</button></li>
+                  <li><button onClick={() => handleNavigation('#support/faq')} className="hover:text-white transition-colors cursor-pointer w-full text-left">FAQ</button></li>
+                  <li><button onClick={() => handleNavigation('#support/contact')} className="hover:text-white transition-colors cursor-pointer w-full text-left">Contact Us</button></li>
+                  <li><button onClick={() => handleNavigation('#support/privacy')} className="hover:text-white transition-colors cursor-pointer w-full text-left">Privacy Policy</button></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-serif text-xl mb-6 text-white/90">Follow Us</h4>
+                <div className="flex gap-5">
+                  <div className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all cursor-pointer">
+                    <Instagram className="w-5 h-5 text-cream" />
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all cursor-pointer">
+                    <Facebook className="w-5 h-5 text-cream" />
+                  </div>
+                  <div className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/15 hover:border-bronze/40 transition-all cursor-pointer">
+                    <Twitter className="w-5 h-5 text-cream" />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="border-t border-white/10 pt-8 flex justify-between items-center text-xs text-sand/50 uppercase tracking-widest">
-            <span>© 2024 Louie Mae Collective.</span>
-            <button onClick={() => handleNavigation('#admin')} className="hover:text-bronze transition-colors">Admin</button>
+            <div className="border-t border-white/10 pt-8 flex justify-between items-center text-xs text-cream/40 uppercase tracking-[0.2em] font-medium">
+              <span>© 2026 Louie Mae Collective.</span>
+              <button 
+                onClick={() => handleNavigation('#admin')} 
+                className="hover:text-bronze transition-colors flex items-center gap-1.5 border border-white/5 px-4 py-2 rounded-full hover:bg-white/5"
+              >
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                Enter Atelier
+              </button>
+            </div>
           </div>
         </footer>
       )}

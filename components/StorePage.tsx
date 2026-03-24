@@ -185,27 +185,28 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   const ProductCard: React.FC<{ product: Product; index: number; compact?: boolean }> = ({ product, index, compact }) => (
     <FadeIn delay={index * 50} className="group cursor-pointer">
       <div
-        className={`relative ${compact ? 'aspect-square' : 'aspect-[3/4]'} overflow-hidden bg-white mb-3 rounded-lg`}
+        className={`relative ${compact ? 'aspect-square' : 'aspect-[3/4]'} overflow-hidden bg-white mb-3 rounded-2xl shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-500 border border-white/40 group`}
         onClick={() => handleSelectProduct(product)}
       >
         {product.isNew && !compact && (
-          <span className="absolute top-2 left-2 bg-white/90 px-2 py-1 text-[8px] uppercase tracking-widest text-earth z-10 rounded-sm">
+          <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-md px-2 py-1 text-[8px] uppercase tracking-widest text-earth z-10 rounded-sm shadow-sm border border-white/50">
             New
           </span>
         )}
         <img
           src={product.images[0]}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+        {/* Subtle Inner Glow Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         {!compact && (
-          <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+          <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
             <GlassButton
               variant="primary"
               size="sm"
               fullWidth
-              className="py-2 md:py-2 text-[10px] bg-white/80 hover:bg-earth hover:text-white text-earth border-white/40"
+              className="py-3 text-[10px] bg-white/80 backdrop-blur-md shadow-lg border border-white/50 hover:bg-earth hover:text-white transition-colors duration-300"
             >
               Quick View
             </GlassButton>
@@ -213,11 +214,11 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
         )}
       </div>
 
-      <div className={compact ? 'px-1' : ''}>
+      <div className={compact ? 'px-2' : 'px-1'}>
         <h3 className={`font-serif ${compact ? 'text-sm' : 'text-base'} text-earth leading-tight mb-1 group-hover:text-bronze transition-colors truncate`}>
           {product.name}
         </h3>
-        <span className={`font-serif italic text-earth/80 ${compact ? 'text-sm' : 'text-base'}`}>${product.price}</span>
+        <span className={`font-serif italic text-earth/80 ${compact ? 'text-sm' : 'text-base'} group-hover:text-bronze/80 transition-colors`}>${product.price}</span>
       </div>
     </FadeIn>
   );
@@ -328,13 +329,14 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             <div className="absolute inset-0 bg-earth/40 rounded-[2rem]" />
 
             {/* Glassmorphic Floating Module */}
-            <div className="relative z-10 w-full p-12 md:p-20 flex flex-col items-center justify-center text-center backdrop-blur-2xl bg-earth/15 border border-white/10 rounded-[2rem]">
+            <div className="relative z-10 w-full p-12 md:p-20 flex flex-col items-center justify-center text-center backdrop-blur-3xl bg-black/60 border border-white/20 shadow-2xl rounded-[2rem] overflow-hidden">
               {/* Subtle light effect inside the card */}
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl opacity-50 -z-10 translate-x-1/3 -translate-y-1/3" />
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-bronze/20 rounded-full blur-3xl opacity-60 -z-10 translate-x-1/3 -translate-y-1/3" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl opacity-50 -z-10 -translate-x-1/4 translate-y-1/4" />
 
-              <h4 className="font-serif text-4xl md:text-5xl text-white mb-4 tracking-tight">Coming Soon</h4>
-              <p className="text-sm md:text-xs text-white/60 uppercase tracking-[0.2em] mb-12 max-w-md mx-auto leading-relaxed font-light">
+              <h4 className="font-serif text-4xl md:text-5xl text-cream mb-4 tracking-tight drop-shadow-md">Coming Soon</h4>
+              <p className="text-sm md:text-xs text-cream/70 uppercase tracking-[0.2em] mb-12 max-w-md mx-auto leading-relaxed font-light">
                 Join the inner circle. Receive 24-hour early access to {category.title} drops before they open to the public.
               </p>
 
@@ -592,8 +594,8 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                                 <p className="text-white/70 text-xs uppercase tracking-[0.2em]">
                                   {cat.caption || 'Shop Now'}
                                 </p>
-                                <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                  <span className="inline-flex items-center text-white text-sm">
+                              <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                  <span className="inline-flex items-center text-white text-sm bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
                                     Explore
                                     <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -760,36 +762,41 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
       {viewLevel === 'PRODUCT' && (
         <>
           {/* Filter & Toolbar */}
-          <div className="sticky top-[73px] z-30 bg-cream/95 backdrop-blur-md border-b border-earth/10 px-4 md:px-8 py-4 transition-all duration-300">
-            <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="sticky top-[73px] z-30 bg-gradient-to-r from-[#1a130a]/95 via-[#2d1f12]/95 to-[#1a130a]/95 backdrop-blur-3xl border-b border-white/10 px-4 md:px-8 py-4 transition-all duration-300 shadow-xl">
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+            <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4 relative z-10">
               <div className="flex items-center gap-4 md:gap-6 overflow-x-auto no-scrollbar w-full md:w-auto pb-2 md:pb-0">
                 <button
                   onClick={() => handleCategoryChange(getBackDestination())}
-                  className="whitespace-nowrap text-[10px] uppercase tracking-widest text-earth/50 hover:text-earth flex items-center gap-1"
+                  className="whitespace-nowrap text-[10px] uppercase tracking-widest text-cream/50 hover:text-cream flex items-center gap-1 group transition-colors"
                 >
-                  <ArrowLeft className="w-3 h-3" /> Back
+                  <div className="bg-white/5 border border-white/10 p-1.5 rounded-full group-hover:bg-white/10 transition-colors">
+                    <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                  </div>
+                  Back
                 </button>
+                <div className="h-6 w-px bg-white/10 mx-2 hidden md:block"></div>
                 {categories.slice(0, 8).map(cat => (
                   <button
                     key={cat}
                     onClick={() => handleCategoryChange(cat)}
-                    className={`whitespace-nowrap text-[10px] uppercase tracking-widest transition-colors ${selectedCategory === cat ? 'text-earth border-b border-bronze font-medium' : 'text-earth/50 hover:text-earth'}`}
+                    className={`whitespace-nowrap text-[10px] uppercase tracking-widest transition-all duration-300 px-3 py-1.5 rounded-full ${selectedCategory === cat ? 'bg-white/10 text-cream border border-white/20 shadow-inner' : 'text-cream/50 hover:text-cream hover:bg-white/5 border border-transparent'}`}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 ml-auto md:ml-0">
-                <span className="text-[10px] uppercase tracking-widest text-earth/50">Sort By:</span>
+              <div className="flex items-center gap-2 ml-auto md:ml-0 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
+                <span className="text-[10px] uppercase tracking-widest text-cream/50">Sort By:</span>
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as any)}
-                  className="bg-transparent text-[10px] uppercase tracking-widest text-earth focus:outline-none cursor-pointer"
+                  className="bg-transparent text-[10px] uppercase tracking-widest text-bronze focus:outline-none cursor-pointer appearance-none ml-1 font-medium"
                 >
-                  <option value="newest">Newest</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
+                  <option value="newest" className="bg-stone-900 text-cream">Newest</option>
+                  <option value="price-asc" className="bg-stone-900 text-cream">Price: Low to High</option>
+                  <option value="price-desc" className="bg-stone-900 text-cream">Price: High to Low</option>
                 </select>
               </div>
             </div>

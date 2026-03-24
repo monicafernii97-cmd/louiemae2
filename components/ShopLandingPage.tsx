@@ -26,12 +26,14 @@ export const ShopLandingPage: React.FC = () => {
                   <h1 className="font-serif text-6xl md:text-8xl text-earth leading-none">Louie Mae</h1>
                </FadeIn>
 
-               <FadeIn delay={200} className="w-full overflow-hidden rounded-[2.5rem] shadow-sm">
+               <FadeIn delay={200} className="w-full relative overflow-hidden rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-earth/5">
                   <img
                      src={home.shop?.headerImage || "/images/brand/DINNERTABLE.png"}
                      alt="Louie Mae Signature"
                      className="w-full h-[300px] md:h-[450px] object-cover"
                   />
+                  {/* Subtle edge highlight */}
+                  <div className="absolute inset-0 border border-white/30 rounded-[2.5rem] pointer-events-none mix-blend-overlay"></div>
                </FadeIn>
             </div>
          </section>
@@ -49,7 +51,7 @@ export const ShopLandingPage: React.FC = () => {
                      <FadeIn
                         key={cat.id}
                         delay={idx * 100}
-                        className={`group cursor-pointer relative overflow-hidden rounded-[2.5rem] shadow-sm border border-earth/5 ${idx === 0 ? 'md:row-span-2 h-[600px] md:h-auto' : 'h-[300px] md:h-[400px]'
+                        className={`group cursor-pointer relative overflow-hidden rounded-[2.5rem] shadow-lg hover:shadow-[0_30px_60px_rgba(0,0,0,0.2)] hover:-translate-y-2 transition-all duration-700 border border-white/20 ${idx === 0 ? 'md:row-span-2 h-[600px] md:h-auto' : 'h-[300px] md:h-[400px]'
                            }`}
                      >
                         <div
@@ -59,18 +61,21 @@ export const ShopLandingPage: React.FC = () => {
                            <img
                               src={cat.image}
                               alt={cat.title}
-                              className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 ${(cat as any).objectPosition || ''}`}
+                              className={`w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110 ${(cat as any).objectPosition || ''}`}
                            />
 
-                           {/* Overlay Gradient */}
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                           {/* Inner Glow Highlight */}
+                           <div className="absolute inset-0 border-[2px] border-white/0 group-hover:border-white/10 rounded-[2.5rem] transition-colors duration-700 pointer-events-none z-20 mix-blend-overlay"></div>
+
+                           {/* Overlay Gradient (Elevated) */}
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-700 z-10"></div>
 
                            {/* Content */}
-                           <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10 flex flex-col justify-end items-start transform transition-transform duration-500 group-hover:-translate-y-2">
-                              <span className="text-[10px] uppercase tracking-[0.3em] text-white/80 mb-2">{cat.subtitle}</span>
+                           <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10 flex flex-col justify-end items-start transform transition-transform duration-700 group-hover:-translate-y-3 z-30">
+                              <span className="text-[10px] uppercase tracking-[0.3em] text-white/80 mb-2 drop-shadow-sm">{cat.subtitle}</span>
                               <div className="flex items-center justify-between w-full">
-                                 <h3 className="font-serif text-3xl md:text-5xl text-white leading-none">{cat.title}</h3>
-                                 <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+                                 <h3 className="font-serif text-3xl md:text-5xl text-white leading-none drop-shadow-md">{cat.title}</h3>
+                                 <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-x-4 group-hover:translate-x-0 shadow-lg">
                                     <ArrowUpRight className="w-5 h-5 text-white" />
                                  </div>
                               </div>
