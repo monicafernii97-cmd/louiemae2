@@ -406,10 +406,10 @@ const EssenceStep: React.FC<{
                         {/* AI Toggle */}
                         <div className="mt-4 flex items-center gap-2">
                             <label className="flex items-center gap-2 cursor-pointer group select-none">
-                                <div className={`w-9 h-5 rounded-full p-1 transition-colors border ${autoEnhance ? 'bg-bronze/40 border-bronze/50' : 'bg-black/40 border-white/10'}`}>
+                                <input type="checkbox" checked={autoEnhance} onChange={(e) => setAutoEnhance(e.target.checked)} className="sr-only peer" />
+                                <div className={`w-9 h-5 rounded-full p-1 transition-colors border peer-focus:ring-2 peer-focus:ring-bronze/50 ${autoEnhance ? 'bg-bronze/40 border-bronze/50' : 'bg-black/40 border-white/10'}`}>
                                     <div className={`w-3 h-3 rounded-full shadow-sm transition-transform ${autoEnhance ? 'bg-amber-400 translate-x-4 shadow-[0_0_5px_currentColor]' : 'bg-cream/50 translate-x-0'}`} />
                                 </div>
-                                <input type="checkbox" checked={autoEnhance} onChange={(e) => setAutoEnhance(e.target.checked)} className="sr-only peer" />
                                 <span className={`text-xs font-medium tracking-wide transition-colors ${autoEnhance ? 'text-amber-400 drop-shadow-sm' : 'text-cream/40'}`}>
                                     Auto-Enhance
                                 </span>
@@ -528,18 +528,18 @@ const EssenceStep: React.FC<{
 
                         <div className="flex gap-6 pt-2">
                             <label className="flex items-center gap-3 cursor-pointer group">
-                                <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${product.isNew ? 'bg-bronze/40 border-bronze/50' : 'bg-black/40 border-white/10 group-hover:border-white/30'}`}>
+                                <input type="checkbox" checked={product.isNew || false} onChange={(e) => onChange({ ...product, isNew: e.target.checked })} className="sr-only peer" />
+                                <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors peer-focus:ring-2 peer-focus:ring-bronze/50 ${product.isNew ? 'bg-bronze/40 border-bronze/50' : 'bg-black/40 border-white/10 group-hover:border-white/30'}`}>
                                     {product.isNew && <CheckCircle className="w-3.5 h-3.5 text-amber-400 shadow-[0_0_5px_currentColor]" />}
                                 </div>
-                                <input type="checkbox" checked={product.isNew || false} onChange={(e) => onChange({ ...product, isNew: e.target.checked })} className="sr-only peer" />
                                 <span className="text-xs uppercase tracking-widest text-cream/70 group-hover:text-cream">New Arrival</span>
                             </label>
 
                             <label className="flex items-center gap-3 cursor-pointer group">
-                                <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${product.inStock ? 'bg-green-500/20 border-green-500/30' : 'bg-black/40 border-white/10 group-hover:border-white/30'}`}>
+                                <input type="checkbox" checked={product.inStock || false} onChange={(e) => onChange({ ...product, inStock: e.target.checked })} className="sr-only peer" />
+                                <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors peer-focus:ring-2 peer-focus:ring-green-500/50 ${product.inStock ? 'bg-green-500/20 border-green-500/30' : 'bg-black/40 border-white/10 group-hover:border-white/30'}`}>
                                     {product.inStock && <CheckCircle className="w-3.5 h-3.5 text-green-400 shadow-[0_0_5px_currentColor]" />}
                                 </div>
-                                <input type="checkbox" checked={product.inStock || false} onChange={(e) => onChange({ ...product, inStock: e.target.checked })} className="sr-only peer" />
                                 <span className="text-xs uppercase tracking-widest text-cream/70 group-hover:text-cream">In Stock</span>
                             </label>
                         </div>
