@@ -72,7 +72,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-0 md:p-6 animate-fade-in">
+        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-0 md:p-6 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="product-studio-title">
             {/* Centered Modal Container */}
             <div className="w-full h-full md:h-auto md:max-w-6xl md:max-h-[90vh] bg-gradient-to-br from-[#120D09] to-[#0A0705] md:rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden relative border border-white/10 animate-fade-in-up">
                 
@@ -89,7 +89,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                                 <span className="w-6 h-px bg-bronze/50 shadow-[#C19A6B]"></span>
                                 The Atelier
                             </span>
-                            <h1 className="font-serif text-2xl md:text-4xl text-cream tracking-tight max-w-2xl truncate leading-tight drop-shadow-md">
+                            <h1 id="product-studio-title" className="font-serif text-2xl md:text-4xl text-cream tracking-tight max-w-2xl truncate leading-tight drop-shadow-md">
                                 {product.name || <span className="text-cream/20 italic">Untitled Creation</span>}
                             </h1>
                         </div>
@@ -245,10 +245,11 @@ const EssenceStep: React.FC<{
     const [autoEnhance, setAutoEnhance] = useState(false); // Default off to avoid quota issues
 
     const handleImport = async () => {
-        if (!importUrl) return;
+        const normalizedUrl = importUrl.trim();
+        if (!normalizedUrl) return;
         setIsImporting(true);
         try {
-            const result = await scrapeProduct({ url: importUrl });
+            const result = await scrapeProduct({ url: normalizedUrl });
             if (!result) throw new Error("Failed to fetch");
 
             let scrapedData: any = {};
@@ -257,7 +258,7 @@ const EssenceStep: React.FC<{
                 // OTAPI 1688 product — use shared extraction helper
                 const item = result.data;
                 if (item) {
-                    const fields = extractOtapiFields(item, importUrl);
+                    const fields = extractOtapiFields(item, normalizedUrl);
                     scrapedData = {
                         name: fields.name,
                         price: fields.price,
@@ -276,7 +277,7 @@ const EssenceStep: React.FC<{
                     images: Array.isArray(data.images) && data.images.length > 0
                         ? data.images
                         : (data.image ? [data.image] : []),
-                    sourceUrl: data.url || importUrl,
+                    sourceUrl: data.url || normalizedUrl,
                 };
             }
 
@@ -395,7 +396,7 @@ const EssenceStep: React.FC<{
                             </div>
                             <button
                                 onClick={handleImport}
-                                disabled={isImporting || !importUrl}
+                                disabled={isImporting || !importUrl.trim()}
                                 className="px-6 py-3 bg-white/10 text-cream border border-white/20 rounded-xl text-sm font-medium hover:bg-white/20 transition-all flex items-center gap-2 disabled:opacity-50 shadow-[0_4px_15px_rgba(0,0,0,0.3)] backdrop-blur-md"
                             >
                                 {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 text-bronze" />}
@@ -437,6 +438,7 @@ const EssenceStep: React.FC<{
                                     <button
                                         key={c.id}
                                         onClick={() => onChange({ ...product, collection: c.id })}
+                                        aria-pressed={product.collection === c.id}
                                         className={`px-4 py-2 text-sm rounded-full border transition-all ${product.collection === c.id
                                             ? 'border-bronze/50 bg-gradient-to-r from-bronze/20 to-bronze/5 text-amber-400 shadow-[0_0_15px_rgba(193,154,107,0.3)]'
                                             : 'border-white/10 text-cream/60 hover:border-white/30 hover:bg-white/5 hover:text-cream'}`}
