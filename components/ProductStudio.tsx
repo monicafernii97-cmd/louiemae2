@@ -20,6 +20,7 @@ type StudioStep = 'essence' | 'visuals' | 'story' | 'review';
 
 export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, initialProduct, onSave, siteContent }) => {
     const [step, setStep] = useState<StudioStep>('essence');
+    const [isSaving, setIsSaving] = useState(false);
     const [product, setProduct] = useState<Partial<Product>>({
         name: '',
         price: 0,
@@ -51,6 +52,19 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
         }
         wasOpenRef.current = isOpen;
     }, [isOpen, initialProduct]);
+
+    // Shared save handler — prevents duplicate concurrent saves
+    const handleSave = async () => {
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            await Promise.resolve(onSave(product));
+        } catch {
+            toast.error('Failed to save product');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // URL Scraper Action
     const scrapeProduct = useAction(api.scraper.scrapeProduct);
@@ -98,11 +112,12 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                             </button>
                             {/* Save on mobile - inline with close */}
                             <button
-                                onClick={() => onSave(product)}
-                                className="md:hidden group relative overflow-hidden bg-white/10 text-cream px-5 py-2 rounded-full text-[10px] uppercase tracking-[0.15em] font-medium border border-white/20"
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="md:hidden group relative overflow-hidden bg-white/10 text-cream px-5 py-2 rounded-full text-[10px] uppercase tracking-[0.15em] font-medium border border-white/20 disabled:opacity-50"
                             >
                                 <span className="flex items-center gap-1.5 drop-shadow-sm">
-                                    <Send className="w-3 h-3" /> Save
+                                    {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} {isSaving ? 'Saving...' : 'Save'}
                                 </span>
                             </button>
                         </div>
@@ -115,11 +130,12 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                         {/* Right: Save (desktop) */}
                         <div className="hidden md:flex justify-end flex-1">
                             <button
-                                onClick={() => onSave(product)}
-                                className="group relative overflow-hidden bg-white/10 backdrop-blur-md text-cream px-8 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-medium border border-white/20 hover:bg-white/20 hover:-translate-y-1 shadow-[0_4px_15px_rgba(0,0,0,0.3)] transition-all duration-300"
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="group relative overflow-hidden bg-white/10 backdrop-blur-md text-cream px-8 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-medium border border-white/20 hover:bg-white/20 hover:-translate-y-1 shadow-[0_4px_15px_rgba(0,0,0,0.3)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             >
                                 <span className="relative z-10 flex items-center gap-2 drop-shadow-sm">
-                                    <Send className="w-3 h-3" /> Save Product
+                                    {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} {isSaving ? 'Saving...' : 'Save Product'}
                                 </span>
                                 <div className="absolute inset-0 bg-gradient-to-r from-bronze/0 via-bronze/10 to-bronze/0 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                             </button>
@@ -164,7 +180,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                             product={product}
                             onChange={setProduct}
                             onBack={() => setStep('story')}
-                            onSave={() => onSave(product)}
+                            onSave={handleSave}
                             siteContent={siteContent}
                         />
                     )}
