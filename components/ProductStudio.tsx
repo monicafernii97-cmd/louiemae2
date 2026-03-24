@@ -181,6 +181,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                             onChange={setProduct}
                             onBack={() => setStep('story')}
                             onSave={handleSave}
+                            isSaving={isSaving}
                             siteContent={siteContent}
                         />
                     )}
@@ -714,7 +715,7 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
 };
 
 // --- Step 4: Review ---
-const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => void; onBack: () => void; onSave: () => void; siteContent: SiteContent }> = ({ product, onChange, onBack, onSave, siteContent }) => {
+const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => void; onBack: () => void; onSave: () => void; isSaving: boolean; siteContent: SiteContent }> = ({ product, onChange, onBack, onSave, isSaving, siteContent }) => {
     return (
         <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in-up">
             <div className="w-full max-w-5xl space-y-10">
@@ -772,9 +773,9 @@ const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => vo
                 </div>
 
                 <div className="flex justify-center pt-8">
-                    <button onClick={onSave} className="py-4 px-16 bg-white/10 text-cream backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 hover:-translate-y-1 transition-all flex items-center gap-3 text-xl font-light tracking-wide shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.6)] duration-300 relative overflow-hidden group">
+                    <button onClick={onSave} disabled={isSaving} className="py-4 px-16 bg-white/10 text-cream backdrop-blur-md border border-white/20 rounded-xl hover:bg-white/20 hover:-translate-y-1 transition-all flex items-center gap-3 text-xl font-light tracking-wide shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.6)] duration-300 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                         <span className="absolute inset-0 bg-gradient-to-r from-bronze/0 via-bronze/20 to-bronze/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
-                        <Send className="w-6 h-6 text-bronze drop-shadow-[0_0_5px_currentColor]" /> <span className="relative z-10">Publish Product</span>
+                        {isSaving ? <Loader2 className="w-6 h-6 animate-spin text-bronze" /> : <Send className="w-6 h-6 text-bronze drop-shadow-[0_0_5px_currentColor]" />} <span className="relative z-10">{isSaving ? 'Publishing...' : 'Publish Product'}</span>
                     </button>
                 </div>
             </div>
