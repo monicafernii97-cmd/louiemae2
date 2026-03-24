@@ -217,7 +217,7 @@ export const CJSettings: React.FC = () => {
                         <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none"></div>
                         {result.success ? <CheckCircle className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" /> : <XCircle className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" />}
                         <span className="font-medium tracking-wide text-xs md:text-sm flex-1 break-words relative z-10">{result.message}</span>
-                        <button onClick={() => setResult(null)} className="ml-auto hover:bg-white/10 p-1.5 rounded-full transition-colors relative z-10 border border-transparent hover:border-white/10">
+                        <button onClick={() => setResult(null)} aria-label="Dismiss notification" className="ml-auto hover:bg-white/10 p-1.5 rounded-full transition-colors relative z-10 border border-transparent hover:border-white/10">
                             <XCircle className="w-4 h-4 opacity-50 hover:opacity-100" />
                         </button>
                     </div>

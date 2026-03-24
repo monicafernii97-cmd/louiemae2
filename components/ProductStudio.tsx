@@ -736,10 +736,10 @@ const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => vo
                                 </div>
                             )}
 
-                            <div className="absolute inset-x-0 bottom-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-center pb-8 bg-gradient-to-t from-black/80 to-transparent z-20">
-                                <button className="bg-white/10 backdrop-blur-md text-cream px-6 py-3 text-xs uppercase tracking-[0.2em] border border-white/20 hover:bg-white/20 hover:shadow-[0_4px_15px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-all rounded-full">
+                            <div className="absolute inset-x-0 bottom-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-center pb-8 bg-gradient-to-t from-black/80 to-transparent z-20 pointer-events-none" aria-hidden="true">
+                                <span className="bg-white/10 backdrop-blur-md text-cream px-6 py-3 text-xs uppercase tracking-[0.2em] border border-white/20 rounded-full">
                                     View Details
-                                </button>
+                                </span>
                             </div>
                         </div>
                         <div className="p-6 text-center space-y-2 relative z-10 bg-gradient-to-t from-black/60 to-transparent">

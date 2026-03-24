@@ -109,6 +109,8 @@ export const remove = mutation({
 
 /**
  * Admin-only remove - simpler version for CJ Settings panel
+ * TODO: Enforce admin role/claim check here when role system is implemented.
+ * Currently a single-owner app, so auth-only guard is sufficient.
  */
 export const adminRemove = mutation({
     args: { id: v.id("products") },

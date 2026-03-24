@@ -928,9 +928,9 @@ export const AdminPage: React.FC = () => {
                                  </div>
                                  <div className="flex gap-2">
                                     {camp.status === 'draft' && (
-                                       <button onClick={() => setEditingCampaign(camp)} className="p-2 hover:bg-white/20 rounded-full text-cream transition-colors"><Edit3 className="w-4 h-4" /></button>
+                                       <button onClick={() => setEditingCampaign(camp)} aria-label={`Edit ${camp.subject}`} className="p-2 hover:bg-white/20 rounded-full text-cream transition-colors"><Edit3 className="w-4 h-4" /></button>
                                     )}
-                                    <button onClick={() => deleteCampaign(camp.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                    <button onClick={() => deleteCampaign(camp.id)} aria-label={`Delete ${camp.subject}`} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full transition-colors"><Trash2 className="w-4 h-4" /></button>
                                  </div>
                               </div>
                            ))}
@@ -969,9 +969,9 @@ export const AdminPage: React.FC = () => {
                                     <h4 className="font-serif text-lg text-cream">{col.title}</h4>
                                     <p className="text-[10px] uppercase tracking-widest text-cream/40">{col.subcategories.length} Subcategories</p>
                                  </div>
-                                 <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => setEditingCollection(col)} className="p-2 hover:bg-white/20 rounded-full text-cream"><Edit3 className="w-4 h-4" /></button>
-                                    <button onClick={() => handleDeleteCollection(col.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full"><Trash2 className="w-4 h-4" /></button>
+                                 <div className="flex gap-2 opacity-50 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                                    <button onClick={() => setEditingCollection(col)} aria-label={`Edit ${col.title}`} className="p-2 hover:bg-white/20 rounded-full text-cream"><Edit3 className="w-4 h-4" /></button>
+                                    <button onClick={() => handleDeleteCollection(col.id)} aria-label={`Delete ${col.title}`} className="p-2 hover:bg-red-500/20 text-red-400 rounded-full"><Trash2 className="w-4 h-4" /></button>
                                  </div>
                               </div>
                            ))}
