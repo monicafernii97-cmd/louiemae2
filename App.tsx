@@ -444,11 +444,13 @@ const AppContent = () => {
                           {link.children && <ChevronDown className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />}
                         </button>
 
-                        {/* Level 1 Dropdown - Static mega-menu layout */}
+                        {/* Level 1 Dropdown - Hyper Glassmorphic Admin Gradient */}
                         {link.children && (
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200">
-                            <div className="bg-cream/95 backdrop-blur-xl border border-white/60 py-4 px-4 shadow-[0_10px_30px_-10px_rgba(74,59,50,0.15)] rounded-lg min-w-[220px] max-h-[75vh] overflow-y-auto">
-                              <div className="flex flex-col gap-0.5">
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                            <div className="bg-gradient-to-br from-[#3a2a1a]/95 via-[#2d1f12]/95 to-[#1a130a]/95 backdrop-blur-3xl border border-white/20 py-5 px-5 shadow-[0_30px_60px_rgba(139,90,43,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] rounded-2xl min-w-[240px] max-h-[75vh] overflow-y-auto relative overflow-hidden text-cream">
+                              {/* Inner Glass Highlight */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-bronze/5 pointer-events-none" />
+                              <div className="flex flex-col gap-1 relative z-10">
                                 {link.children.map(child => (
                                   <div key={child.label} className="w-full">
                                     {/* Category Header */}
@@ -457,31 +459,31 @@ const AppContent = () => {
                                         e.stopPropagation();
                                         handleNavigation(child.href);
                                       }}
-                                      className="w-full text-left text-[0.7rem] uppercase tracking-[0.15em] text-earth font-medium py-2 px-2 hover:text-bronze transition-colors rounded-md hover:bg-white/40"
+                                      className="w-full text-left text-[0.7rem] uppercase tracking-[0.15em] font-medium py-2 px-3 hover:text-white transition-colors rounded-xl hover:bg-white/10 text-cream/90"
                                     >
                                       {child.label}
                                     </button>
 
                                     {/* Subcategories - Always visible */}
                                     {child.children && (
-                                      <div className="ml-3 mb-2 border-l border-bronze/15 pl-2">
+                                      <div className="ml-4 mb-3 border-l border-white/10 pl-3">
                                         {child.children.map(subChild => (
                                           <div key={subChild.label}>
                                             <button
                                               onClick={(e) => { e.stopPropagation(); handleNavigation(subChild.href); }}
-                                              className="w-full text-left text-[0.6rem] uppercase tracking-[0.12em] text-earth/70 py-1.5 px-2 hover:text-bronze transition-colors rounded hover:bg-white/30"
+                                              className="w-full text-left text-[0.6rem] uppercase tracking-[0.12em] text-cream/70 py-1.5 px-2 hover:text-white transition-colors rounded-md hover:bg-white/5 mt-1"
                                             >
                                               {subChild.label}
                                             </button>
 
                                             {/* Deep items - Always visible */}
                                             {subChild.children && (
-                                              <div className="ml-3 border-l border-bronze/10 pl-2">
+                                              <div className="ml-3 border-l border-white/5 pl-2">
                                                 {subChild.children.map(deepChild => (
                                                   <button
                                                     key={deepChild.label}
                                                     onClick={(e) => { e.stopPropagation(); handleNavigation(deepChild.href); }}
-                                                    className="w-full text-left text-[0.55rem] uppercase tracking-[0.1em] text-earth/60 py-1.5 px-2 hover:text-bronze transition-colors rounded hover:bg-white/20"
+                                                    className="w-full text-left text-[0.55rem] uppercase tracking-[0.1em] text-cream/50 py-1.5 px-2 hover:text-white transition-colors rounded-md hover:bg-white/5"
                                                   >
                                                     {deepChild.label}
                                                   </button>
