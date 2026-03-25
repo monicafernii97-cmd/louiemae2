@@ -110,6 +110,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [reviewGalleryIdx, setReviewGalleryIdx] = useState<Record<number, number>>({});
     /** Draft text for price override inputs — keyed by variantId. Stored as raw string to avoid coercing transient values (e.g. "0.", ".5"). */
     const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
 
@@ -755,9 +756,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     <p className="text-earth/60 font-light mt-1 max-w-md mx-auto text-xs">Select, reorder, and preview images. First image = main listing image.</p>
                                 </div>
 
-                                {/* Main Preview (compact — not aspect-square) */}
+                                {/* Main Preview — full-size scrollable gallery */}
                                 <div className="px-4 md:px-8 pb-3">
-                                    <div className="max-w-xs mx-auto rounded-xl overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.06)] border border-white/60 bg-white relative group" style={{ height: '200px' }}>
+                                    <div className="max-w-md mx-auto aspect-square rounded-xl overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.06)] border border-white/60 bg-white relative group">
                                     {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
@@ -1552,40 +1553,66 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 return (
                                     <div key={product.id} className="bg-white rounded-2xl border border-earth/10 overflow-hidden shadow-sm">
                                         <div className="flex flex-col lg:flex-row">
-                                            {/* Image Gallery */}
+                                            {/* Image Gallery — Scrollable Slideshow */}
                                             <div className="lg:w-80 flex-shrink-0 bg-cream/20 p-4">
-                                                {orderedImages.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        {/* Main image */}
-                                                        <div className="aspect-square rounded-xl overflow-hidden border border-earth/10 relative">
-                                                            <img
-                                                                src={orderedImages[0]}
-                                                                alt={product.customName || product.name}
-                                                                referrerPolicy="no-referrer"
-                                                                crossOrigin="anonymous"
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                            <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center" title="Main listing image">
-                                                                <Check className="w-3 h-3" />
-                                                            </div>
-                                                        </div>
-                                                        {/* Thumbnail strip */}
-                                                        {orderedImages.length > 1 && (
-                                                            <div className="flex gap-1 overflow-x-auto">
-                                                                {orderedImages.slice(1, 7).map((img, i) => (
-                                                                    <div key={i} className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-earth/10">
-                                                                        <img src={img} alt={`Thumbnail ${i + 2}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                                    </div>
-                                                                ))}
-                                                                {orderedImages.length > 7 && (
-                                                                    <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-earth/5 flex items-center justify-center text-xs text-earth/40 font-bold">
-                                                                        +{orderedImages.length - 7}
+                                                {orderedImages.length > 0 && (() => {
+                                                    const activeIdx = reviewGalleryIdx[productIdx] ?? 0;
+                                                    const displayIdx = activeIdx < orderedImages.length ? activeIdx : 0;
+                                                    return (
+                                                        <div className="space-y-2">
+                                                            {/* Main image with nav arrows */}
+                                                            <div className="aspect-square rounded-xl overflow-hidden border border-earth/10 relative group">
+                                                                <img
+                                                                    src={orderedImages[displayIdx]}
+                                                                    alt={product.customName || product.name}
+                                                                    referrerPolicy="no-referrer"
+                                                                    crossOrigin="anonymous"
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                                {displayIdx === 0 && (
+                                                                    <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center" title="Main listing image">
+                                                                        <Check className="w-3 h-3" />
                                                                     </div>
                                                                 )}
+                                                                {orderedImages.length > 1 && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [productIdx]: displayIdx <= 0 ? orderedImages.length - 1 : displayIdx - 1 }))}
+                                                                            aria-label="Previous image"
+                                                                            className="absolute left-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                                                                        >
+                                                                            <ChevronLeft className="w-4 h-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [productIdx]: displayIdx >= orderedImages.length - 1 ? 0 : displayIdx + 1 }))}
+                                                                            aria-label="Next image"
+                                                                            className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                                                                        >
+                                                                            <ChevronRight className="w-4 h-4" />
+                                                                        </button>
+                                                                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm">
+                                                                            {displayIdx + 1} / {orderedImages.length}
+                                                                        </div>
+                                                                    </>
+                                                                )}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                            {/* Scrollable clickable thumbnail strip */}
+                                                            {orderedImages.length > 1 && (
+                                                                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                                                                    {orderedImages.map((img, i) => (
+                                                                        <button
+                                                                            key={i}
+                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [productIdx]: i }))}
+                                                                            className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${displayIdx === i ? 'border-bronze ring-1 ring-bronze/30 scale-105' : 'border-earth/10 hover:border-earth/30'}`}
+                                                                        >
+                                                                            <img src={img} alt={`Image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
 
                                             {/* Product Details */}

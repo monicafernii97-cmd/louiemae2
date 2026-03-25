@@ -48,25 +48,26 @@ export const NewsletterPopup: React.FC = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in-up">
-      <div className="relative bg-[#F9F7F2] w-full max-w-3xl h-auto md:h-[500px] rounded-sm shadow-2xl flex flex-col md:flex-row overflow-hidden border border-earth/5">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in-up">
+      <div className="relative w-full max-w-3xl h-auto md:h-[500px] rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] flex flex-col md:flex-row overflow-hidden border border-white/10 bg-gradient-to-br from-[#120D09]/95 to-[#0A0705]/95 backdrop-blur-3xl">
         <button 
           onClick={handleDismiss}
-          className="absolute top-4 right-4 z-20 text-earth/40 hover:text-earth transition-colors"
+          aria-label="Close newsletter popup"
+          className="absolute top-4 right-4 z-20 text-cream/40 hover:text-cream transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
 
         {/* Image Side */}
         <div className="w-full md:w-1/2 h-48 md:h-full relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10"></div>
           <img 
             src="/images/brand/mae-collective-home.png" 
             alt="LouieMae — Curated living, designed with intention" 
             className="w-full h-full object-cover"
           />
-          <div className="absolute bottom-6 left-6 z-20 text-white">
-             <p className="font-serif italic text-2xl">"Where home meets heritage."</p>
+          <div className="absolute bottom-6 left-6 z-20 text-cream">
+             <p className="font-serif italic text-2xl drop-shadow-lg">"Where home meets heritage."</p>
           </div>
         </div>
 
@@ -74,43 +75,44 @@ export const NewsletterPopup: React.FC = () => {
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center text-center md:text-left relative">
            {status === 'success' ? (
              <div className="flex flex-col items-center justify-center h-full animate-fade-in-up">
-                <div className="w-16 h-16 rounded-full bg-earth text-cream flex items-center justify-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-bronze/20 border border-bronze/30 text-amber-400 flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(193,154,107,0.3)]">
                    <Check className="w-8 h-8" />
                 </div>
-                <h3 className="font-serif text-3xl text-earth mb-2">You're In.</h3>
-                <p className="font-sans text-earth/60 text-sm">Welcome to the collective — check your inbox for something special.</p>
+                <h3 className="font-serif text-3xl text-cream mb-2">You're In.</h3>
+                <p className="font-sans text-cream/50 text-sm">Welcome to the collective — check your inbox for something special.</p>
              </div>
            ) : (
              <>
-               <span className="text-bronze text-xs uppercase tracking-[0.3em] mb-4 block">The Mae Letter</span>
-               <h2 className="font-serif text-4xl md:text-5xl text-earth mb-4 leading-tight">
+               <span className="text-bronze text-xs uppercase tracking-[0.3em] mb-4 block drop-shadow-[0_0_5px_rgba(193,154,107,0.3)]">The Mae Letter</span>
+               <h2 className="font-serif text-4xl md:text-5xl text-cream mb-4 leading-tight">
                  Be First to Know
                </h2>
-               <p className="font-sans text-earth/70 text-sm leading-relaxed mb-8">
+               <p className="font-sans text-cream/50 text-sm leading-relaxed mb-8">
                  New drops, restocks, and behind-the-scenes stories — delivered before anyone else sees them. No spam, just thoughtfully curated finds for your home and closet.
                </p>
 
                <form onSubmit={handleSubmit} className="space-y-4">
                  <div className="relative">
-                   <Mail className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-earth/30" />
+                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/30" />
                    <input 
                      type="email" 
                      value={email}
                      onChange={(e) => setEmail(e.target.value)}
                      placeholder="Your email address" 
-                     className="w-full bg-transparent border-b border-earth/20 py-3 pl-8 text-earth placeholder:text-earth/30 focus:outline-none focus:border-bronze transition-colors font-sans"
+                     className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-cream placeholder:text-cream/20 focus:outline-none focus:border-bronze/50 focus:ring-1 focus:ring-bronze/20 transition-all font-sans"
                      required
                    />
                  </div>
                  <button 
                    type="submit" 
                    disabled={status === 'loading'}
-                   className="w-full bg-earth text-cream px-8 py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-bronze transition-colors disabled:opacity-70 mt-4"
+                   className="w-full bg-white/10 text-cream border border-white/20 rounded-xl px-8 py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-[0_4px_15px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.4)] relative overflow-hidden group"
                  >
-                   {status === 'loading' ? 'Joining...' : 'Join the List'}
+                   <span className="absolute inset-0 bg-gradient-to-r from-bronze/0 via-bronze/10 to-bronze/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                   <span className="relative z-10">{status === 'loading' ? 'Joining...' : 'Join the List'}</span>
                  </button>
                </form>
-               <p className="text-[9px] text-earth/30 mt-6 text-center md:text-left">
+               <p className="text-[9px] text-cream/20 mt-6 text-center md:text-left">
                  By signing up, you agree to our Privacy Policy. Unsubscribe anytime.
                </p>
              </>
