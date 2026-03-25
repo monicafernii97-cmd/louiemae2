@@ -48,8 +48,8 @@ export const NewsletterPopup: React.FC = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in-up">
-      <div className="relative w-full max-w-3xl h-auto md:h-[500px] rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] flex flex-col md:flex-row overflow-hidden border border-white/10 bg-gradient-to-br from-[#120D09]/95 to-[#0A0705]/95 backdrop-blur-3xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in-up">
+      <div className="relative w-full max-w-3xl h-auto md:h-[500px] rounded-[2rem] shadow-[0_40px_100px_rgba(139,90,43,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col md:flex-row overflow-hidden border border-bronze/30 bg-gradient-to-br from-[#3a2a1a]/95 via-[#2d1f12]/90 to-[#1a130a]/95 backdrop-blur-3xl">
         <button 
           onClick={handleDismiss}
           aria-label="Close newsletter popup"
@@ -106,9 +106,9 @@ export const NewsletterPopup: React.FC = () => {
                  <button 
                    type="submit" 
                    disabled={status === 'loading'}
-                   className="w-full bg-white/10 text-cream border border-white/20 rounded-xl px-8 py-4 text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-[0_4px_15px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.4)] relative overflow-hidden group"
+                   className="w-full bg-gradient-to-r from-[#3a2a1a] to-[#2d1f12] text-cream border border-bronze/30 rounded-xl px-8 py-4 text-[10px] uppercase tracking-[0.2em] hover:shadow-[0_8px_25px_rgba(139,90,43,0.35)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-[0_4px_15px_rgba(0,0,0,0.3)] relative overflow-hidden group"
                  >
-                   <span className="absolute inset-0 bg-gradient-to-r from-bronze/0 via-bronze/10 to-bronze/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                   <span className="absolute inset-0 bg-gradient-to-r from-bronze/0 via-bronze/20 to-bronze/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
                    <span className="relative z-10">{status === 'loading' ? 'Joining...' : 'Join the List'}</span>
                  </button>
                </form>
