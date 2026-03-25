@@ -21,6 +21,8 @@ type StudioStep = 'essence' | 'visuals' | 'story' | 'review';
 export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, initialProduct, onSave, siteContent }) => {
     const [step, setStep] = useState<StudioStep>('essence');
     const [isSaving, setIsSaving] = useState(false);
+    const saveSessionRef = useRef(0);
+    const [priceDraft, setPriceDraft] = useState('');
     const [product, setProduct] = useState<Partial<Product>>({
         name: '',
         price: 0,
@@ -50,7 +52,9 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                 ...initialProduct
             });
             setStep('essence');
-            setIsSaving(false);
+            // Bump save session so any in-flight save from a previous session is ignored
+            saveSessionRef.current += 1;
+            setPriceDraft(String(initialProduct?.price ?? '0'));
             previousFocusRef.current = document.activeElement as HTMLElement;
         }
         if (!isOpen && wasOpenRef.current && previousFocusRef.current) {
@@ -100,14 +104,21 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
     // Shared save handler — prevents duplicate concurrent saves
     const handleSave = async () => {
         if (isSaving) return;
+        const session = saveSessionRef.current;
         setIsSaving(true);
         try {
-            await Promise.resolve(onSave(product));
+            // Normalize price draft before save
+            const normalizedPrice = priceDraft === '' ? 0 : Number(priceDraft);
+            const productToSave = { ...product, price: Number.isFinite(normalizedPrice) ? normalizedPrice : 0 };
+            await Promise.resolve(onSave(productToSave));
         } catch (err) {
             console.error('Product save failed:', err);
             toast.error('Failed to save product');
         } finally {
-            setIsSaving(false);
+            // Only clear if this is still the active session
+            if (saveSessionRef.current === session) {
+                setIsSaving(false);
+            }
         }
     };
 
@@ -580,13 +591,22 @@ const EssenceStep: React.FC<{
                                 <DollarSign className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 text-cream/20" />
                                 <input
                                     id="product-price"
-                                    type="number"
-                                    value={product.price ?? ''}
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={priceDraft}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        onChange({ ...product, price: val === '' ? undefined : Number(val) });
+                                        // Allow digits, one decimal point, and empty
+                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                            setPriceDraft(val);
+                                        }
                                     }}
-                                    min="0"
+                                    onBlur={() => {
+                                        // Normalize on blur: commit number back to product
+                                        const num = Number(priceDraft);
+                                        onChange({ ...product, price: Number.isFinite(num) ? num : 0 });
+                                    }}
+                                    placeholder="0"
                                     className="w-full text-3xl font-serif text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)] border-b border-white/10 py-2 pl-8 focus:outline-none focus:border-bronze bg-transparent placeholder:text-cream/10 transition-colors"
                                 />
                             </div>
@@ -834,7 +854,7 @@ const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => vo
                             <div className="flex items-center justify-center gap-2 text-sm font-light text-cream/60">
                                 <span>{product.category}</span>
                                 <span className="w-1 h-1 rounded-full bg-cream/20"></span>
-                                <span className="text-bronze font-medium">${product.price}</span>
+                                <span className="text-bronze font-medium">${priceDraft || '0'}</span>
                             </div>
                         </div>
                     </div>
