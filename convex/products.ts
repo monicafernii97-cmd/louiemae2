@@ -109,11 +109,16 @@ export const remove = mutation({
 
 /**
  * Admin-only remove - simpler version for CJ Settings panel
- * Note: In production, you'd want to add proper admin verification
+ * TODO: Enforce admin role/claim check here when role system is implemented.
+ * Currently a single-owner app, so auth-only guard is sufficient.
  */
 export const adminRemove = mutation({
     args: { id: v.id("products") },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to delete products");
+        }
         await ctx.db.delete(args.id);
     },
 });

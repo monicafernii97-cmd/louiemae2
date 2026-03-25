@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Wand2, Send, ChevronRight, Layout, Type, Image as ImageIcon, CheckCircle, Clock, AlertCircle, ArrowLeft, Eye, Smartphone, Monitor, Loader2, Grid } from 'lucide-react';
+import { X, Wand2, Send, ChevronRight, Layout, Type, Image as ImageIcon, CheckCircle, Clock, AlertCircle, ArrowLeft, Eye, Smartphone, Monitor, Loader2, Grid } from 'lucide-react';
 import { EmailCampaign } from '../types';
 import { generateEmailSubject, generateEmailBody, personalizeTemplate } from '../services/geminiService';
 import { EMAIL_TEMPLATES, EmailTemplate } from '../constants/emailTemplates';
@@ -124,7 +124,7 @@ export const NewsletterStudio: React.FC<NewsletterStudioProps> = ({ isOpen, onCl
 
 const StudioStepIndicator: React.FC<{ currentStep: StudioStep }> = ({ currentStep }) => {
     const steps: { id: StudioStep; label: string; icon: any }[] = [
-        { id: 'strategy', label: 'Strategy', icon: Sparkles },
+        { id: 'strategy', label: 'Strategy', icon: Wand2 },
         { id: 'templates', label: 'Templates', icon: Grid },
         { id: 'design', label: 'Design', icon: Layout },
         { id: 'launch', label: 'Launch', icon: Send },
@@ -210,15 +210,15 @@ const StrategyStep: React.FC<{ campaign: Partial<EmailCampaign>, onChange: (c: a
                                     onClick={handleGenerateSubjects}
                                     disabled={!campaign.subject || isGenerating}
                                     className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-bronze hover:bg-bronze/10 rounded-full transition-colors disabled:opacity-30"
-                                    title="Generate AI Suggestions"
+                                    title="Generate Smart Suggestions"
                                 >
-                                    {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                                    {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
                                 </button>
                             </div>
 
                             {suggestions.length > 0 && (
                                 <div className="animate-fade-in space-y-2">
-                                    <p className="text-xs text-earth/40 uppercase tracking-widest">AI Suggestions</p>
+                                    <p className="text-xs text-earth/40 uppercase tracking-widest">Smart Suggestions</p>
                                     <div className="grid gap-2">
                                         {suggestions.map((s, i) => (
                                             <button
@@ -283,7 +283,7 @@ const TemplateStep: React.FC<{ campaign: Partial<EmailCampaign>, onChange: (c: a
                         <button onClick={onBack} className="text-earth/40 hover:text-earth"><ArrowLeft className="w-5 h-5" /></button>
                         <div className="text-center flex-1">
                             <h2 className="font-serif text-3xl text-earth">Select a Template</h2>
-                            <p className="text-earth/60 font-light">AI will personalize it for your campaign.</p>
+                            <p className="text-earth/60 font-light">We'll personalize it for your campaign.</p>
                         </div>
                         <div className="w-5"></div> {/* spacer */}
                     </div>
@@ -317,7 +317,7 @@ const TemplateStep: React.FC<{ campaign: Partial<EmailCampaign>, onChange: (c: a
                                     <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-10">
                                         <div className="flex flex-col items-center gap-3">
                                             <Loader2 className="w-8 h-8 text-bronze animate-spin" />
-                                            <span className="text-sm uppercase tracking-widest text-bronze font-medium">Personalizing with AI...</span>
+                                            <span className="text-sm uppercase tracking-widest text-bronze font-medium">Personalizing...</span>
                                         </div>
                                     </div>
                                 )}

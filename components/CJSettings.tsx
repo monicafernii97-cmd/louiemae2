@@ -156,62 +156,69 @@ export const CJSettings: React.FC = () => {
 
     // Action Card Component (Refined & Minimalist)
     const ActionCard = ({ icon: Icon, title, description, loading, onClick, colorClass = "text-bronze" }: { icon: React.FC<{ className?: string }>; title: string; description: string; loading: boolean; onClick: () => void; colorClass?: string }) => (
-        <div
-            onClick={loading ? undefined : onClick}
-            className="group relative backdrop-blur-xl bg-white/60 border border-white/40 p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer overflow-hidden rounded-xl active:scale-[0.98] md:hover:-translate-y-1"
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={loading}
+            className="group relative backdrop-blur-xl bg-black/40 border border-white/10 p-4 md:p-6 shadow-[0_10px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.5)] transition-all duration-500 cursor-pointer overflow-hidden rounded-[2rem] hover:bg-white/5 active:scale-[0.98] md:hover:-translate-y-1 text-left w-full disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50"
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[2rem]" />
+            <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none" />
 
-            <div className="flex justify-between items-start mb-4">
-                <div className={`p-2 rounded-lg bg-white/50 backdrop-blur-md shadow-sm border border-white/20 group-hover:scale-110 transition-transform duration-300`}>
+            <div className="flex justify-between items-start mb-4 relative z-10">
+                <div className={`p-3 rounded-2xl bg-white/5 backdrop-blur-md shadow-inner border border-white/10 group-hover:scale-110 group-hover:bg-white/10 transition-all duration-300`}>
                     <Icon className={`w-5 h-5 ${colorClass}`} />
                 </div>
-                <div className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                    <ArrowRight className="w-4 h-4 text-earth/30" />
+                <div className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 bg-white/5 p-2 rounded-full border border-white/10">
+                    <ArrowRight className="w-4 h-4 text-cream/60 group-hover:text-cream" />
                 </div>
             </div>
 
             <div className="relative z-10">
-                <h3 className="font-serif text-lg text-earth font-medium mb-1 group-hover:text-bronze transition-colors">{title}</h3>
-                <p className="text-xs text-earth/50 leading-relaxed font-sans line-clamp-2">{description}</p>
+                <h3 className="font-serif text-lg text-cream font-medium mb-1 drop-shadow-sm group-hover:text-amber-400 transition-colors">{title}</h3>
+                <p className="text-xs text-cream/50 leading-relaxed font-sans line-clamp-2">{description}</p>
             </div>
 
             {loading && (
                 <div className="absolute bottom-4 right-4 animate-pulse">
-                    <Loader2 className="w-4 h-4 text-bronze animate-spin" />
+                    <Loader2 className="w-4 h-4 text-amber-500 animate-spin drop-shadow-[0_0_5px_currentColor]" />
                 </div>
             )}
-        </div>
+        </button>
     );
 
     return (
         <div className="relative min-h-screen overflow-hidden p-4 md:p-8">
             {/* Animated Background Blobs */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
-                <div className="absolute top-0 -left-4 w-72 h-72 bg-bronze/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
-                <div className="absolute top-0 -right-4 w-72 h-72 bg-sand/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000" />
-                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-cream-dark/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000" />
+                <div className="absolute top-0 -left-4 w-72 h-72 bg-bronze/10 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob" />
+                <div className="absolute top-0 -right-4 w-72 h-72 bg-black/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000" />
+                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-amber-900/10 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-4000" />
             </div>
 
             {/* Header */}
             <div className="mb-12 relative z-10">
                 <FadeIn>
-                    <span className="text-bronze text-xs uppercase tracking-[0.4em] mb-3 block font-medium">Integration Center</span>
-                    <h1 className="font-serif text-2xl md:text-5xl text-earth drop-shadow-sm">CJ Dropshipping Link</h1>
+                    <span className="text-[10px] uppercase tracking-[0.4em] mb-3 font-medium text-amber-400 flex items-center gap-2 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">
+                        <span className="w-8 h-px bg-amber-400/50 shadow-[#FBBF24]"></span>
+                        Integration Center
+                    </span>
+                    <h1 className="font-serif text-3xl md:text-5xl text-cream drop-shadow-md tracking-tight">CJ Dropshipping Link</h1>
                 </FadeIn>
             </div>
 
             {/* Notification Banner */}
             {result && (
                 <FadeIn className="mb-8 relative z-20">
-                    <div className={`p-3 md:p-4 border border-white/50 backdrop-blur-md rounded-xl flex items-start md:items-center gap-3 md:gap-4 shadow-lg ${result.success
-                        ? 'bg-green-50/40 text-green-800'
-                        : 'bg-red-50/40 text-red-800'
+                    <div className={`p-4 md:p-5 border backdrop-blur-xl rounded-[2rem] flex items-start md:items-center gap-3 md:gap-4 shadow-[0_10px_20px_rgba(0,0,0,0.3)] relative overflow-hidden ${result.success
+                        ? 'bg-green-900/20 border-green-500/30 text-green-400'
+                        : 'bg-red-900/20 border-red-500/30 text-red-400'
                         }`}>
-                        {result.success ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                        <span className="font-medium tracking-wide text-xs md:text-sm flex-1 break-words">{result.message}</span>
-                        <button onClick={() => setResult(null)} className="ml-auto hover:bg-black/5 p-1 rounded-full transition-colors">
-                            <XCircle className="w-4 h-4 opacity-50" />
+                        <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none"></div>
+                        {result.success ? <CheckCircle className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" /> : <XCircle className="w-5 h-5 drop-shadow-[0_0_3px_currentColor]" />}
+                        <span className="font-medium tracking-wide text-xs md:text-sm flex-1 break-words relative z-10">{result.message}</span>
+                        <button onClick={() => setResult(null)} aria-label="Dismiss notification" className="ml-auto hover:bg-white/10 p-1.5 rounded-full transition-colors relative z-10 border border-transparent hover:border-white/10">
+                            <XCircle className="w-4 h-4 opacity-50 hover:opacity-100" />
                         </button>
                     </div>
                 </FadeIn>
@@ -222,8 +229,8 @@ export const CJSettings: React.FC = () => {
                 {/* Panel 1: Main Controls */}
                 <div className="space-y-8">
                     <FadeIn delay={100}>
-                        <h2 className="font-serif text-2xl text-earth mb-6 flex items-center gap-3">
-                            <Settings className="w-5 h-5 text-bronze/60" />
+                        <h2 className="font-serif text-2xl text-cream drop-shadow-sm mb-6 flex items-center gap-3">
+                            <Settings className="w-5 h-5 text-amber-500 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]" />
                             System Controls
                         </h2>
                         <div className="grid grid-cols-2 gap-3 md:gap-6">
@@ -233,7 +240,7 @@ export const CJSettings: React.FC = () => {
                                 description="Verify API connectivity with CJ."
                                 onClick={handleTestConnection}
                                 loading={testing}
-                                colorClass="text-green-600"
+                                colorClass="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]"
                             />
 
                             <ActionCard
@@ -242,7 +249,7 @@ export const CJSettings: React.FC = () => {
                                 description="Setup status callbacks."
                                 onClick={handleConfigureWebhooks}
                                 loading={configuring}
-                                colorClass="text-amber-500"
+                                colorClass="text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]"
                             />
 
                             <ActionCard
@@ -251,7 +258,7 @@ export const CJSettings: React.FC = () => {
                                 description="Pull latest tracking numbers."
                                 onClick={handleSyncTracking}
                                 loading={syncing}
-                                colorClass="text-green-500"
+                                colorClass="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]"
                             />
 
                             <ActionCard
@@ -260,47 +267,50 @@ export const CJSettings: React.FC = () => {
                                 description="Update sourcing status."
                                 onClick={handleCheckSourcing}
                                 loading={checkingSourcing}
-                                colorClass="text-amber-500"
+                                colorClass="text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]"
                             />
                         </div>
                     </FadeIn>
 
                     {/* Token Status Card */}
                     <FadeIn delay={150}>
-                        <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-5 shadow-xl">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm ${tokenStatus?.connected
-                                    ? 'bg-green-50/50 border border-green-100'
-                                    : 'bg-red-50/50 border border-red-100'
+                        <div className="backdrop-blur-2xl bg-black/40 border border-white/10 rounded-[2rem] p-6 shadow-[0_15px_30px_rgba(0,0,0,0.3)] relative overflow-hidden">
+                            <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none"></div>
+                            
+                            <div className="flex items-center gap-4 mb-6 relative z-10">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${tokenStatus?.connected
+                                    ? 'bg-green-900/30 border border-green-500/30'
+                                    : 'bg-red-900/30 border border-red-500/30'
                                     }`}>
-                                    <Key className={`w-4 h-4 ${tokenStatus?.connected ? 'text-green-600' : 'text-red-500'}`} />
+                                    <Key className={`w-5 h-5 drop-shadow-[0_0_3px_currentColor] ${tokenStatus?.connected ? 'text-green-400' : 'text-red-400'}`} />
                                 </div>
                                 <div>
-                                    <h3 className="font-serif text-base text-earth">API Connection</h3>
-                                    <span className={`text-[10px] uppercase tracking-wider font-medium ${tokenStatus?.connected ? 'text-green-600/70' : 'text-red-600/70'
+                                    <h3 className="font-serif text-lg text-cream drop-shadow-sm">API Connection</h3>
+                                    <span className={`text-[10px] uppercase tracking-widest font-medium flex items-center gap-1.5 mt-1 ${tokenStatus?.connected ? 'text-green-400' : 'text-red-400'
                                         }`}>
-                                        {tokenStatus?.connected ? '✓ Connected' : '✗ Disconnected'}
+                                        <span className={`w-1.5 h-1.5 rounded-full ${tokenStatus?.connected ? 'bg-green-400 shadow-[0_0_5px_#4ade80]' : 'bg-red-400 shadow-[0_0_5px_#f87171] animate-pulse'}`}></span>
+                                        {tokenStatus?.connected ? 'Connected' : 'Disconnected'}
                                     </span>
                                 </div>
                             </div>
 
                             {tokenStatus && (
-                                <div className="space-y-2 text-xs">
-                                    <div className="flex items-center justify-between p-2 bg-white/40 rounded-lg">
-                                        <span className="text-earth/60">Access Token</span>
-                                        <span className={`font-medium ${tokenStatus.accessTokenValid ? 'text-green-600' : 'text-amber-600'}`}>
+                                <div className="space-y-3 text-xs relative z-10">
+                                    <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl shadow-inner">
+                                        <span className="text-cream/50 uppercase tracking-widest text-[10px]">Access Token</span>
+                                        <span className={`font-mono text-[11px] ${tokenStatus.accessTokenValid ? 'text-green-400 drop-shadow-[0_0_2px_rgba(74,222,128,0.5)]' : 'text-amber-400 drop-shadow-[0_0_2px_rgba(251,191,36,0.5)]'}`}>
                                             {tokenStatus.accessTokenValid
-                                                ? `Valid until ${new Date(tokenStatus.accessTokenExpiresAt!).toLocaleDateString()}`
-                                                : 'Expired (will auto-refresh)'
+                                                ? `Valid to ${tokenStatus.accessTokenExpiresAt ? new Date(tokenStatus.accessTokenExpiresAt).toLocaleDateString() : 'N/A'}`
+                                                : 'Expired (auto-refreshes)'
                                             }
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between p-2 bg-white/40 rounded-lg">
-                                        <span className="text-earth/60">Refresh Token</span>
-                                        <span className={`font-medium ${tokenStatus.refreshTokenValid ? 'text-green-600' : 'text-red-600'}`}>
+                                    <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl shadow-inner">
+                                        <span className="text-cream/50 uppercase tracking-widest text-[10px]">Refresh Token</span>
+                                        <span className={`font-mono text-[11px] ${tokenStatus.refreshTokenValid ? 'text-green-400 drop-shadow-[0_0_2px_rgba(74,222,128,0.5)]' : 'text-red-400 drop-shadow-[0_0_2px_rgba(248,113,113,0.5)]'}`}>
                                             {tokenStatus.refreshTokenValid
-                                                ? `Valid until ${new Date(tokenStatus.refreshTokenExpiresAt!).toLocaleDateString()}`
-                                                : 'Expired - reconnect required'
+                                                ? `Valid to ${tokenStatus.refreshTokenExpiresAt ? new Date(tokenStatus.refreshTokenExpiresAt).toLocaleDateString() : 'N/A'}`
+                                                : 'Expired - reconnect'
                                             }
                                         </span>
                                     </div>
@@ -313,8 +323,8 @@ export const CJSettings: React.FC = () => {
                 {/* Panel 2 & 3: Product Import Pipeline */}
                 <div className="lg:col-span-2 space-y-8">
                     <FadeIn delay={200}>
-                        <h2 className="font-serif text-2xl text-earth mb-6 flex items-center gap-3">
-                            <Clock className="w-5 h-5 text-bronze/60" />
+                        <h2 className="font-serif text-2xl text-cream drop-shadow-sm mb-6 flex items-center gap-3">
+                            <Clock className="w-5 h-5 text-amber-500 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]" />
                             Import Pipeline
                         </h2>
                     </FadeIn>
@@ -322,16 +332,19 @@ export const CJSettings: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* Pending Products - Glass Panel */}
                         <FadeIn delay={300} className="h-full">
-                            <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl h-full flex flex-col relative overflow-hidden group">
+                            <div className="backdrop-blur-2xl bg-black/40 border border-white/10 rounded-[2rem] p-6 shadow-[0_15px_30px_rgba(0,0,0,0.3)] h-full flex flex-col relative overflow-hidden group">
+                                <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none z-0"></div>
+                                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0"></div>
+
                                 <div className="flex items-center gap-4 mb-6 relative z-10">
-                                    <div className="w-12 h-12 rounded-2xl bg-white/50 backdrop-blur-md border border-white/60 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
-                                        <Clock className="w-6 h-6 text-earth/60" />
+                                    <div className="w-12 h-12 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500">
+                                        <Clock className="w-6 h-6 text-cream/60 group-hover:text-cream drop-shadow-sm transition-colors" />
                                     </div>
                                     <div>
-                                        <h3 className="font-serif text-xl text-earth leading-tight">Pending Review</h3>
+                                        <h3 className="font-serif text-xl text-cream leading-tight drop-shadow-sm">Pending Review</h3>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                            <span className="text-[10px] uppercase tracking-wider text-earth/50 font-medium">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_5px_rgba(251,191,36,0.8)]" />
+                                            <span className="text-[10px] uppercase tracking-widest text-cream/50 font-medium">
                                                 {pendingProducts.length} Items Waiting
                                             </span>
                                         </div>
@@ -339,42 +352,41 @@ export const CJSettings: React.FC = () => {
                                 </div>
 
                                 {pendingProducts.length === 0 ? (
-                                    <div className="flex-1 flex flex-col items-center justify-center text-earth/30 py-12">
-                                        <CheckCircle className="w-12 h-12 mb-3 opacity-50" />
-                                        <p className="text-sm">All cleared</p>
+                                    <div className="flex-1 flex flex-col items-center justify-center text-cream/30 py-12 relative z-10">
+                                        <CheckCircle className="w-12 h-12 mb-3 opacity-50 drop-shadow-sm text-green-400" />
+                                        <p className="font-serif text-lg tracking-wide text-green-400/50">All cleared</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="space-y-4 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                                         {pendingProducts.map((product) => {
                                             const timeSince = getTimeSinceSubmission(product.cjSubmittedAt);
-                                            const hasNoSourcingId = !product.cjSourcingId;
 
                                             return (
-                                                <div key={product._id} className="group/item bg-white/40 hover:bg-white/60 border border-white/40 p-4 rounded-xl transition-all hover:shadow-md">
-                                                    <div className="flex items-start gap-3">
+                                                <div key={product._id} className="group/item bg-white/5 hover:bg-white/10 border border-white/10 p-4 rounded-2xl transition-all duration-300 shadow-inner hover:shadow-[0_5px_15px_rgba(0,0,0,0.3)]">
+                                                    <div className="flex items-start gap-4">
                                                         {/* Image Preview */}
-                                                        <div className="h-14 w-14 rounded-lg bg-white/50 backdrop-blur-sm border border-white/20 overflow-hidden flex-shrink-0 relative shadow-sm">
+                                                        <div className="h-16 w-16 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 overflow-hidden flex-shrink-0 relative shadow-inner">
                                                             {product.images && product.images[0] ? (
-                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" />
                                                             ) : (
-                                                                <div className="h-full w-full flex items-center justify-center text-earth/20">
-                                                                    <Package className="w-5 h-5" />
+                                                                <div className="h-full w-full flex items-center justify-center text-cream/20">
+                                                                    <Package className="w-6 h-6" />
                                                                 </div>
                                                             )}
                                                         </div>
 
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="font-medium text-earth text-sm truncate font-serif leading-tight mb-1">{product.name}</h4>
+                                                        <div className="flex-1 min-w-0 pt-1">
+                                                            <h4 className="font-medium text-cream text-sm truncate font-serif leading-tight mb-2 drop-shadow-sm">{product.name}</h4>
 
                                                             {/* Status Row */}
-                                                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-earth/40 mb-2">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-cream/40 mb-3">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_3px_#fbbf24]"></span>
                                                                 <span>Awaiting CJ</span>
                                                                 {timeSince && (
                                                                     <>
-                                                                        <span className="text-earth/20">•</span>
+                                                                        <span className="text-white/20">•</span>
                                                                         <span className="flex items-center gap-1">
-                                                                            <Clock className="w-2.5 h-2.5" />
+                                                                            <Clock className="w-3 h-3 text-cream/30" />
                                                                             {timeSince} ago
                                                                         </span>
                                                                     </>
@@ -382,15 +394,15 @@ export const CJSettings: React.FC = () => {
                                                             </div>
 
                                                             {/* CJ Info */}
-                                                            <div className="space-y-1 text-[10px] text-earth/50">
+                                                            <div className="space-y-1 text-[10px] font-medium tracking-widest">
                                                                 {product.cjSourcingId ? (
-                                                                    <div className="flex items-center gap-1.5 font-mono bg-green-50/40 text-green-700/70 px-2 py-0.5 rounded-md w-fit">
-                                                                        <Link2 className="w-2.5 h-2.5" />
+                                                                    <div className="flex items-center gap-1.5 font-mono bg-green-500/10 text-green-400 border border-green-500/20 px-2.5 py-1 rounded-lg w-fit shadow-inner">
+                                                                        <Link2 className="w-3 h-3 drop-shadow-[0_0_2px_currentColor]" />
                                                                         CJ ID: {product.cjSourcingId.slice(-12)}...
                                                                     </div>
                                                                 ) : (
-                                                                    <div className="flex items-center gap-1.5 text-amber-600/70 bg-amber-50/40 px-2 py-0.5 rounded-md w-fit">
-                                                                        <AlertTriangle className="w-2.5 h-2.5" />
+                                                                    <div className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg w-fit shadow-inner">
+                                                                        <AlertTriangle className="w-3 h-3 drop-shadow-[0_0_2px_currentColor]" />
                                                                         No CJ ID yet
                                                                     </div>
                                                                 )}
@@ -399,18 +411,18 @@ export const CJSettings: React.FC = () => {
                                                     </div>
 
                                                     {/* Action Buttons */}
-                                                    <div className="flex flex-wrap items-center justify-end gap-2 mt-3 pt-3 border-t border-earth/5">
-                                                        {/* Resubmit - always available for pending products */}
+                                                    <div className="flex flex-wrap items-center justify-end gap-2 mt-4 pt-3 border-t border-white/5">
+                                                        {/* Resubmit */}
                                                         <button
                                                             onClick={() => handleResubmit(product._id)}
                                                             disabled={resubmittingId === product._id}
-                                                            className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 rounded-lg transition-all disabled:opacity-50 border border-amber-500/30 shadow-inner uppercase tracking-widest"
                                                             title="Resubmit to CJ"
                                                         >
                                                             {resubmittingId === product._id ? (
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin drop-shadow-[0_0_3px_currentColor]" />
                                                             ) : (
-                                                                <RotateCcw className="w-3 h-3" />
+                                                                <RotateCcw className="w-3.5 h-3.5 drop-shadow-[0_0_3px_currentColor]" />
                                                             )}
                                                             Resubmit
                                                         </button>
@@ -421,10 +433,10 @@ export const CJSettings: React.FC = () => {
                                                                 href={product.sourceUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center gap-1 px-2 py-1.5 text-xs text-earth/50 hover:text-earth hover:bg-white/50 rounded-lg transition-all"
+                                                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-cream/40 hover:text-cream hover:bg-white/10 rounded-lg transition-all border border-transparent hover:border-white/10"
                                                                 title="View source"
                                                             >
-                                                                <ExternalLink className="w-3 h-3" />
+                                                                <ExternalLink className="w-3.5 h-3.5" />
                                                             </a>
                                                         )}
 
@@ -432,13 +444,13 @@ export const CJSettings: React.FC = () => {
                                                         <button
                                                             onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                                             disabled={deletingId === product._id}
-                                                            className="p-2 md:p-1.5 text-red-400 hover:text-red-600 active:text-red-600 hover:bg-red-50/50 active:bg-red-50/50 rounded-lg transition-all disabled:opacity-50"
+                                                            className="p-1.5 text-red-400/70 hover:text-red-400 active:text-red-400 hover:bg-red-500/20 active:bg-red-500/30 rounded-lg transition-all disabled:opacity-50 border border-transparent hover:border-red-500/30"
                                                             title="Remove from import"
                                                         >
                                                             {deletingId === product._id ? (
-                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
                                                             ) : (
-                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                <Trash2 className="w-4 h-4 drop-shadow-[0_0_3px_currentColor]" />
                                                             )}
                                                         </button>
                                                     </div>
@@ -455,31 +467,34 @@ export const CJSettings: React.FC = () => {
 
                             {/* Approved - Glass Panel */}
                             <FadeIn delay={400}>
-                                <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+                                <div className="backdrop-blur-2xl bg-black/40 border border-white/10 rounded-[2rem] p-6 shadow-[0_15px_30px_rgba(0,0,0,0.3)] relative overflow-hidden group">
+                                    <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none z-0"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0"></div>
+
                                     <div className="flex items-center gap-4 mb-6 relative z-10">
-                                        <div className="w-10 h-10 rounded-xl bg-green-50/50 backdrop-blur-md border border-green-100 flex items-center justify-center shadow-sm">
-                                            <CheckCircle className="w-5 h-5 text-green-600/80" />
+                                        <div className="w-12 h-12 rounded-2xl bg-green-900/20 backdrop-blur-md border border-green-500/30 flex items-center justify-center shadow-inner group-hover:bg-green-900/30 transition-colors">
+                                            <CheckCircle className="w-6 h-6 text-green-400 drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]" />
                                         </div>
                                         <div>
-                                            <h3 className="font-serif text-lg text-earth leading-tight">Recently Approved</h3>
-                                            <span className="text-[10px] uppercase tracking-wider text-green-700/60 font-medium block mt-0.5">
+                                            <h3 className="font-serif text-xl text-cream leading-tight drop-shadow-sm">Recently Approved</h3>
+                                            <span className="text-[10px] uppercase tracking-widest text-green-400/80 font-medium block mt-1 drop-shadow-sm">
                                                 {recentlyApproved.length} Live Items
                                             </span>
                                         </div>
                                     </div>
 
                                     {recentlyApproved.length === 0 ? (
-                                        <div className="py-8 text-center text-earth/30 text-sm">No recent approvals</div>
+                                        <div className="py-8 text-center text-cream/40 font-serif text-lg tracking-wide relative z-10">No recent approvals</div>
                                     ) : (
                                         <div className="space-y-3 relative z-10">
                                             {recentlyApproved.slice(0, 3).map((product) => (
-                                                <div key={product._id} className="flex items-center gap-3 text-sm text-earth/70 bg-green-50/30 border border-green-100/50 p-3 rounded-lg backdrop-blur-sm">
-                                                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                                                    <span className="truncate">{product.name}</span>
+                                                <div key={product._id} className="flex items-center gap-3 text-sm text-cream/80 bg-green-500/10 border border-green-500/20 p-3.5 rounded-xl shadow-inner backdrop-blur-md group-hover:bg-green-500/20 transition-colors">
+                                                    <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0 drop-shadow-[0_0_2px_currentColor]" />
+                                                    <span className="truncate font-medium tracking-wide drop-shadow-sm">{product.name}</span>
                                                 </div>
                                             ))}
                                             {recentlyApproved.length > 3 && (
-                                                <div className="text-center text-xs text-earth/40 italic mt-2">
+                                                <div className="text-center font-mono text-[10px] uppercase tracking-widest text-cream/40 mt-3 bg-white/5 py-2 rounded-xl border border-white/5 shadow-inner">
                                                     + {recentlyApproved.length - 3} more
                                                 </div>
                                             )}
@@ -490,45 +505,48 @@ export const CJSettings: React.FC = () => {
 
                             {/* Rejected - Glass Panel */}
                             <FadeIn delay={500}>
-                                <div className="backdrop-blur-xl bg-white/30 border border-white/40 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+                                <div className="backdrop-blur-2xl bg-black/40 border border-white/10 rounded-[2rem] p-6 shadow-[0_15px_30px_rgba(0,0,0,0.3)] relative overflow-hidden group">
+                                    <div className="absolute inset-0 border border-white/5 mix-blend-overlay rounded-[2rem] pointer-events-none z-0"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-0"></div>
+
                                     <div className="flex items-center gap-4 mb-6 relative z-10">
-                                        <div className="w-10 h-10 rounded-xl bg-red-50/50 backdrop-blur-md border border-red-100 flex items-center justify-center shadow-sm">
-                                            <AlertTriangle className="w-5 h-5 text-red-500/80" />
+                                        <div className="w-12 h-12 rounded-2xl bg-red-900/20 backdrop-blur-md border border-red-500/30 flex items-center justify-center shadow-inner group-hover:bg-red-900/30 transition-colors">
+                                            <AlertTriangle className="w-6 h-6 text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" />
                                         </div>
                                         <div>
-                                            <h3 className="font-serif text-lg text-earth leading-tight">Requires Attention</h3>
-                                            <span className="text-[10px] uppercase tracking-wider text-red-700/60 font-medium block mt-0.5">
+                                            <h3 className="font-serif text-xl text-cream leading-tight drop-shadow-sm">Requires Attention</h3>
+                                            <span className="text-[10px] uppercase tracking-widest text-red-400/80 font-medium block mt-1 drop-shadow-sm">
                                                 {rejectedProducts.length} Issues Found
                                             </span>
                                         </div>
                                     </div>
 
                                     {rejectedProducts.length === 0 ? (
-                                        <div className="py-8 text-center text-earth/30 text-sm">No issues found</div>
+                                        <div className="py-8 text-center text-cream/40 font-serif text-lg tracking-wide relative z-10">No issues found</div>
                                     ) : (
-                                        <div className="space-y-3 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="space-y-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                             {rejectedProducts.map((product) => (
-                                                <div key={product._id} className="group/item bg-red-50/30 border border-red-100/50 p-4 rounded-xl backdrop-blur-sm hover:bg-red-50/50 transition-colors">
+                                                <div key={product._id} className="group/item bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-md hover:bg-white/10 hover:border-red-500/30 transition-all shadow-inner hover:shadow-[0_5px_15px_rgba(248,113,113,0.1)]">
                                                     {/* Header with image and name */}
-                                                    <div className="flex items-start gap-3 mb-3">
+                                                    <div className="flex items-start gap-4 mb-4">
                                                         {/* Image Preview */}
-                                                        <div className="h-12 w-12 rounded-lg bg-white/50 backdrop-blur-sm border border-red-100/50 overflow-hidden flex-shrink-0 relative shadow-sm">
+                                                        <div className="h-16 w-16 rounded-xl bg-black/60 backdrop-blur-sm border border-white/10 overflow-hidden flex-shrink-0 relative shadow-inner">
                                                             {product.images && product.images[0] ? (
-                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" />
                                                             ) : (
-                                                                <div className="h-full w-full flex items-center justify-center text-red-300">
-                                                                    <Package className="w-4 h-4" />
+                                                                <div className="h-full w-full flex items-center justify-center text-red-400/50">
+                                                                    <Package className="w-6 h-6" />
                                                                 </div>
                                                             )}
                                                         </div>
 
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="font-medium text-earth text-sm truncate font-serif leading-tight mb-1">{product.name}</h4>
+                                                        <div className="flex-1 min-w-0 pt-1">
+                                                            <h4 className="font-medium text-cream text-sm truncate font-serif leading-tight mb-2 drop-shadow-sm">{product.name}</h4>
 
                                                             {/* CJ Info */}
                                                             {product.cjSourcingId && (
-                                                                <div className="flex items-center gap-1.5 font-mono text-[10px] text-red-600/60 bg-red-50/40 px-2 py-0.5 rounded-md w-fit">
-                                                                    <Link2 className="w-2.5 h-2.5" />
+                                                                <div className="flex items-center gap-1.5 font-mono text-[10px] text-red-400 bg-red-900/30 border border-red-500/20 px-2.5 py-1 rounded-lg w-fit shadow-inner">
+                                                                    <Link2 className="w-3 h-3 drop-shadow-[0_0_2px_currentColor]" />
                                                                     CJ ID: {product.cjSourcingId.slice(-12)}...
                                                                 </div>
                                                             )}
@@ -536,26 +554,26 @@ export const CJSettings: React.FC = () => {
                                                     </div>
 
                                                     {/* Error Message */}
-                                                    <div className="flex items-start gap-2 p-2 bg-red-100/40 rounded-lg mb-3">
-                                                        <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
-                                                        <p className="text-[11px] text-red-700/80 leading-snug">
+                                                    <div className="flex items-start gap-3 p-3 bg-red-900/20 border border-red-500/20 rounded-xl mb-4 shadow-inner">
+                                                        <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 drop-shadow-[0_0_3px_currentColor]" />
+                                                        <p className="text-[11px] font-mono tracking-wide text-red-300/90 leading-relaxed break-words">
                                                             {product.cjSourcingError || 'Rejected by CJ - no specific reason provided'}
                                                         </p>
                                                     </div>
 
                                                     {/* Actions */}
-                                                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-red-100/50">
+                                                    <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-white/5">
                                                         {/* Resubmit */}
                                                         <button
                                                             onClick={() => handleResubmit(product._id)}
                                                             disabled={resubmittingId === product._id}
-                                                            className="flex items-center gap-1.5 px-3 py-2 md:py-1.5 text-xs font-medium text-amber-700 bg-amber-50/70 hover:bg-amber-100/70 active:bg-amber-200/70 rounded-lg transition-all disabled:opacity-50 border border-amber-200/50"
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 active:bg-amber-500/30 rounded-lg transition-all disabled:opacity-50 shadow-inner uppercase tracking-widest"
                                                             title="Retry submission to CJ"
                                                         >
                                                             {resubmittingId === product._id ? (
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin drop-shadow-[0_0_2px_currentColor]" />
                                                             ) : (
-                                                                <RotateCcw className="w-3 h-3" />
+                                                                <RotateCcw className="w-3.5 h-3.5 drop-shadow-[0_0_2px_currentColor]" />
                                                             )}
                                                             Retry
                                                         </button>
@@ -566,10 +584,10 @@ export const CJSettings: React.FC = () => {
                                                                 href={product.sourceUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center gap-1 px-2 py-1.5 text-xs text-earth/50 hover:text-earth hover:bg-white/50 rounded-lg transition-all"
+                                                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-cream/40 hover:text-cream hover:bg-white/10 rounded-lg transition-all border border-transparent hover:border-white/10"
                                                                 title="View source"
                                                             >
-                                                                <ExternalLink className="w-3 h-3" />
+                                                                <ExternalLink className="w-3.5 h-3.5" />
                                                             </a>
                                                         )}
 
@@ -577,13 +595,13 @@ export const CJSettings: React.FC = () => {
                                                         <button
                                                             onClick={() => handleDeleteProduct(product._id, product.name, product.cjSourcingId)}
                                                             disabled={deletingId === product._id}
-                                                            className="p-2 md:p-1.5 text-red-400 hover:text-red-600 active:text-red-600 hover:bg-red-100/50 active:bg-red-100/50 rounded-lg transition-all disabled:opacity-50"
+                                                            className="p-1.5 text-red-400/70 hover:text-red-400 active:text-red-400 hover:bg-red-500/20 active:bg-red-500/30 rounded-lg transition-all disabled:opacity-50 border border-transparent hover:border-red-500/30"
                                                             title="Remove from catalog"
                                                         >
                                                             {deletingId === product._id ? (
-                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
                                                             ) : (
-                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                <Trash2 className="w-4 h-4 drop-shadow-[0_0_2px_currentColor]" />
                                                             )}
                                                         </button>
                                                     </div>
@@ -600,32 +618,44 @@ export const CJSettings: React.FC = () => {
             </div>
 
             {/* Size Variant Mapping Section */}
-            <div className="mt-12 relative z-10">
+            <div className="mt-16 relative z-10">
                 <FadeIn delay={550}>
-                    <h2 className="font-serif text-2xl text-earth mb-6 flex items-center gap-3">
-                        <Package className="w-5 h-5 text-bronze/60" />
+                    <h2 className="font-serif text-3xl text-cream drop-shadow-md mb-8 flex items-center gap-3">
+                        <Package className="w-6 h-6 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
                         Variant Mapping
                     </h2>
                 </FadeIn>
-                <div className="lg:w-2/3">
+                <div className="w-full">
+                    {/* The CJVariantManager creates its own dark-glass wrapper internally if needed, but we provide it full width and context */}
                     <CJVariantManager />
                 </div>
             </div>
 
             {/* Knowledge Base / Footer Info */}
-            <FadeIn delay={700} className="mt-16 pt-8 border-t border-earth/5 mix-blend-multiply opacity-60 hover:opacity-100 transition-opacity duration-500 relative z-10">
-                <div className="flex flex-col md:flex-row gap-8 text-xs text-earth/50 leading-relaxed font-sans backdrop-blur-sm bg-white/20 p-6 rounded-2xl border border-white/30">
-                    <div className="flex-1">
-                        <strong className="block text-earth uppercase tracking-widest mb-2 font-bold">Automated Workflow</strong>
-                        <p>Products imported from AliExpress are automatically submitted to CJ for sourcing. They remain "Pending" and hidden from the storefront until CJ approves the sourcing request. Once approved, they automatically go live.</p>
+            <FadeIn delay={700} className="mt-24 pt-10 border-t border-white/10 relative z-10 relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent mix-blend-overlay pointer-events-none"></div>
+                <div className="flex flex-col md:flex-row gap-8 lg:gap-12 text-xs md:text-sm text-cream/60 leading-relaxed font-sans backdrop-blur-3xl bg-black/40 p-8 md:p-12 rounded-[2rem] border border-white/10 shadow-[0_15px_30px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-noise opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
+                    <div className="flex-1 relative z-10">
+                        <strong className="flex items-center gap-2 text-amber-400 uppercase tracking-widest mb-3 font-medium drop-shadow-sm text-[10px] md:text-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_5px_#fbbf24]"></span>
+                            Automated Workflow
+                        </strong>
+                        <p className="font-light">Products imported from AliExpress are automatically submitted to CJ for sourcing. They remain "Pending" and hidden from the storefront until CJ approves the sourcing request. Once approved, they automatically go live.</p>
                     </div>
-                    <div className="flex-1">
-                        <strong className="block text-earth uppercase tracking-widest mb-2 font-bold">CJ Sourcing ID</strong>
-                        <p>If CJ provides a new SKU or Variant ID, the system will link it. Pricing is not automatically synced - please review the imported cost in CJ before setting your retail price.</p>
+                    <div className="flex-1 relative z-10">
+                        <strong className="flex items-center gap-2 text-amber-400 uppercase tracking-widest mb-3 font-medium drop-shadow-sm text-[10px] md:text-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_5px_#fbbf24]"></span>
+                            CJ Sourcing ID
+                        </strong>
+                        <p className="font-light">If CJ provides a new SKU or Variant ID, the system will link it. Pricing is not automatically synced - please review the imported cost in CJ before setting your retail price.</p>
                     </div>
-                    <div className="flex-1">
-                        <strong className="block text-earth uppercase tracking-widest mb-2 font-bold">Troubleshooting</strong>
-                        <p>If products stick in "Pending" for more than 48 hours, use "Check Sourcing" above. For "Failed" items, verify the AliExpress URL is valid and accessible publicly.</p>
+                    <div className="flex-1 relative z-10">
+                        <strong className="flex items-center gap-2 text-amber-400 uppercase tracking-widest mb-3 font-medium drop-shadow-sm text-[10px] md:text-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_5px_#fbbf24]"></span>
+                            Troubleshooting
+                        </strong>
+                        <p className="font-light">If products stick in "Pending" for more than 48 hours, use "Check Sourcing" above. For "Failed" items, verify the AliExpress URL is valid and accessible publicly.</p>
                     </div>
                 </div>
             </FadeIn>
@@ -633,17 +663,19 @@ export const CJSettings: React.FC = () => {
             {/* Custom Scrollbar Styles for this component only */}
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
-                    width: 4px;
+                    width: 6px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(0,0,0,0.02);
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(74, 59, 50, 0.1);
+                    background: rgba(255,255,255,0.02);
                     border-radius: 10px;
                 }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,0.1);
+                    border-radius: 10px;
+                    border: 1px solid rgba(255,255,255,0.05);
+                }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(74, 59, 50, 0.2);
+                    background: rgba(255,255,255,0.2);
                 }
             `}</style>
         </div>
