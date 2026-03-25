@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Wand2, Send, ChevronRight, Layout, Type, Image as ImageIcon, CheckCircle, Clock, AlertCircle, ArrowLeft, Eye, Smartphone, Monitor, Loader2, Grid, Upload, Trash2, Box, Tag, DollarSign, Shirt } from 'lucide-react';
+import { X, Wand2, Send, ChevronRight, Type, Image as ImageIcon, CheckCircle, ArrowLeft, Eye, Loader2, Upload, Trash2, Box, DollarSign } from 'lucide-react';
 import { Product, SiteContent } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, suggestProductCategory } from '../services/geminiService';
 import { FadeIn } from './FadeIn';
@@ -52,7 +52,8 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                 ...initialProduct
             });
             setStep('essence');
-            // Bump save session so any in-flight save from a previous session is ignored
+            // Reset save state and bump session so any in-flight save is ignored
+            setIsSaving(false);
             saveSessionRef.current += 1;
             setPriceDraft(String(initialProduct?.price ?? '0'));
             previousFocusRef.current = document.activeElement as HTMLElement;
@@ -100,6 +101,11 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
             document.removeEventListener('keydown', handleKeyDown);
         };
     }, [isOpen, onClose]);
+
+    // Sync priceDraft when product.price changes programmatically (e.g. scraper import)
+    useEffect(() => {
+        setPriceDraft(String(product.price ?? 0));
+    }, [product.price]);
 
     // Shared save handler — prevents duplicate concurrent saves
     const handleSave = async () => {
@@ -206,6 +212,8 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                         <EssenceStep
                             product={product}
                             onChange={setProduct}
+                            priceDraft={priceDraft}
+                            onPriceDraftChange={setPriceDraft}
                             onNext={() => setStep('visuals')}
                             collections={siteContent.collections}
                             scrapeProduct={scrapeProduct}
@@ -238,6 +246,7 @@ export const ProductStudio: React.FC<ProductStudioProps> = ({ isOpen, onClose, i
                             onBack={() => setStep('story')}
                             onSave={handleSave}
                             isSaving={isSaving}
+                            priceDraft={priceDraft}
                             siteContent={siteContent}
                         />
                     )}
@@ -287,10 +296,12 @@ const StudioStepIndicator: React.FC<{ currentStep: StudioStep }> = ({ currentSte
 const EssenceStep: React.FC<{
     product: Partial<Product>;
     onChange: (p: any) => void;
+    priceDraft: string;
+    onPriceDraftChange: (value: string) => void;
     onNext: () => void;
     collections: any[];
     scrapeProduct: any;
-}> = ({ product, onChange, onNext, collections, scrapeProduct }) => {
+}> = ({ product, onChange, priceDraft, onPriceDraftChange, onNext, collections, scrapeProduct }) => {
     const [isGeneratingName, setIsGeneratingName] = useState(false);
     const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
     const [isCategorizing, setIsCategorizing] = useState(false);
@@ -598,7 +609,7 @@ const EssenceStep: React.FC<{
                                         const val = e.target.value;
                                         // Allow digits, one decimal point, and empty
                                         if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                            setPriceDraft(val);
+                                            onPriceDraftChange(val);
                                         }
                                     }}
                                     onBlur={() => {
@@ -803,7 +814,7 @@ const StoryStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => voi
 };
 
 // --- Step 4: Review ---
-const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => void; onBack: () => void; onSave: () => void; isSaving: boolean; siteContent: SiteContent }> = ({ product, onChange, onBack, onSave, isSaving, siteContent }) => {
+const ReviewStep: React.FC<{ product: Partial<Product>; onChange: (p: any) => void; onBack: () => void; onSave: () => void; isSaving: boolean; priceDraft: string; siteContent: SiteContent }> = ({ product, onChange, onBack, onSave, isSaving, priceDraft, siteContent }) => {
     return (
         <div className="h-full flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in-up">
             <div className="w-full max-w-5xl space-y-10">
