@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, Check, X, DollarSign, Wand2, Package, ChevronDown, AlertCircle, Link, ChevronLeft, ChevronRight, Globe, Filter, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { aliexpressService } from '../services/aliexpressService';
@@ -6,6 +6,7 @@ import { CollectionType, Product, CollectionConfig } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames, isLikelyFallback, isLikelyFallbackDescription } from '../services/geminiService';
 import { translateProductFields, detectChinese } from '../services/translateService';
 import { FadeIn } from './FadeIn';
+import { ProductImageGallery } from './ProductImageGallery';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
 import { useMutation, useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
@@ -110,6 +111,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [reviewGalleryIdx, setReviewGalleryIdx] = useState<Record<string, number>>({});
     /** Draft text for price override inputs — keyed by variantId. Stored as raw string to avoid coercing transient values (e.g. "0.", ".5"). */
     const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
 
@@ -755,9 +757,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                     <p className="text-earth/60 font-light mt-1 max-w-md mx-auto text-xs">Select, reorder, and preview images. First image = main listing image.</p>
                                 </div>
 
-                                {/* Main Preview (compact — not aspect-square) */}
+                                {/* Main Preview — full-size scrollable gallery */}
                                 <div className="px-4 md:px-8 pb-3">
-                                    <div className="max-w-xs mx-auto rounded-xl overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.06)] border border-white/60 bg-white relative group" style={{ height: '200px' }}>
+                                    <div className="max-w-md mx-auto aspect-square rounded-xl overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.06)] border border-white/60 bg-white relative group">
                                     {((currentProduct.images?.length ?? 0) > 0 || previewImageIdx !== null) ? (
                                         <>
                                             {(() => {
@@ -1552,39 +1554,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                 return (
                                     <div key={product.id} className="bg-white rounded-2xl border border-earth/10 overflow-hidden shadow-sm">
                                         <div className="flex flex-col lg:flex-row">
-                                            {/* Image Gallery */}
+                                            {/* Image Gallery — Scrollable Slideshow */}
                                             <div className="lg:w-80 flex-shrink-0 bg-cream/20 p-4">
                                                 {orderedImages.length > 0 && (
-                                                    <div className="space-y-2">
-                                                        {/* Main image */}
-                                                        <div className="aspect-square rounded-xl overflow-hidden border border-earth/10 relative">
-                                                            <img
-                                                                src={orderedImages[0]}
-                                                                alt={product.customName || product.name}
-                                                                referrerPolicy="no-referrer"
-                                                                crossOrigin="anonymous"
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                            <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center" title="Main listing image">
-                                                                <Check className="w-3 h-3" />
-                                                            </div>
-                                                        </div>
-                                                        {/* Thumbnail strip */}
-                                                        {orderedImages.length > 1 && (
-                                                            <div className="flex gap-1 overflow-x-auto">
-                                                                {orderedImages.slice(1, 7).map((img, i) => (
-                                                                    <div key={i} className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-earth/10">
-                                                                        <img src={img} alt={`Thumbnail ${i + 2}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                                    </div>
-                                                                ))}
-                                                                {orderedImages.length > 7 && (
-                                                                    <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-earth/5 flex items-center justify-center text-xs text-earth/40 font-bold">
-                                                                        +{orderedImages.length - 7}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    <ProductImageGallery
+                                                        images={orderedImages}
+                                                        activeIndex={reviewGalleryIdx[product.id] ?? 0}
+                                                        onIndexChange={(i) => setReviewGalleryIdx(prev => ({ ...prev, [product.id]: i }))}
+                                                        alt={product.customName || product.name}
+                                                    />
                                                 )}
                                             </div>
 

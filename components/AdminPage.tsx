@@ -474,9 +474,10 @@ export const AdminPage: React.FC = () => {
                      <button
                         type="submit"
                         disabled={isSigningIn}
-                        className="w-full bg-earth text-cream py-4 rounded-xl text-[10px] uppercase tracking-[0.25em] hover:bg-bronze hover:shadow-lg hover:-translate-y-0.5 transition-all duration-500 disabled:opacity-50 flex items-center justify-center gap-2 mt-8"
+                        className="w-full bg-gradient-to-r from-[#3a2a1a] to-[#2d1f12] text-cream border border-bronze/30 py-4 rounded-xl text-[10px] uppercase tracking-[0.25em] hover:shadow-[0_8px_25px_rgba(139,90,43,0.35)] hover:-translate-y-0.5 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-8 relative overflow-hidden group shadow-[0_4px_15px_rgba(0,0,0,0.2)]"
                      >
-                        {isSigningIn ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Authenticate'}
+                        <span className="absolute inset-0 bg-gradient-to-r from-bronze/0 via-bronze/20 to-bronze/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                        <span className="relative z-10">{isSigningIn ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Authenticate'}</span>
                      </button>
                   </form>
 
