@@ -6,6 +6,7 @@ import { CollectionType, Product, CollectionConfig } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames, isLikelyFallback, isLikelyFallbackDescription } from '../services/geminiService';
 import { translateProductFields, detectChinese } from '../services/translateService';
 import { FadeIn } from './FadeIn';
+import { ProductImageGallery } from './ProductImageGallery';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
 import { useMutation, useAction } from 'convex/react';
 import { api } from '../convex/_generated/api';
@@ -1555,65 +1556,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                         <div className="flex flex-col lg:flex-row">
                                             {/* Image Gallery — Scrollable Slideshow */}
                                             <div className="lg:w-80 flex-shrink-0 bg-cream/20 p-4">
-                                                {orderedImages.length > 0 && (() => {
-                                                    const galleryKey = product.id;
-                                                    const activeIdx = reviewGalleryIdx[galleryKey] ?? 0;
-                                                    const displayIdx = activeIdx < orderedImages.length ? activeIdx : 0;
-                                                    return (
-                                                        <div className="space-y-2">
-                                                            {/* Main image with nav arrows */}
-                                                            <div className="aspect-square rounded-xl overflow-hidden border border-earth/10 relative group">
-                                                                <img
-                                                                    src={orderedImages[displayIdx]}
-                                                                    alt={product.customName || product.name}
-                                                                    referrerPolicy="no-referrer"
-                                                                    crossOrigin="anonymous"
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                                {displayIdx === 0 && (
-                                                                    <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center" title="Main listing image">
-                                                                        <Check className="w-3 h-3" />
-                                                                    </div>
-                                                                )}
-                                                                {orderedImages.length > 1 && (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [galleryKey]: displayIdx <= 0 ? orderedImages.length - 1 : displayIdx - 1 }))}
-                                                                            aria-label="Previous image"
-                                                                            className="absolute left-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                                                                        >
-                                                                            <ChevronLeft className="w-4 h-4" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [galleryKey]: displayIdx >= orderedImages.length - 1 ? 0 : displayIdx + 1 }))}
-                                                                            aria-label="Next image"
-                                                                            className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                                                                        >
-                                                                            <ChevronRight className="w-4 h-4" />
-                                                                        </button>
-                                                                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur px-2 py-0.5 rounded-full text-[10px] font-medium text-earth/60 shadow-sm">
-                                                                            {displayIdx + 1} / {orderedImages.length}
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                            {/* Scrollable clickable thumbnail strip */}
-                                                            {orderedImages.length > 1 && (
-                                                                <div className="flex gap-1.5 overflow-x-auto pb-1">
-                                                                    {orderedImages.map((img, i) => (
-                                                                        <button
-                                                                            key={i}
-                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [galleryKey]: i }))}
-                                                                            className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${displayIdx === i ? 'border-bronze ring-1 ring-bronze/30 scale-105' : 'border-earth/10 hover:border-earth/30'}`}
-                                                                        >
-                                                                            <img src={img} alt={`Image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
+                                                {orderedImages.length > 0 && (
+                                                    <ProductImageGallery
+                                                        images={orderedImages}
+                                                        activeIndex={reviewGalleryIdx[product.id] ?? 0}
+                                                        onIndexChange={(i) => setReviewGalleryIdx(prev => ({ ...prev, [product.id]: i }))}
+                                                        alt={product.customName || product.name}
+                                                    />
+                                                )}
                                             </div>
 
                                             {/* Product Details */}
