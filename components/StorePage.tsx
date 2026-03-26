@@ -31,7 +31,7 @@ interface VariantSelectorProps {
   onSetGroupKey: (key: string | null) => void;
 }
 
-const VariantSelector: React.FC<VariantSelectorProps> = ({
+const VariantSelector: React.FC<VariantSelectorProps> = React.memo(({
   variants,
   selectedVariant,
   activeImageGroupKey,
@@ -155,7 +155,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
       )}
     </>
   );
-};
+});
+VariantSelector.displayName = 'VariantSelector';
 
 export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategory = 'All', forceProductView = false }) => {
   const { products, siteContent, isLoading } = useSite();
