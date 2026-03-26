@@ -114,6 +114,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [reviewGalleryIdx, setReviewGalleryIdx] = useState<Record<string, number>>({});
     /** Draft text for price override inputs — keyed by variantId. Stored as raw string to avoid coercing transient values (e.g. "0.", ".5"). */
     const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
+    /** Stamp mode: index of the "active stamp" image. Click a variant to assign this image. */
+    const [activeStampImage, setActiveStampImage] = useState<number | null>(null);
+    /** Last image assigned to a variant — used as sticky first option in per-variant picker */
+    const [lastUsedImage, setLastUsedImage] = useState<number | null>(null);
+    /** Drag-reorder state for image ordering strip */
+    const [dragIdx, setDragIdx] = useState<number | null>(null);
+    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
     // Handle image upload for current review product
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -486,9 +493,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         } catch { return 0; }
     });
 
-    // Reset preview when switching products or entering review mode
+    // Reset preview and stamp/drag state when switching products or entering review mode
     useEffect(() => {
         setPreviewImageIdx(null);
+        setActiveStampImage(null);
+        setLastUsedImage(null);
+        setDragIdx(null);
+        setDragOverIdx(null);
+        setOpenImagePicker(null);
     }, [reviewIndex, importStep]);
     const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
         if (typeof idxOrUpdater === 'function') {
@@ -954,50 +966,98 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
 
                                     return (
                                         <div className="mt-3 mb-2">
-                                            <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Image Order <span className="normal-case text-earth/30">(first = main listing image)</span></p>
-                                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                            <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-2">Image Order <span className="normal-case text-earth/30">(drag to reorder · first = main listing image)</span></p>
+                                            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                                                 {finalOrder.map((imgIdx, pos) => {
                                                     const isMain = pos === 0;
                                                     const imgSrc = combinedImages[imgIdx];
                                                     if (!imgSrc) return null;
+                                                    const isDragging = dragIdx === pos;
+                                                    const isDragOver = dragOverIdx === pos;
                                                     return (
-                                                        <div key={imgIdx} className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${isMain ? 'border-green-500 ring-2 ring-green-300/40' : 'border-earth/10'}`}>
-                                                            <img src={imgSrc} alt={`Order ${pos + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                            {/* Main image badge */}
-                                                            {isMain && (
-                                                                <div className="absolute top-0.5 left-0.5 bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center" title="Main listing image">
-                                                                    <Check className="w-2.5 h-2.5" />
-                                                                </div>
-                                                            )}
-                                                            {/* Click to set as main */}
+                                                        <div
+                                                            key={imgIdx}
+                                                            draggable
+                                                            onDragStart={(e) => {
+                                                                setDragIdx(pos);
+                                                                e.dataTransfer.effectAllowed = 'move';
+                                                                // Set a transparent drag image for cleaner look
+                                                                const img = new Image();
+                                                                img.src = imgSrc;
+                                                                e.dataTransfer.setDragImage(img, 28, 28);
+                                                            }}
+                                                            onDragOver={(e) => {
+                                                                e.preventDefault();
+                                                                e.dataTransfer.dropEffect = 'move';
+                                                                if (dragIdx !== null && dragIdx !== pos) {
+                                                                    setDragOverIdx(pos);
+                                                                }
+                                                            }}
+                                                            onDragLeave={() => {
+                                                                if (dragOverIdx === pos) setDragOverIdx(null);
+                                                            }}
+                                                            onDrop={(e) => {
+                                                                e.preventDefault();
+                                                                if (dragIdx !== null && dragIdx !== pos) {
+                                                                    const newOrder = [...finalOrder];
+                                                                    const [moved] = newOrder.splice(dragIdx, 1);
+                                                                    newOrder.splice(pos, 0, moved);
+                                                                    updateReviewProduct('imageOrder', newOrder);
+                                                                    setPreviewImageIdx(newOrder[0]);
+                                                                }
+                                                                setDragIdx(null);
+                                                                setDragOverIdx(null);
+                                                            }}
+                                                            onDragEnd={() => {
+                                                                setDragIdx(null);
+                                                                setDragOverIdx(null);
+                                                            }}
+                                                            onTouchStart={() => {
+                                                                // Touch start - drag is handled by HTML5 on desktop
+                                                                // Arrow buttons below serve as mobile/keyboard fallback
+                                                            }}
+                                                            className={`relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing select-none
+                                                                ${isMain ? 'border-green-500 ring-2 ring-green-300/40' : 'border-earth/10 hover:border-earth/30'}
+                                                                ${isDragging ? 'opacity-40 scale-90' : ''}
+                                                                ${isDragOver ? 'ring-2 ring-bronze/50 scale-105 border-bronze' : ''}`}
+                                                        >
+                                                            <img src={imgSrc} alt={`Order ${pos + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover pointer-events-none" />
+                                                            {/* Position badge */}
+                                                            <div className={`absolute top-0.5 left-0.5 rounded-full w-5 h-5 flex items-center justify-center text-[9px] font-bold shadow-sm
+                                                                ${isMain ? 'bg-green-500 text-white' : 'bg-white/90 backdrop-blur text-earth/60'}`}
+                                                                title={isMain ? 'Main listing image' : `Position ${pos + 1}`}
+                                                            >
+                                                                {isMain ? <Check className="w-3 h-3" /> : pos + 1}
+                                                            </div>
+                                                            {/* Click to set as main (non-main only) */}
                                                             {!isMain && (
                                                                 <button
                                                                     aria-label={`Set image ${pos + 1} as the main listing image`}
-                                                                    onClick={() => {
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
                                                                         const newOrder = [imgIdx, ...finalOrder.filter(i => i !== imgIdx)];
                                                                         updateReviewProduct('imageOrder', newOrder);
                                                                         setPreviewImageIdx(newOrder[0]);
                                                                     }}
-                                                                    className="absolute top-0.5 left-0.5 bg-white/80 hover:bg-green-100 backdrop-blur rounded-full w-4 h-4 flex items-center justify-center transition-colors"
+                                                                    className="absolute top-0.5 right-0.5 bg-white/90 hover:bg-green-100 backdrop-blur rounded-full w-5 h-5 flex items-center justify-center transition-colors shadow-sm"
                                                                     title="Set as main image"
                                                                 >
-                                                                    <Check className="w-2.5 h-2.5 text-earth/40" />
+                                                                    <Check className="w-3 h-3 text-earth/40" />
                                                                 </button>
                                                             )}
-                                                            {/* Reorder buttons */}
+                                                            {/* Arrow buttons — mobile/keyboard reorder fallback */}
                                                             <div className="absolute bottom-0.5 right-0.5 flex gap-px">
                                                                 {pos > 0 && (
                                                                     <button
                                                                         aria-label={`Move image ${pos + 1} left`}
-                                                                        onClick={() => {
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
                                                                             const newOrder = [...finalOrder];
                                                                             [newOrder[pos - 1], newOrder[pos]] = [newOrder[pos], newOrder[pos - 1]];
                                                                             updateReviewProduct('imageOrder', newOrder);
-                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) {
-                                                                                setPreviewImageIdx(newOrder[0]);
-                                                                            }
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) setPreviewImageIdx(newOrder[0]);
                                                                         }}
-                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-4 h-4 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
+                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-5 h-5 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
                                                                         title="Move left"
                                                                     >
                                                                         <ChevronLeft className="w-3 h-3" />
@@ -1006,15 +1066,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 {pos < finalOrder.length - 1 && (
                                                                     <button
                                                                         aria-label={`Move image ${pos + 1} right`}
-                                                                        onClick={() => {
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
                                                                             const newOrder = [...finalOrder];
                                                                             [newOrder[pos], newOrder[pos + 1]] = [newOrder[pos + 1], newOrder[pos]];
                                                                             updateReviewProduct('imageOrder', newOrder);
-                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) {
-                                                                                setPreviewImageIdx(newOrder[0]);
-                                                                            }
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) setPreviewImageIdx(newOrder[0]);
                                                                         }}
-                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-4 h-4 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
+                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-5 h-5 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
                                                                         title="Move right"
                                                                     >
                                                                         <ChevronRight className="w-3 h-3" />
@@ -1319,7 +1378,81 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 {(currentProduct.selectedVariants?.length ?? currentProduct.variants.length) === currentProduct.variants.length ? 'Deselect All' : 'Select All'}
                                             </button>
                                         </div>
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+
+                                        {/* ── STAMP MODE: Image Gallery for batch variant assignment ── */}
+                                        {(() => {
+                                            const allImages = [...(currentProduct.images || []), ...(currentProduct.descriptionImages || [])];
+                                            const selected = currentProduct.selectedImages || (currentProduct.images || []).map((_: string, i: number) => i);
+                                            const ordered = currentProduct.imageOrder && currentProduct.imageOrder.length > 0
+                                                ? currentProduct.imageOrder.filter((i: number) => selected.includes(i))
+                                                : [...selected];
+                                            const missing = selected.filter((i: number) => !ordered.includes(i));
+                                            const stampImages = [...ordered, ...missing];
+
+                                            if (stampImages.length === 0) return null;
+
+                                            return (
+                                                <div className="mb-4 pb-4 border-b border-earth/10">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold">
+                                                            {activeStampImage !== null ? (
+                                                                <span className="text-bronze">🎯 Stamp Mode Active — tap variants below to assign</span>
+                                                            ) : (
+                                                                <span>Tap an image to stamp it onto variants</span>
+                                                            )}
+                                                        </p>
+                                                        {activeStampImage !== null && (
+                                                            <button
+                                                                onClick={() => setActiveStampImage(null)}
+                                                                className="text-[10px] uppercase tracking-widest text-red-500 hover:text-red-700 bg-red-50 px-3 py-1 rounded-full font-bold transition-colors flex items-center gap-1"
+                                                            >
+                                                                <X className="w-3 h-3" /> Cancel Stamp
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-1.5">
+                                                        {stampImages.map((imgIdx: number) => {
+                                                            const imgSrc = allImages[imgIdx];
+                                                            if (!imgSrc) return null;
+                                                            const isActiveStamp = activeStampImage === imgIdx;
+                                                            // Count variants using this image
+                                                            const variantsUsingThis = currentProduct.variants!.filter(v => {
+                                                                const mapped = currentProduct.variantImageMap?.[v.id];
+                                                                return mapped === imgIdx;
+                                                            }).length;
+
+                                                            return (
+                                                                <button
+                                                                    key={imgIdx}
+                                                                    type="button"
+                                                                    onClick={() => setActiveStampImage(isActiveStamp ? null : imgIdx)}
+                                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200
+                                                                        ${isActiveStamp
+                                                                            ? 'border-bronze ring-2 ring-bronze/30 shadow-lg scale-[1.05] z-10'
+                                                                            : 'border-earth/10 hover:border-earth/30 hover:shadow-sm'}`}
+                                                                >
+                                                                    <img src={imgSrc} alt={`Stamp ${imgIdx + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                                    {isActiveStamp && (
+                                                                        <div className="absolute inset-0 bg-bronze/20 flex items-center justify-center">
+                                                                            <div className="bg-white/90 rounded-full p-1 shadow-md">
+                                                                                <Check className="w-4 h-4 text-bronze" />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {variantsUsingThis > 0 && !isActiveStamp && (
+                                                                        <div className="absolute bottom-0.5 right-0.5 bg-green-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-sm">
+                                                                            {variantsUsingThis}
+                                                                        </div>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                                             {currentProduct.variants.map((variant) => {
                                                 const isSelected = currentProduct.selectedVariants ? currentProduct.selectedVariants.includes(variant.id) : true;
                                                 const originalName = currentProduct.originalVariants?.find(ov => ov.id === variant.id)?.name;
@@ -1328,11 +1461,13 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                 const allocatedIdx = currentProduct.variantImageMap?.[variant.id];
                                                 const allocatedImage = allocatedIdx !== undefined ? allImages[allocatedIdx] : undefined;
                                                 const displayImage = allocatedImage || variant.image || currentProduct.images?.[0];
+                                                const isStampMode = activeStampImage !== null;
                                                 
                                                 return (
                                                     <div
                                                         key={variant.id}
                                                         className={`rounded-3xl transition-all border-4 overflow-hidden relative
+                                                            ${isStampMode ? 'cursor-pointer hover:scale-[1.01] hover:shadow-xl' : ''}
                                                             ${isSelected
                                                                 ? 'bg-white border-green-500 shadow-lg'
                                                                 : 'bg-white/30 border-white/40 opacity-60 hover:opacity-100 hover:border-earth/20'}`}
@@ -1340,12 +1475,20 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         <button
                                                             type="button"
                                                             onClick={() => {
+                                                                // STAMP MODE: assign the active stamp image to this variant
+                                                                if (isStampMode) {
+                                                                    updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: activeStampImage });
+                                                                    updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[activeStampImage!] } : v));
+                                                                    setLastUsedImage(activeStampImage);
+                                                                    return;
+                                                                }
+                                                                // NORMAL MODE: toggle variant selection
                                                                 const allIds = currentProduct.variants!.map(v => v.id);
-                                                                const currentSelected = currentProduct.selectedVariants || allIds;
-                                                                const newSelected = isSelected ? currentSelected.filter(id => id !== variant.id) : [...currentSelected, variant.id];
+                                                                const currentSelectedVars = currentProduct.selectedVariants || allIds;
+                                                                const newSelected = isSelected ? currentSelectedVars.filter(id => id !== variant.id) : [...currentSelectedVars, variant.id];
                                                                 updateReviewProduct('selectedVariants', newSelected);
                                                             }}
-                                                            className="flex items-center gap-4 p-5 cursor-pointer w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bronze/50"
+                                                            className="flex items-center gap-4 p-4 md:p-5 cursor-pointer w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bronze/50"
                                                         >
                                                             {/* Variant Image */}
                                                             <div
@@ -1428,34 +1571,54 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                         
                                                         {openImagePicker === `${currentProduct.id}:${variant.id}` && (
                                                             <div className="border-t-2 border-earth/5 p-4 bg-white/95">
-                                                                <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-3">Assign specific image</p>
+                                                                <p className="text-[10px] uppercase tracking-widest text-earth/50 font-bold mb-3">
+                                                                    Assign specific image
+                                                                    {lastUsedImage !== null && <span className="text-bronze ml-2">(★ = last used)</span>}
+                                                                </p>
                                                                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                                                                    {allImages.map((img, imgIdx) => (
-                                                                        <div
-                                                                            key={imgIdx}
-                                                                            role="button"
-                                                                            tabIndex={0}
-                                                                            aria-label={`Assign image ${imgIdx + 1} to variant`}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
-                                                                                updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
-                                                                                setOpenImagePicker(null);
-                                                                            }}
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === 'Enter' || e.key === ' ') {
-                                                                                    e.preventDefault();
+                                                                    {/* Sort images: last-used first, then by index */}
+                                                                    {(() => {
+                                                                        const imageIndices = allImages.map((_: string, i: number) => i);
+                                                                        // Move lastUsedImage to front if set
+                                                                        if (lastUsedImage !== null && lastUsedImage < allImages.length) {
+                                                                            const idx = imageIndices.indexOf(lastUsedImage);
+                                                                            if (idx > 0) {
+                                                                                imageIndices.splice(idx, 1);
+                                                                                imageIndices.unshift(lastUsedImage);
+                                                                            }
+                                                                        }
+                                                                        return imageIndices.map((imgIdx: number) => (
+                                                                            <div
+                                                                                key={imgIdx}
+                                                                                role="button"
+                                                                                tabIndex={0}
+                                                                                aria-label={`Assign image ${imgIdx + 1} to variant`}
+                                                                                onClick={(e) => {
                                                                                     e.stopPropagation();
                                                                                     updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
                                                                                     updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
+                                                                                    setLastUsedImage(imgIdx);
                                                                                     setOpenImagePicker(null);
-                                                                                }
-                                                                            }}
-                                                                            className={`w-16 h-16 flex-shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden hover:opacity-80 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50
-                                                                            ${allocatedIdx === imgIdx ? 'border-bronze ring-2 ring-transparent shadow-lg' : 'border-earth/10'}`}>
-                                                                            <img src={img} alt={`Option ${imgIdx + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
-                                                                        </div>
-                                                                    ))}
+                                                                                }}
+                                                                                onKeyDown={(e) => {
+                                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                                        e.preventDefault();
+                                                                                        e.stopPropagation();
+                                                                                        updateReviewProduct('variantImageMap', { ...(currentProduct.variantImageMap || {}), [variant.id]: imgIdx });
+                                                                                        updateReviewProduct('variants', currentProduct.variants!.map(v => v.id === variant.id ? { ...v, image: allImages[imgIdx] } : v));
+                                                                                        setLastUsedImage(imgIdx);
+                                                                                        setOpenImagePicker(null);
+                                                                                    }
+                                                                                }}
+                                                                                className={`relative w-14 h-14 md:w-16 md:h-16 flex-shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden hover:opacity-80 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze/50
+                                                                                ${allocatedIdx === imgIdx ? 'border-bronze ring-2 ring-transparent shadow-lg' : imgIdx === lastUsedImage ? 'border-amber-400/60' : 'border-earth/10'}`}>
+                                                                                <img src={allImages[imgIdx]} alt={`Option ${imgIdx + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                                                                                {imgIdx === lastUsedImage && allocatedIdx !== imgIdx && (
+                                                                                    <div className="absolute top-0.5 left-0.5 bg-amber-400 text-white text-[8px] rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-sm">★</div>
+                                                                                )}
+                                                                            </div>
+                                                                        ));
+                                                                    })()}
                                                                 </div>
                                                                 {allocatedIdx !== undefined && (
                                                                     <div className="mt-3 flex justify-end">
