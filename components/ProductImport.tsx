@@ -585,7 +585,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             (p.salePrice || p.price) + v.priceAdjustment, collection, markupRatio, hasCustomPrice
                         );
                         return { ...v, priceAdjustment: scaledSelling - finalPrice };
-                    });
+                    }).map(({ sellingPriceOverride: _drop, ...rest }) => rest);
                 })(),
                 sourceUrl: p.productUrl || '',
                 cjSourcingStatus: p.productUrl ? 'pending' as const : 'none' as const,
@@ -594,8 +594,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 estimatedCjCost: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedCjCost,
                 estimatedShipping: calculateCostStackPrice(p.salePrice || p.price, productCollection).estimatedShipping,
                 pricingStage: 'estimated' as const,
-                sourceCurrency: p.sourceCurrency,
-                sourcePriceOriginal: p.sourcePriceOriginal,
+
+
                 // Subcategory — clear if collection changed to avoid stale category
                 subcategory: collectionChanged ? undefined : (productSubcategory || undefined),
             };
