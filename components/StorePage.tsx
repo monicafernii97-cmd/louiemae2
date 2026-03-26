@@ -917,27 +917,125 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                 </p>
                 <div className="h-px w-full bg-earth/10 mb-6"></div>
 
-                {/* Variant Selector */}
+                {/* Variant Selector — Two-tier: Color/Style swatches → Size pills */}
                 {selectedProduct.variants && selectedProduct.variants.length > 0 && (
                   <div className="mb-6">
-                    <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Option</span>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProduct.variants.map(v => (
-                        <button
-                          key={v.id}
-                          onClick={() => setSelectedVariant(v.id === selectedVariant?.id ? undefined : v)}
-                          disabled={!v.inStock}
-                          className={`px-4 py-2 text-xs uppercase tracking-wider border transition-all ${selectedVariant?.id === v.id
-                            ? 'border-earth bg-earth text-cream'
-                            : v.inStock
-                              ? 'border-earth/20 text-earth hover:border-earth'
-                              : 'border-earth/10 text-earth/30 cursor-not-allowed line-through'
-                            }`}
-                        >
-                          {v.name}
-                        </button>
-                      ))}
-                    </div>
+                    {(() => {
+                      const variants = selectedProduct.variants!;
+                      // Group variants by image — each unique image = a color/style group
+                      const imageGroups = new Map<string, typeof variants>();
+                      variants.forEach(v => {
+                        const key = v.image || '__no_image__';
+                        if (!imageGroups.has(key)) imageGroups.set(key, []);
+                        imageGroups.get(key)!.push(v);
+                      });
+
+                      const groupEntries = Array.from(imageGroups.entries());
+                      const hasMultipleGroups = groupEntries.length > 1;
+
+                      // Find which group the currently selected variant belongs to
+                      const selectedGroupKey = selectedVariant?.image || '__no_image__';
+                      const activeGroup = imageGroups.get(selectedGroupKey) || groupEntries[0]?.[1] || [];
+
+                      if (!hasMultipleGroups) {
+                        // Single group — show flat buttons (original behavior)
+                        return (
+                          <>
+                            <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Option</span>
+                            <div className="flex flex-wrap gap-2">
+                              {variants.map(v => (
+                                <button
+                                  key={v.id}
+                                  onClick={() => setSelectedVariant(v.id === selectedVariant?.id ? undefined : v)}
+                                  disabled={!v.inStock}
+                                  className={`px-4 py-2 text-xs uppercase tracking-wider border transition-all rounded-sm ${selectedVariant?.id === v.id
+                                    ? 'border-earth bg-earth text-cream'
+                                    : v.inStock
+                                      ? 'border-earth/20 text-earth hover:border-earth'
+                                      : 'border-earth/10 text-earth/30 cursor-not-allowed line-through'
+                                    }`}
+                                >
+                                  {v.name}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      }
+
+                      // Multi-group — tier 1: image/color swatches, tier 2: size buttons
+                      return (
+                        <>
+                          {/* Tier 1: Color/Style */}
+                          <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Style</span>
+                          <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                            {groupEntries.map(([imageKey, groupVariants]) => {
+                              const isActive = selectedGroupKey === imageKey || (!selectedVariant && groupEntries[0][0] === imageKey);
+                              const hasImage = imageKey !== '__no_image__';
+                              const firstVariant = groupVariants[0];
+                              const anyInStock = groupVariants.some(v => v.inStock);
+
+                              return (
+                                <button
+                                  key={imageKey}
+                                  onClick={() => {
+                                    // Select first in-stock variant of this group
+                                    const target = groupVariants.find(v => v.inStock) || firstVariant;
+                                    setSelectedVariant(target);
+                                  }}
+                                  disabled={!anyInStock}
+                                  className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200
+                                    ${isActive
+                                      ? 'border-earth ring-2 ring-earth/20 shadow-md scale-[1.02]'
+                                      : anyInStock
+                                        ? 'border-earth/15 hover:border-earth/40 hover:shadow-sm'
+                                        : 'border-earth/10 opacity-40 cursor-not-allowed'}`}
+                                >
+                                  {hasImage ? (
+                                    <img
+                                      src={imageKey}
+                                      alt={firstVariant.name}
+                                      className="w-14 h-14 md:w-16 md:h-16 object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-14 h-14 md:w-16 md:h-16 bg-earth/5 flex items-center justify-center text-[9px] text-earth/40 uppercase tracking-wider px-1 text-center">
+                                      {firstVariant.name.split(/[\s-]/)[0]}
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Tier 2: Size/Option within selected group */}
+                          {activeGroup.length > 1 && (
+                            <>
+                              <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Size</span>
+                              <div className="flex flex-wrap gap-2">
+                                {activeGroup.map(v => (
+                                  <button
+                                    key={v.id}
+                                    onClick={() => setSelectedVariant(v.id === selectedVariant?.id ? undefined : v)}
+                                    disabled={!v.inStock}
+                                    className={`px-4 py-2 text-xs uppercase tracking-wider border transition-all rounded-sm ${selectedVariant?.id === v.id
+                                      ? 'border-earth bg-earth text-cream'
+                                      : v.inStock
+                                        ? 'border-earth/20 text-earth hover:border-earth'
+                                        : 'border-earth/10 text-earth/30 cursor-not-allowed line-through'
+                                      }`}
+                                  >
+                                    {v.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {activeGroup.length === 1 && !selectedVariant && (
+                            <p className="text-xs text-earth/40 italic">Tap a style above to view options</p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
 
