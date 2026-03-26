@@ -110,7 +110,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
     const [previewImageIdx, setPreviewImageIdx] = useState<number | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
-    const [reviewGalleryIdx, setReviewGalleryIdx] = useState<Record<number, number>>({});
+    const [reviewGalleryIdx, setReviewGalleryIdx] = useState<Record<string, number>>({});
     /** Draft text for price override inputs — keyed by variantId. Stored as raw string to avoid coercing transient values (e.g. "0.", ".5"). */
     const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
 
@@ -1556,7 +1556,8 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                             {/* Image Gallery — Scrollable Slideshow */}
                                             <div className="lg:w-80 flex-shrink-0 bg-cream/20 p-4">
                                                 {orderedImages.length > 0 && (() => {
-                                                    const activeIdx = reviewGalleryIdx[productIdx] ?? 0;
+                                                    const galleryKey = product.id;
+                                                    const activeIdx = reviewGalleryIdx[galleryKey] ?? 0;
                                                     const displayIdx = activeIdx < orderedImages.length ? activeIdx : 0;
                                                     return (
                                                         <div className="space-y-2">
@@ -1577,14 +1578,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 {orderedImages.length > 1 && (
                                                                     <>
                                                                         <button
-                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [productIdx]: displayIdx <= 0 ? orderedImages.length - 1 : displayIdx - 1 }))}
+                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [galleryKey]: displayIdx <= 0 ? orderedImages.length - 1 : displayIdx - 1 }))}
                                                                             aria-label="Previous image"
                                                                             className="absolute left-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                                                                         >
                                                                             <ChevronLeft className="w-4 h-4" />
                                                                         </button>
                                                                         <button
-                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [productIdx]: displayIdx >= orderedImages.length - 1 ? 0 : displayIdx + 1 }))}
+                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [galleryKey]: displayIdx >= orderedImages.length - 1 ? 0 : displayIdx + 1 }))}
                                                                             aria-label="Next image"
                                                                             className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                                                                         >
@@ -1602,7 +1603,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                     {orderedImages.map((img, i) => (
                                                                         <button
                                                                             key={i}
-                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [productIdx]: i }))}
+                                                                            onClick={() => setReviewGalleryIdx(prev => ({ ...prev, [galleryKey]: i }))}
                                                                             className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${displayIdx === i ? 'border-bronze ring-1 ring-bronze/30 scale-105' : 'border-earth/10 hover:border-earth/30'}`}
                                                                         >
                                                                             <img src={img} alt={`Image ${i + 1}`} referrerPolicy="no-referrer" crossOrigin="anonymous" className="w-full h-full object-cover" />
