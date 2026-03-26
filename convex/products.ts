@@ -45,6 +45,16 @@ export const create = mutation({
             v.literal("rejected"),
             v.literal("none")
         )),
+        // Two-stage pricing metadata
+        sourcePriceCny: v.optional(v.number()),
+        estimatedCjCost: v.optional(v.number()),
+        estimatedShipping: v.optional(v.number()),
+        pricingStage: v.optional(v.union(
+            v.literal("estimated"),
+            v.literal("confirmed")
+        )),
+        // Multi-category support
+        subcategory: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         // Require authentication
