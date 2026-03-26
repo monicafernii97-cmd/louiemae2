@@ -27,7 +27,10 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
 }) => {
     if (images.length === 0) return null;
 
-    const displayIdx = activeIndex < images.length ? activeIndex : 0;
+    const displayIdx =
+        Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < images.length
+            ? activeIndex
+            : 0;
 
     const goPrev = () => onIndexChange(displayIdx <= 0 ? images.length - 1 : displayIdx - 1);
     const goNext = () => onIndexChange(displayIdx >= images.length - 1 ? 0 : displayIdx + 1);
@@ -51,6 +54,7 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
                 {images.length > 1 && (
                     <>
                         <button
+                            type="button"
                             onClick={goPrev}
                             aria-label="Previous image"
                             className="absolute left-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
@@ -58,6 +62,7 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
                             <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button
+                            type="button"
                             onClick={goNext}
                             aria-label="Next image"
                             className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur hover:bg-white text-earth/60 hover:text-earth rounded-full w-7 h-7 flex items-center justify-center shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
@@ -75,6 +80,7 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                     {images.map((img, i) => (
                         <button
+                            type="button"
                             key={i}
                             onClick={() => onIndexChange(i)}
                             className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${displayIdx === i ? 'border-bronze ring-1 ring-bronze/30 scale-105' : 'border-earth/10 hover:border-earth/30'}`}
