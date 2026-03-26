@@ -493,9 +493,14 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
         } catch { return 0; }
     });
 
-    // Reset preview when switching products or entering review mode
+    // Reset preview and stamp/drag state when switching products or entering review mode
     useEffect(() => {
         setPreviewImageIdx(null);
+        setActiveStampImage(null);
+        setLastUsedImage(null);
+        setDragIdx(null);
+        setDragOverIdx(null);
+        setOpenImagePicker(null);
     }, [reviewIndex, importStep]);
     const setReviewIndex = (idxOrUpdater: number | ((prev: number) => number)) => {
         if (typeof idxOrUpdater === 'function') {
@@ -1007,9 +1012,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                 setDragIdx(null);
                                                                 setDragOverIdx(null);
                                                             }}
-                                                            onTouchStart={(e) => {
-                                                                // For mobile: long-press to initiate drag feel
-                                                                setDragIdx(pos);
+                                                            onTouchStart={() => {
+                                                                // Touch start - drag is handled by HTML5 on desktop
+                                                                // Arrow buttons below serve as mobile/keyboard fallback
                                                             }}
                                                             className={`relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing select-none
                                                                 ${isMain ? 'border-green-500 ring-2 ring-green-300/40' : 'border-earth/10 hover:border-earth/30'}
@@ -1034,12 +1039,47 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                                                                         updateReviewProduct('imageOrder', newOrder);
                                                                         setPreviewImageIdx(newOrder[0]);
                                                                     }}
-                                                                    className="absolute bottom-0.5 right-0.5 bg-white/90 hover:bg-green-100 backdrop-blur rounded-full w-5 h-5 flex items-center justify-center transition-colors shadow-sm"
+                                                                    className="absolute top-0.5 right-0.5 bg-white/90 hover:bg-green-100 backdrop-blur rounded-full w-5 h-5 flex items-center justify-center transition-colors shadow-sm"
                                                                     title="Set as main image"
                                                                 >
                                                                     <Check className="w-3 h-3 text-earth/40" />
                                                                 </button>
                                                             )}
+                                                            {/* Arrow buttons — mobile/keyboard reorder fallback */}
+                                                            <div className="absolute bottom-0.5 right-0.5 flex gap-px">
+                                                                {pos > 0 && (
+                                                                    <button
+                                                                        aria-label={`Move image ${pos + 1} left`}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const newOrder = [...finalOrder];
+                                                                            [newOrder[pos - 1], newOrder[pos]] = [newOrder[pos], newOrder[pos - 1]];
+                                                                            updateReviewProduct('imageOrder', newOrder);
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) setPreviewImageIdx(newOrder[0]);
+                                                                        }}
+                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-5 h-5 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
+                                                                        title="Move left"
+                                                                    >
+                                                                        <ChevronLeft className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                                {pos < finalOrder.length - 1 && (
+                                                                    <button
+                                                                        aria-label={`Move image ${pos + 1} right`}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const newOrder = [...finalOrder];
+                                                                            [newOrder[pos], newOrder[pos + 1]] = [newOrder[pos + 1], newOrder[pos]];
+                                                                            updateReviewProduct('imageOrder', newOrder);
+                                                                            if (previewImageIdx === null || previewImageIdx === finalOrder[0]) setPreviewImageIdx(newOrder[0]);
+                                                                        }}
+                                                                        className="bg-white/90 hover:bg-white backdrop-blur rounded-sm w-5 h-5 flex items-center justify-center text-earth/50 hover:text-earth transition-colors"
+                                                                        title="Move right"
+                                                                    >
+                                                                        <ChevronRight className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}

@@ -38,11 +38,14 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
   const selectedCategory = useMemo(() => decodeURIComponent(initialCategory), [initialCategory]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(undefined);
+  /** Tracks the active image group (color/style) independently from selectedVariant */
+  const [activeImageGroupKey, setActiveImageGroupKey] = useState<string | null>(null);
 
-  // Reset variant when changing product
+  // Reset variant and group key when changing product
   const handleSelectProduct = (product: Product | null) => {
     setSelectedProduct(product);
     setSelectedVariant(undefined);
+    setActiveImageGroupKey(null);
   };
 
   // Get main categories for logic checks
@@ -899,7 +902,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
             </button>
             <div className="w-full md:w-1/2 bg-white h-1/2 md:h-auto overflow-hidden relative group">
               <img
-                src={selectedVariant?.image || selectedProduct.images[0]}
+                src={selectedVariant?.image || (activeImageGroupKey && activeImageGroupKey !== '__no_image__' ? activeImageGroupKey : selectedProduct.images[0])}
                 alt={selectedProduct.name}
                 className="w-full h-full object-cover"
               />
@@ -933,9 +936,11 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                       const groupEntries = Array.from(imageGroups.entries());
                       const hasMultipleGroups = groupEntries.length > 1;
 
-                      // Find which group the currently selected variant belongs to
-                      const selectedGroupKey = selectedVariant?.image || '__no_image__';
-                      const activeGroup = imageGroups.get(selectedGroupKey) || groupEntries[0]?.[1] || [];
+                      // Determine active group: explicit key > selected variant's group > first group
+                      const resolvedGroupKey = activeImageGroupKey
+                        || (selectedVariant?.image || '__no_image__');
+                      const activeGroup = imageGroups.get(resolvedGroupKey) || groupEntries[0]?.[1] || [];
+                      const currentGroupKey = imageGroups.has(resolvedGroupKey) ? resolvedGroupKey : groupEntries[0]?.[0] || '__no_image__';
 
                       if (!hasMultipleGroups) {
                         // Single group — show flat buttons (original behavior)
@@ -970,7 +975,7 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                           <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Style</span>
                           <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
                             {groupEntries.map(([imageKey, groupVariants]) => {
-                              const isActive = selectedGroupKey === imageKey || (!selectedVariant && groupEntries[0][0] === imageKey);
+                              const isActive = currentGroupKey === imageKey;
                               const hasImage = imageKey !== '__no_image__';
                               const firstVariant = groupVariants[0];
                               const anyInStock = groupVariants.some(v => v.inStock);
@@ -979,9 +984,16 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                                 <button
                                   key={imageKey}
                                   onClick={() => {
-                                    // Select first in-stock variant of this group
-                                    const target = groupVariants.find(v => v.inStock) || firstVariant;
-                                    setSelectedVariant(target);
+                                    // Set the active group key without auto-selecting a size
+                                    setActiveImageGroupKey(imageKey);
+                                    // Clear any previously selected variant from a different group
+                                    if (selectedVariant && (selectedVariant.image || '__no_image__') !== imageKey) {
+                                      setSelectedVariant(undefined);
+                                    }
+                                    // Auto-select only if this group has exactly 1 variant
+                                    if (groupVariants.length === 1) {
+                                      setSelectedVariant(firstVariant);
+                                    }
                                   }}
                                   disabled={!anyInStock}
                                   className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200
@@ -1008,9 +1020,11 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                           </div>
 
                           {/* Tier 2: Size/Option within selected group */}
-                          {activeGroup.length > 1 && (
+                          {activeGroup.length > 0 && (
                             <>
-                              <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">Select Size</span>
+                              <span className="text-[10px] uppercase tracking-widest text-earth/50 block mb-3">
+                                {activeGroup.length === 1 ? 'Selected' : 'Select Size'}
+                              </span>
                               <div className="flex flex-wrap gap-2">
                                 {activeGroup.map(v => (
                                   <button
@@ -1029,9 +1043,6 @@ export const StorePage: React.FC<StorePageProps> = ({ collection, initialCategor
                                 ))}
                               </div>
                             </>
-                          )}
-                          {activeGroup.length === 1 && !selectedVariant && (
-                            <p className="text-xs text-earth/40 italic">Tap a style above to view options</p>
                           )}
                         </>
                       );
