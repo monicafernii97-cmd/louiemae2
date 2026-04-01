@@ -63,7 +63,8 @@ export default defineSchema({
         )),
         // Multi-category support
         subcategory: v.optional(v.string()),         // e.g., "Skirts" (parent category auto-derived)
-    }).index("by_cj_sourcing_status", ["cjSourcingStatus"]),
+    }).index("by_cj_sourcing_status", ["cjSourcingStatus"])
+        .index("by_cj_sourcing_id", ["cjSourcingId"]),
 
     // Blog posts table
     blogPosts: defineTable({

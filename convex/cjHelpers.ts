@@ -238,12 +238,27 @@ export const updateProductSourcingStatus = internalMutation({
         cjSku: v.optional(v.string()),
         error: v.optional(v.string()),
         confirmedCjCost: v.optional(v.number()),
+        // CAS guard: if provided, only apply the write when the product's
+        // current cjSourcingStatus matches this value. Prevents the cron job
+        // from overwriting a concurrent SOURCINGCREATE webhook update.
+        expectedStatus: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         // Idempotency check: if product is already in the desired status, skip update
         const product = await ctx.db.get(args.productId);
         if (!product) {
             console.log(`updateProductSourcingStatus: Product ${args.productId} not found`);
+            return;
+        }
+
+        // CAS guard: if the caller specified an expected status and the product has
+        // since been updated (e.g., by a concurrent webhook), bail out to avoid
+        // overwriting with stale data.
+        if (args.expectedStatus && product.cjSourcingStatus !== args.expectedStatus) {
+            console.log(
+                `updateProductSourcingStatus: CAS conflict for ${args.productId} — ` +
+                `expected "${args.expectedStatus}" but found "${product.cjSourcingStatus}", skipping`
+            );
             return;
         }
 
@@ -356,7 +371,7 @@ export const getProductByCjSourcingId = internalQuery({
     handler: async (ctx, args) => {
         const products = await ctx.db
             .query("products")
-            .filter((q) => q.eq(q.field("cjSourcingId"), args.cjSourcingId))
+            .withIndex("by_cj_sourcing_id", (q) => q.eq("cjSourcingId", args.cjSourcingId))
             .collect();
         return products;
     },

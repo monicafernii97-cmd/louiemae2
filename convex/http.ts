@@ -431,17 +431,13 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
         cjStatus = "failed";
     }
 
-    try {
-        await ctx.runMutation(internal.cjHelpers.handleCjLogisticsUpdate, {
-            cjOrderId: orderId?.toString(),
-            trackingNumber: trackingNumber || undefined,
-            trackingUrl: trackingUrl || undefined,
-            carrier: logisticName || undefined,
-            cjStatus,
-        });
-    } catch (error: any) {
-        console.error("Failed to process CJ logistics webhook:", error.message);
-    }
+    await ctx.runMutation(internal.cjHelpers.handleCjLogisticsUpdate, {
+        cjOrderId: orderId?.toString(),
+        trackingNumber: trackingNumber || undefined,
+        trackingUrl: trackingUrl || undefined,
+        carrier: logisticName || undefined,
+        cjStatus,
+    });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -472,12 +468,31 @@ async function handleCjSourcingCreateWebhook(ctx: any, params: any) {
         cjSourcingId: String(cjSourcingId),
     });
 
+    // Fail closed: if multiple products share the same cjSourcingId, that's a
+    // data-integrity issue — bail out instead of silently mutating all matches.
+    if (products && products.length > 1) {
+        console.error(
+            `CJ SOURCINGCREATE: DATA INTEGRITY ERROR — ${products.length} products share cjSourcingId=${cjSourcingId}. ` +
+            `Refusing to update. Product IDs: ${products.map((p: any) => p._id).join(', ')}`
+        );
+        return;
+    }
+
     // Fallback: If not found by sourcingId, try cjProductId
     if ((!products || products.length === 0) && cjProductId) {
         console.log(`CJ SOURCINGCREATE: No match by sourcingId=${cjSourcingId}, trying cjProductId=${cjProductId}`);
         products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, {
             cjProductId: String(cjProductId),
         });
+
+        // Fail closed on non-unique cjProductId matches too
+        if (products && products.length > 1) {
+            console.error(
+                `CJ SOURCINGCREATE: DATA INTEGRITY ERROR — ${products.length} products share cjProductId=${cjProductId}. ` +
+                `Refusing to update. Product IDs: ${products.map((p: any) => p._id).join(', ')}`
+            );
+            return;
+        }
     }
 
     // Last resort: Match pending/rejected products by name or thirdProductId
