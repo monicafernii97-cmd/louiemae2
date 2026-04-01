@@ -751,15 +751,18 @@ export const checkSourcingStatus = internalAction({
 
                         if (hasProductId || statusIsSuccess) {
                             // Approved! CJ has a product ID for this item
+                            // Per CJ docs: sourcing response has cjVariantSku (SKU string)
+                            // but variantId is our thirdVariantId, NOT CJ's vid.
+                            // We store cjProductId + cjVariantSku now; actual CJ vid
+                            // comes from SOURCINGCREATE webhook or Product Details API.
                             await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                                 productId: product._id,
                                 status: "approved",
                                 cjProductId: sourcing.cjProductId,
-                                cjVariantId: sourcing.variantId,
                                 cjSku: sourcing.cjVariantSku,
                             });
                             approved++;
-                            console.log(`CJ Sourcing approved for ${product.name}: cjProductId=${sourcing.cjProductId}, sourceStatus=${sourcing.sourceStatus} (${sourcing.sourceStatusStr})`);
+                            console.log(`CJ Sourcing approved for ${product.name}: cjProductId=${sourcing.cjProductId}, cjSku=${sourcing.cjVariantSku}, sourceStatus=${sourcing.sourceStatus} (${sourcing.sourceStatusStr})`);
                         } else if (statusIsFailed) {
                             // Status says failed, but this could be a closed-out ticket
                             // where the product was actually sourced. Verify by checking
@@ -847,7 +850,8 @@ export const checkSourcingStatus = internalAction({
                                                 productId: product._id,
                                                 status: "approved",
                                                 cjProductId: freshSourcing.cjProductId,
-                                                cjVariantId: verifyData2.data.variants?.[0]?.vid || freshSourcing.variantId,
+                                                // Get CJ variant ID from product details API, not sourcing response
+                                                cjVariantId: verifyData2.data.variants?.[0]?.vid,
                                                 cjSku: verifyData2.data.variants?.[0]?.variantSku || freshSourcing.cjVariantSku,
                                             });
                                             approved++;
@@ -865,7 +869,7 @@ export const checkSourcingStatus = internalAction({
                                                 productId: product._id,
                                                 status: "approved",
                                                 cjProductId: freshSourcing.cjProductId,
-                                                cjVariantId: freshSourcing.variantId,
+                                                // variantId in sourcing response is our thirdVariantId, not CJ's vid
                                                 cjSku: freshSourcing.cjVariantSku,
                                             });
                                             approved++;

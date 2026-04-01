@@ -337,8 +337,17 @@ http.route({
                     console.log("CJ Order Split:", params);
                     break;
 
+                case "SOURCINGCREATE":
+                    // Per CJ docs: Sourcing result — the definitive sourcing approval/rejection.
+                    // This is CJ's primary notification when a sourcing request completes.
+                    // Contains: cjProductId, cjVariantId, cjVariantSku, cjSourcingId, status, failReason
+                    console.log(`CJ SOURCINGCREATE:`, JSON.stringify(params));
+                    await handleCjSourcingCreateWebhook(ctx, params);
+                    break;
+
                 case "PRODUCT":
-                    // Product status update (approval/rejection)
+                    // Per CJ docs: Product catalog update (description, price, image, status changes)
+                    // NOTE: This is NOT for sourcing results — use SOURCINGCREATE for that.
                     console.log(`CJ PRODUCT update:`, params);
                     await handleCjProductWebhook(ctx, params);
                     break;
@@ -435,69 +444,135 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
     }
 }
 
-// Handle CJ Product webhook (approval/rejection status)
-/** Handles CJ Dropshipping product info webhook events. */
+// ═══════════════════════════════════════════════════════════════════════════
+// CJ SOURCINGCREATE WEBHOOK — Primary sourcing result handler
+// Per CJ docs: This is sent when a sourcing request is completed or failed.
+// Payload: { cjProductId, cjVariantId, cjVariantSku, cjSourcingId, status, failReason, createDate }
+// ═══════════════════════════════════════════════════════════════════════════
+async function handleCjSourcingCreateWebhook(ctx: any, params: any) {
+    const {
+        cjProductId,
+        cjVariantId,
+        cjVariantSku,
+        cjSourcingId,
+        status,      // "completed" or "failed"
+        failReason,
+        createDate,
+    } = params;
+
+    console.log(`CJ SOURCINGCREATE: sourcingId=${cjSourcingId}, status=${status}, cjProductId=${cjProductId}, cjVariantId=${cjVariantId}, sku=${cjVariantSku}`);
+
+    if (!cjSourcingId) {
+        console.error("CJ SOURCINGCREATE webhook missing cjSourcingId");
+        return;
+    }
+
+    // Primary strategy: Find product by cjSourcingId (the most reliable link)
+    let products = await ctx.runQuery(internal.cjHelpers.getProductByCjSourcingId, {
+        cjSourcingId: String(cjSourcingId),
+    });
+
+    // Fallback: If not found by sourcingId, try cjProductId
+    if ((!products || products.length === 0) && cjProductId) {
+        console.log(`CJ SOURCINGCREATE: No match by sourcingId=${cjSourcingId}, trying cjProductId=${cjProductId}`);
+        products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, {
+            cjProductId: String(cjProductId),
+        });
+    }
+
+    // Last resort: Match pending/rejected products by name or thirdProductId
+    if (!products || products.length === 0) {
+        console.log(`CJ SOURCINGCREATE: No match by sourcingId or productId, checking all pending products`);
+        const pendingProducts = await ctx.runQuery(internal.cjHelpers.getProductsPendingSourcing, {});
+        const rejectedProducts = await ctx.runQuery(internal.cjHelpers.getRejectedProductsForRecheck, {});
+        const allCandidates = [...pendingProducts, ...rejectedProducts];
+
+        // Try matching by thirdProductId (we set this to our internal product._id during sourcing create)
+        if (params.thirdProductId) {
+            const match = allCandidates.filter((p: any) => p._id === params.thirdProductId);
+            if (match.length > 0) {
+                products = match;
+                console.log(`CJ SOURCINGCREATE: Matched by thirdProductId=${params.thirdProductId}`);
+            }
+        }
+    }
+
+    if (!products || products.length === 0) {
+        console.error(`CJ SOURCINGCREATE: No product found for sourcingId=${cjSourcingId}. ` +
+            `This sourcing result will be picked up by the cron job instead.`);
+        return;
+    }
+
+    for (const product of products) {
+        if (status === "completed") {
+            // Sourcing succeeded! Update with all CJ IDs provided.
+            console.log(`CJ SOURCINGCREATE APPROVED: ${product.name} → cjProductId=${cjProductId}, cjVariantId=${cjVariantId}, cjSku=${cjVariantSku}`);
+
+            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                productId: product._id,
+                status: "approved",
+                cjProductId: cjProductId || undefined,
+                cjVariantId: cjVariantId || undefined,
+                cjSku: cjVariantSku || undefined,
+                sourcingId: String(cjSourcingId),
+            });
+        } else if (status === "failed") {
+            // Sourcing actually failed — mark as rejected with reason
+            console.log(`CJ SOURCINGCREATE REJECTED: ${product.name} → reason: ${failReason}`);
+
+            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                productId: product._id,
+                status: "rejected",
+                error: failReason || "Sourcing failed - CJ could not find a supplier",
+                sourcingId: String(cjSourcingId),
+            });
+        } else {
+            console.log(`CJ SOURCINGCREATE: Unknown status "${status}" for ${product.name}, logging only`);
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CJ PRODUCT WEBHOOK — Catalog update handler (NOT sourcing results)
+// Per CJ docs: Sent when a product in your CJ catalog is created or updated.
+// Contains changed fields in params.fields[]. Used for keeping local catalog in sync.
+// ═══════════════════════════════════════════════════════════════════════════
 async function handleCjProductWebhook(ctx: any, params: any) {
-    const { pid, productName, productStatus, statusReason, sourceId } = params;
+    const { pid, productName, productNameEn, productStatus, productDescription, productImage, productSellPrice, fields } = params;
 
     if (!pid) {
         console.error("CJ Product webhook missing pid");
         return;
     }
 
-    // Strategy 1: Find product by CJ product ID (direct match)
-    let products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, { cjProductId: pid });
-
-    // Strategy 2: If not found by cjProductId, try matching by cjSourcingId
-    // This handles the case where the product was submitted to CJ but hasn't
-    // had its cjProductId set yet (common during the sourcing flow)
-    if ((!products || products.length === 0) && sourceId) {
-        console.log(`CJ Product webhook: No match by pid=${pid}, trying sourceId=${sourceId}`);
-        products = await ctx.runQuery(internal.cjHelpers.getProductByCjSourcingId, {
-            cjSourcingId: String(sourceId),
-        });
-    }
-
-    // Strategy 3: Try matching pending/rejected products by name similarity
-    if (!products || products.length === 0) {
-        console.log(`CJ Product webhook: No match by pid=${pid} or sourceId=${sourceId}, trying pending products by name`);
-        const pendingProducts = await ctx.runQuery(internal.cjHelpers.getProductsPendingSourcing, {});
-        if (productName && pendingProducts.length > 0) {
-            // Try exact name match first (CJ sometimes echoes back our product name)
-            const nameMatch = pendingProducts.filter((p: any) =>
-                p.name.toLowerCase() === productName.toLowerCase()
-            );
-            if (nameMatch.length > 0) {
-                products = nameMatch;
-                console.log(`CJ Product webhook: Matched ${nameMatch.length} pending product(s) by name="${productName}"`);
-            }
-        }
-    }
+    // Find product by CJ product ID in our database
+    const products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, { cjProductId: pid });
 
     if (!products || products.length === 0) {
-        console.log(`CJ Product webhook: No product found for pid=${pid} after all strategies, skipping`);
+        // This is normal — CJ sends PRODUCT updates for ALL catalog products,
+        // not just ones we've sourced. Only process ones we have locally.
+        console.log(`CJ PRODUCT webhook: No local product for pid=${pid}, ignoring catalog update`);
         return;
     }
 
-    for (const product of products) {
-        console.log(`CJ Product update for ${product.name}: status=${productStatus}, pid=${pid}`);
+    // Log which fields changed (CJ sends this in the `fields` array)
+    const changedFields = fields || [];
+    console.log(`CJ PRODUCT update for pid=${pid}: changed fields = [${changedFields.join(', ')}]`);
 
-        // Status 22 = approved/active
-        if (productStatus === 22) {
-            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
-                productId: product._id,
-                status: "approved",
-                cjProductId: pid,
-            });
-        } else if (productStatus === 5 || productStatus === 6) {
-            // Status 5/6 = rejected
-            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
-                productId: product._id,
-                status: "rejected",
-                cjProductId: pid,
-                error: statusReason || "Product rejected by CJ",
-            });
+    for (const product of products) {
+        // If productStatus is set and indicates the product was removed/disabled
+        // from CJ's catalog, we should flag it.
+        if (productStatus !== null && productStatus !== undefined) {
+            // Per CJ docs: productStatus values aren't fully documented in the webhook guide,
+            // but in the product detail API, active products have non-null status.
+            // If the product is removed from CJ's catalog, we need to know.
+            console.log(`CJ PRODUCT status change for ${product.name}: productStatus=${productStatus}`);
         }
+
+        // Log the update for admin visibility — price and description changes
+        // can be synced here in the future if needed.
+        console.log(`CJ PRODUCT catalog update for ${product.name}: fields=[${changedFields.join(', ')}], ` +
+            `name=${productNameEn || productName || '(unchanged)'}, price=${productSellPrice || '(unchanged)'}`);
     }
 }
 
