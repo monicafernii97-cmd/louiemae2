@@ -438,24 +438,49 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
 // Handle CJ Product webhook (approval/rejection status)
 /** Handles CJ Dropshipping product info webhook events. */
 async function handleCjProductWebhook(ctx: any, params: any) {
-    const { pid, productName, productStatus, statusReason } = params;
+    const { pid, productName, productStatus, statusReason, sourceId } = params;
 
     if (!pid) {
         console.error("CJ Product webhook missing pid");
         return;
     }
 
-    // Find product by CJ product ID
-    const products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, { cjProductId: pid });
+    // Strategy 1: Find product by CJ product ID (direct match)
+    let products = await ctx.runQuery(internal.cjHelpers.getProductByCjProductId, { cjProductId: pid });
+
+    // Strategy 2: If not found by cjProductId, try matching by cjSourcingId
+    // This handles the case where the product was submitted to CJ but hasn't
+    // had its cjProductId set yet (common during the sourcing flow)
+    if ((!products || products.length === 0) && sourceId) {
+        console.log(`CJ Product webhook: No match by pid=${pid}, trying sourceId=${sourceId}`);
+        products = await ctx.runQuery(internal.cjHelpers.getProductByCjSourcingId, {
+            cjSourcingId: String(sourceId),
+        });
+    }
+
+    // Strategy 3: Try matching pending/rejected products by name similarity
+    if (!products || products.length === 0) {
+        console.log(`CJ Product webhook: No match by pid=${pid} or sourceId=${sourceId}, trying pending products by name`);
+        const pendingProducts = await ctx.runQuery(internal.cjHelpers.getProductsPendingSourcing, {});
+        if (productName && pendingProducts.length > 0) {
+            // Try exact name match first (CJ sometimes echoes back our product name)
+            const nameMatch = pendingProducts.filter((p: any) =>
+                p.name.toLowerCase() === productName.toLowerCase()
+            );
+            if (nameMatch.length > 0) {
+                products = nameMatch;
+                console.log(`CJ Product webhook: Matched ${nameMatch.length} pending product(s) by name="${productName}"`);
+            }
+        }
+    }
 
     if (!products || products.length === 0) {
-        console.log(`CJ Product webhook: No product found for pid=${pid}, storing for later matching`);
-        // Product might not be linked yet - store the CJ product ID for later reference
+        console.log(`CJ Product webhook: No product found for pid=${pid} after all strategies, skipping`);
         return;
     }
 
     for (const product of products) {
-        console.log(`CJ Product update for ${product.name}: status=${productStatus}`);
+        console.log(`CJ Product update for ${product.name}: status=${productStatus}, pid=${pid}`);
 
         // Status 22 = approved/active
         if (productStatus === 22) {

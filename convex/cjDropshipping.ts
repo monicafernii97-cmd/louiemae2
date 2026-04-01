@@ -592,6 +592,16 @@ export const submitForSourcing = internalAction({
  * Check the status of pending sourcing requests
  * Called by cron job every 2 hours
  * Also auto-submits pending products that haven't been submitted yet
+ * 
+ * IMPORTANT: Also re-checks products previously marked "rejected" because
+ * CJ's sourcing ticket lifecycle can cause premature rejections:
+ * - CJ receives sourcing request, status = 1 (pending)
+ * - CJ processes it, status = 2 (processing)
+ * - CJ sources the product, adds it to catalog, sends success email
+ * - CJ closes / archives the sourcing ticket, status = 4 or 5 ("failed")
+ * If the cron runs while the ticket is in status 4/5 but BEFORE the
+ * verification catches the product in the catalog, we incorrectly reject.
+ * Re-checking rejected products fixes this race condition.
  */
 export const checkSourcingStatus = internalAction({
     args: {},
@@ -605,11 +615,27 @@ export const checkSourcingStatus = internalAction({
         // Get products pending sourcing approval
         const pendingProducts = await ctx.runQuery(internal.cjHelpers.getProductsPendingSourcing, {});
 
+        // Also re-check rejected products — they may have been prematurely
+        // rejected due to CJ's ticket lifecycle (status 4/5 before catalog indexing)
+        const rejectedProducts = await ctx.runQuery(internal.cjHelpers.getRejectedProductsForRecheck, {});
+
         let approved = 0;
         let rejected = 0;
         let submitted = 0;
 
-        for (const product of pendingProducts) {
+        // Combine pending (for submission + check) and rejected (for re-check only)
+        // Rejected products already have cjSourcingId so they skip the submission step
+        const allProducts = [...pendingProducts, ...rejectedProducts];
+
+        // Deduplicate in case a product appears in both queries
+        const seen = new Set<string>();
+        const deduped = allProducts.filter(p => {
+            if (seen.has(p._id)) return false;
+            seen.add(p._id);
+            return true;
+        });
+
+        for (const product of deduped) {
             // If product doesn't have a cjSourcingId yet, auto-submit it to CJ
             if (!product.cjSourcingId && product.sourceUrl) {
                 try {
@@ -738,44 +764,120 @@ export const checkSourcingStatus = internalAction({
                             // Status says failed, but this could be a closed-out ticket
                             // where the product was actually sourced. Verify by checking
                             // if the product exists in CJ's catalog before marking rejected.
+                            //
+                            // CJ's ticket lifecycle: after sourcing succeeds, CJ closes the
+                            // ticket with status 4/5. The product IS in their catalog, but
+                            // the sourcing ticket status is misleading.
                             console.log(`CJ Sourcing status ${sourcing.sourceStatus} (${sourcing.sourceStatusStr}) for ${product.name} — verifying product existence before rejecting...`);
 
                             let productActuallyExists = false;
-                            try {
-                                // Query the sourcing detail to see if there's linked product data
-                                // Sometimes the sourcing list endpoint has more info
-                                const verifyRes = await fetch(
-                                    `${CJ_API_BASE}/product/query?pid=${encodeURIComponent(sourcing.productId || sourcing.cjProductId || "")}`,
-                                    {
-                                        method: "GET",
+
+                            // Strategy 1: Use cjProductId from sourcing response if available
+                            const pidToVerify = sourcing.cjProductId || sourcing.productId;
+                            if (pidToVerify) {
+                                try {
+                                    const verifyRes = await fetch(
+                                        `${CJ_API_BASE}/product/query?pid=${encodeURIComponent(pidToVerify)}`,
+                                        {
+                                            method: "GET",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                                "CJ-Access-Token": token,
+                                            },
+                                        }
+                                    );
+                                    const verifyData = await verifyRes.json();
+
+                                    if (verifyData.result && verifyData.data) {
+                                        // Product exists in CJ's catalog! The sourcing ticket was just closed.
+                                        productActuallyExists = true;
+                                        console.log(`CJ Product confirmed in catalog for ${product.name} via pid=${pidToVerify}! Marking as approved.`);
+
+                                        await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                                            productId: product._id,
+                                            status: "approved",
+                                            cjProductId: verifyData.data.pid || pidToVerify,
+                                            cjVariantId: verifyData.data.variants?.[0]?.vid,
+                                            cjSku: verifyData.data.variants?.[0]?.variantSku,
+                                        });
+                                        approved++;
+                                    }
+                                } catch (verifyError: any) {
+                                    console.log(`Strategy 1 (pid lookup) failed: ${verifyError.message}`);
+                                }
+                            }
+
+                            // Strategy 2: If pid wasn't available, re-query the sourcing
+                            // endpoint — CJ may have populated cjProductId since last check
+                            if (!productActuallyExists && product.cjSourcingId) {
+                                try {
+                                    console.log(`Trying Strategy 2: re-query sourcing for ${product.name} (sourcingId=${product.cjSourcingId})`);
+                                    const reQueryRes = await fetch(`${CJ_API_BASE}/product/sourcing/query`, {
+                                        method: "POST",
                                         headers: {
                                             "Content-Type": "application/json",
                                             "CJ-Access-Token": token,
                                         },
-                                    }
-                                );
-                                const verifyData = await verifyRes.json();
-
-                                if (verifyData.result && verifyData.data && verifyData.data.variants) {
-                                    // Product exists in CJ's catalog! The sourcing ticket was just closed.
-                                    productActuallyExists = true;
-                                    console.log(`CJ Product confirmed in catalog for ${product.name}! Marking as approved despite closed sourcing ticket.`);
-
-                                    await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
-                                        productId: product._id,
-                                        status: "approved",
-                                        cjProductId: verifyData.data.pid || sourcing.cjProductId,
-                                        cjVariantId: verifyData.data.variants?.[0]?.vid,
-                                        cjSku: verifyData.data.variants?.[0]?.variantSku,
+                                        body: JSON.stringify({ sourceIds: [product.cjSourcingId] }),
                                     });
-                                    approved++;
+                                    const reQueryData = await reQueryRes.json();
+                                    const freshSourcing = Array.isArray(reQueryData.data)
+                                        ? reQueryData.data[0]
+                                        : reQueryData.data;
+
+                                    if (freshSourcing?.cjProductId) {
+                                        // CJ now has a product ID — verify it exists
+                                        const verifyRes2 = await fetch(
+                                            `${CJ_API_BASE}/product/query?pid=${encodeURIComponent(freshSourcing.cjProductId)}`,
+                                            {
+                                                method: "GET",
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "CJ-Access-Token": token,
+                                                },
+                                            }
+                                        );
+                                        const verifyData2 = await verifyRes2.json();
+
+                                        if (verifyData2.result && verifyData2.data) {
+                                            productActuallyExists = true;
+                                            console.log(`CJ Product confirmed via re-query for ${product.name}: cjProductId=${freshSourcing.cjProductId}`);
+
+                                            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                                                productId: product._id,
+                                                status: "approved",
+                                                cjProductId: freshSourcing.cjProductId,
+                                                cjVariantId: verifyData2.data.variants?.[0]?.vid || freshSourcing.variantId,
+                                                cjSku: verifyData2.data.variants?.[0]?.variantSku || freshSourcing.cjVariantSku,
+                                            });
+                                            approved++;
+                                        }
+                                    }
+                                    // Also check if status changed to success between checks
+                                    if (!productActuallyExists && freshSourcing) {
+                                        const freshStatusIsSuccess =
+                                            freshSourcing.sourceStatus === "3" || freshSourcing.sourceStatus === 3 ||
+                                            freshSourcing.sourceStatus === "9" || freshSourcing.sourceStatus === 9;
+                                        if (freshStatusIsSuccess && freshSourcing.cjProductId) {
+                                            productActuallyExists = true;
+                                            console.log(`CJ Sourcing now shows success for ${product.name}: status=${freshSourcing.sourceStatus}`);
+                                            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                                                productId: product._id,
+                                                status: "approved",
+                                                cjProductId: freshSourcing.cjProductId,
+                                                cjVariantId: freshSourcing.variantId,
+                                                cjSku: freshSourcing.cjVariantSku,
+                                            });
+                                            approved++;
+                                        }
+                                    }
+                                } catch (reQueryError: any) {
+                                    console.log(`Strategy 2 (re-query sourcing) failed: ${reQueryError.message}`);
                                 }
-                            } catch (verifyError: any) {
-                                console.log(`Could not verify product existence: ${verifyError.message}`);
                             }
 
                             if (!productActuallyExists) {
-                                // Genuinely rejected — product not found in CJ catalog
+                                // Genuinely rejected — product not found in CJ catalog after all strategies
                                 await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                                     productId: product._id,
                                     status: "rejected",
@@ -796,8 +898,8 @@ export const checkSourcingStatus = internalAction({
             await new Promise(resolve => setTimeout(resolve, 300));
         }
 
-        console.log(`CJ Sourcing check: ${pendingProducts.length} products, ${submitted} submitted, ${approved} approved, ${rejected} rejected`);
-        return { checked: pendingProducts.length, approved, rejected, submitted };
+        console.log(`CJ Sourcing check: ${deduped.length} products (${pendingProducts.length} pending + ${rejectedProducts.length} rejected), ${submitted} submitted, ${approved} approved, ${rejected} rejected`);
+        return { checked: deduped.length, approved, rejected, submitted };
     },
 });
 

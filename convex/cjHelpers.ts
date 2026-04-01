@@ -328,6 +328,41 @@ export const getProductsPendingSourcing = internalQuery({
 });
 
 /**
+ * Get rejected products that have a cjSourcingId for re-checking.
+ * CJ's ticket lifecycle can cause premature rejections — the cron job
+ * re-checks these to auto-correct products that were actually sourced.
+ * Only returns products with a cjSourcingId (so we can re-query CJ).
+ */
+export const getRejectedProductsForRecheck = internalQuery({
+    args: {},
+    handler: async (ctx) => {
+        const rejected = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
+            .collect();
+
+        // Only re-check products that have a sourcing ID to query
+        return rejected.filter(p => !!p.cjSourcingId);
+    },
+});
+
+/**
+ * Find a product by its CJ sourcing ID.
+ * Used as a fallback in webhook handlers when the product can't be
+ * found by cjProductId (which may not be set yet during sourcing).
+ */
+export const getProductByCjSourcingId = internalQuery({
+    args: { cjSourcingId: v.string() },
+    handler: async (ctx, args) => {
+        const products = await ctx.db
+            .query("products")
+            .filter((q) => q.eq(q.field("cjSourcingId"), args.cjSourcingId))
+            .collect();
+        return products;
+    },
+});
+
+/**
  * Get recently approved products for admin notifications
  */
 export const getRecentlyApprovedProducts = internalQuery({
