@@ -996,6 +996,13 @@ export const checkSourcingStatus = internalAction({
                         // If still pending (status 1 or 2), leave it as is
                     }
                 }
+
+                // Update lastCheckedAt to track recheck activity regardless of outcome.
+                // This ensures the recency sort/filter in the recheck batch uses
+                // accurate timestamps and prevents the same products from dominating.
+                await ctx.runMutation(internal.cjHelpers.updateProductLastChecked, {
+                    productId: product._id,
+                });
             } catch (error: any) {
                 console.error(`Error checking sourcing for ${product.name}:`, error.message);
             }

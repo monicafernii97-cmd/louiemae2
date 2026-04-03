@@ -364,6 +364,10 @@ export const getRejectedProductsForRecheck = internalQuery({
         // the caller enough headroom for recency filtering + sorting.
         const cap = args.limit ?? 100;
 
+        // NOTE: .filter() on cjSourcingId runs post-index (in-memory), not at the
+        // index level. This is acceptable at current scale (cap=100). If the ratio
+        // of rejected products without cjSourcingId grows significantly, consider
+        // adding a compound index on (cjSourcingStatus, cjSourcingId).
         const rejected = await ctx.db
             .query("products")
             .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
@@ -382,11 +386,13 @@ export const getRejectedProductsForRecheck = internalQuery({
 export const getProductByCjSourcingId = internalQuery({
     args: { cjSourcingId: v.string() },
     handler: async (ctx, args) => {
-        const products = await ctx.db
+        // cjSourcingId should be unique per product, so use .first() for efficiency.
+        // Returns an array for backward compatibility with callers that check .length.
+        const product = await ctx.db
             .query("products")
             .withIndex("by_cj_sourcing_id", (q) => q.eq("cjSourcingId", args.cjSourcingId))
-            .collect();
-        return products;
+            .first();
+        return product ? [product] : [];
     },
 });
 
