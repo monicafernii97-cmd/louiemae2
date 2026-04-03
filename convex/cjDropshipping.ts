@@ -628,21 +628,32 @@ export const checkSourcingStatus = internalAction({
         // rejected due to CJ's ticket lifecycle (status 4/5 before catalog indexing)
         const allRejected = await ctx.runQuery(internal.cjHelpers.getRejectedProductsForRecheck, {});
 
-        // Cap rejected rechecks: only include recent rejections (within RECHECK_WINDOW_DAYS)
-        // and limit to MAX_RECHECK_BATCH to avoid unbounded API usage and action timeouts.
+        // Cap rejected rechecks: only include rejections within RECHECK_WINDOW_DAYS
+        // that haven't been checked in the last 10 minutes (cooldown).
+        // Sort oldest-checked-first so every rejected product eventually gets a pass,
+        // preventing recently-checked items from starving the backlog.
         const recheckCutoff = new Date(Date.now() - RECHECK_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+        const cooldownCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // 10 min cooldown
         const rejectedProducts = allRejected
             .filter(p => {
-                // Use the most recent timestamp available as a recency signal
-                const lastActivity = p.cjLastCheckedAt || p.cjSubmittedAt || '';
+                // Allow rows with no timestamps through at least once (never checked)
+                const lastActivity = p.cjLastCheckedAt || p.cjSubmittedAt;
+                if (!lastActivity) return true; // never checked — always include
+                // Only include if within the recheck window
                 return lastActivity >= recheckCutoff;
             })
+            .filter(p => {
+                // Cooldown: skip items checked very recently to avoid hammering
+                // the same products every cron cycle
+                if (!p.cjLastCheckedAt) return true; // never checked — no cooldown
+                return p.cjLastCheckedAt < cooldownCutoff;
+            })
             .sort((a, b) => {
-                // Sort by most recent activity descending so newer false rejections
-                // are rechecked first and aren't starved behind older ones.
-                const aLastActivity = a.cjLastCheckedAt || a.cjSubmittedAt || "";
-                const bLastActivity = b.cjLastCheckedAt || b.cjSubmittedAt || "";
-                return bLastActivity.localeCompare(aLastActivity);
+                // Sort oldest-checked-first so every product eventually gets rechecked.
+                // Missing timestamps are treated as epoch 0 (highest priority).
+                const aLastChecked = a.cjLastCheckedAt || "";
+                const bLastChecked = b.cjLastCheckedAt || "";
+                return aLastChecked.localeCompare(bLastChecked);
             })
             .slice(0, MAX_RECHECK_BATCH);
 
@@ -850,12 +861,22 @@ export const checkSourcingStatus = internalAction({
                                         productActuallyExists = true;
                                         console.log(`CJ Product confirmed in catalog for ${product.name} via pid=${pidToVerify}! Marking as approved.`);
 
+                                        // Match the correct variant by SKU rather than assuming variants[0].
+                                        // For multi-variant items, blindly using [0] could attach the wrong vid/SKU.
+                                        const variants = verifyData.data.variants || [];
+                                        const sourcingSku = sourcing.cjVariantSku;
+                                        const matchedVariant = sourcingSku
+                                            ? variants.find((v: any) => v.variantSku === sourcingSku)
+                                            : null;
+                                        // Fall back to variants[0] only for single-variant products
+                                        const resolvedVariant = matchedVariant || (variants.length === 1 ? variants[0] : null);
+
                                         await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                                             productId: product._id,
                                             status: "approved",
                                             cjProductId: verifyData.data.pid || pidToVerify,
-                                            cjVariantId: verifyData.data.variants?.[0]?.vid,
-                                            cjSku: verifyData.data.variants?.[0]?.variantSku,
+                                            cjVariantId: resolvedVariant?.vid,
+                                            cjSku: resolvedVariant?.variantSku,
                                             expectedStatus: product.cjSourcingStatus,
                                         });
                                         approved++;
@@ -933,13 +954,20 @@ export const checkSourcingStatus = internalAction({
                                             productActuallyExists = true;
                                             console.log(`CJ Product confirmed via re-query for ${product.name}: cjProductId=${freshSourcing.cjProductId}`);
 
+                                            // Match the correct variant by SKU from the fresh sourcing response.
+                                            const variants2 = verifyData2.data.variants || [];
+                                            const freshSku = freshSourcing.cjVariantSku;
+                                            const matchedVariant2 = freshSku
+                                                ? variants2.find((v: any) => v.variantSku === freshSku)
+                                                : null;
+                                            const resolvedVariant2 = matchedVariant2 || (variants2.length === 1 ? variants2[0] : null);
+
                                             await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                                                 productId: product._id,
                                                 status: "approved",
                                                 cjProductId: freshSourcing.cjProductId,
-                                                // Get CJ variant ID from product details API, not sourcing response
-                                                cjVariantId: verifyData2.data.variants?.[0]?.vid,
-                                                cjSku: verifyData2.data.variants?.[0]?.variantSku || freshSourcing.cjVariantSku,
+                                                cjVariantId: resolvedVariant2?.vid,
+                                                cjSku: resolvedVariant2?.variantSku || freshSourcing.cjVariantSku,
                                                 expectedStatus: product.cjSourcingStatus,
                                             });
                                             approved++;
