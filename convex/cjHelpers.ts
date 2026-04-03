@@ -238,12 +238,27 @@ export const updateProductSourcingStatus = internalMutation({
         cjSku: v.optional(v.string()),
         error: v.optional(v.string()),
         confirmedCjCost: v.optional(v.number()),
+        // CAS guard: if provided, only apply the write when the product's
+        // current cjSourcingStatus matches this value. Prevents the cron job
+        // from overwriting a concurrent SOURCINGCREATE webhook update.
+        expectedStatus: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         // Idempotency check: if product is already in the desired status, skip update
         const product = await ctx.db.get(args.productId);
         if (!product) {
             console.log(`updateProductSourcingStatus: Product ${args.productId} not found`);
+            return;
+        }
+
+        // CAS guard: if the caller specified an expected status and the product has
+        // since been updated (e.g., by a concurrent webhook), bail out to avoid
+        // overwriting with stale data.
+        if (args.expectedStatus && product.cjSourcingStatus !== args.expectedStatus) {
+            console.log(
+                `updateProductSourcingStatus: CAS conflict for ${args.productId} — ` +
+                `expected "${args.expectedStatus}" but found "${product.cjSourcingStatus}", skipping`
+            );
             return;
         }
 
@@ -283,6 +298,9 @@ export const updateProductSourcingStatus = internalMutation({
         }
         if (args.status === "approved") {
             updateData.cjApprovedAt = new Date().toISOString();
+            // Clear any stale rejection metadata from a prior rejected state.
+            // Without this, a re-approved product retains the old error string.
+            updateData.cjSourcingError = undefined;
         }
 
         // Stage 2 pricing: recalculate selling price from confirmed CJ cost
@@ -324,6 +342,57 @@ export const getProductsPendingSourcing = internalQuery({
             .query("products")
             .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "pending"))
             .collect();
+    },
+});
+
+/**
+ * Get rejected products that have a cjSourcingId for re-checking.
+ * CJ's ticket lifecycle can cause premature rejections — the cron job
+ * re-checks these to auto-correct products that were actually sourced.
+ * Only returns products with a cjSourcingId (so we can re-query CJ).
+ */
+export const getRejectedProductsForRecheck = internalQuery({
+    args: {
+        // Optional limit to bound the read volume at the query level.
+        // The caller (checkSourcingStatus) applies further recency filtering and sorting.
+        limit: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        // Use .take() to cap the Convex read volume so historical rejections
+        // don't cause unbounded collection as the table grows.
+        // Default cap of 100 is well above MAX_RECHECK_BATCH (20) to give
+        // the caller enough headroom for recency filtering + sorting.
+        const cap = args.limit ?? 100;
+
+        // NOTE: .filter() on cjSourcingId runs post-index (in-memory), not at the
+        // index level. This is acceptable at current scale (cap=100). If the ratio
+        // of rejected products without cjSourcingId grows significantly, consider
+        // adding a compound index on (cjSourcingStatus, cjSourcingId).
+        const rejected = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
+            .filter((q) => q.neq(q.field("cjSourcingId"), undefined))
+            .take(cap);
+
+        return rejected;
+    },
+});
+
+/**
+ * Find a product by its CJ sourcing ID.
+ * Used as a fallback in webhook handlers when the product can't be
+ * found by cjProductId (which may not be set yet during sourcing).
+ */
+export const getProductByCjSourcingId = internalQuery({
+    args: { cjSourcingId: v.string() },
+    handler: async (ctx, args) => {
+        // cjSourcingId should be unique per product, so use .first() for efficiency.
+        // Returns an array for backward compatibility with callers that check .length.
+        const product = await ctx.db
+            .query("products")
+            .withIndex("by_cj_sourcing_id", (q) => q.eq("cjSourcingId", args.cjSourcingId))
+            .first();
+        return product ? [product] : [];
     },
 });
 
