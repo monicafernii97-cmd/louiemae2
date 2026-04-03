@@ -352,15 +352,25 @@ export const getProductsPendingSourcing = internalQuery({
  * Only returns products with a cjSourcingId (so we can re-query CJ).
  */
 export const getRejectedProductsForRecheck = internalQuery({
-    args: {},
-    handler: async (ctx) => {
+    args: {
+        // Optional limit to bound the read volume at the query level.
+        // The caller (checkSourcingStatus) applies further recency filtering and sorting.
+        limit: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        // Use .take() to cap the Convex read volume so historical rejections
+        // don't cause unbounded collection as the table grows.
+        // Default cap of 100 is well above MAX_RECHECK_BATCH (20) to give
+        // the caller enough headroom for recency filtering + sorting.
+        const cap = args.limit ?? 100;
+
         const rejected = await ctx.db
             .query("products")
             .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
-            .collect();
+            .filter((q) => q.neq(q.field("cjSourcingId"), undefined))
+            .take(cap);
 
-        // Only re-check products that have a sourcing ID to query
-        return rejected.filter(p => !!p.cjSourcingId);
+        return rejected;
     },
 });
 

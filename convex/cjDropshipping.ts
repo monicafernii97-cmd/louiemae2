@@ -720,6 +720,11 @@ export const checkSourcingStatus = internalAction({
                             status: "pending",
                             sourcingId: String(sourcingId),
                         });
+                        // Persist submission timestamp so this product qualifies for
+                        // recheck batching/sorting if it's later false-rejected.
+                        await ctx.runMutation(internal.cjHelpers.updateProductSubmittedAt, {
+                            productId: product._id,
+                        });
                         submitted++;
                         console.log(`CJ Auto-submitted: ${product.name} -> cjSourcingId=${sourcingId}`);
                     } else {
@@ -835,7 +840,12 @@ export const checkSourcingStatus = internalAction({
                                     }
                                     const verifyData = await verifyRes.json();
 
-                                    if (verifyData.result && verifyData.data) {
+                                    // Guard: CJ returning result:false means an API-level error
+                                    // (auth, rate limit, upstream), not "product doesn't exist".
+                                    if (verifyData.result === false) {
+                                        verificationIncomplete = true;
+                                        console.log(`Strategy 1 (pid lookup): CJ returned result:false — treating as incomplete (${verifyData.message || 'no message'})`);
+                                    } else if (verifyData.result && verifyData.data) {
                                         // Product exists in CJ's catalog! The sourcing ticket was just closed.
                                         productActuallyExists = true;
                                         console.log(`CJ Product confirmed in catalog for ${product.name} via pid=${pidToVerify}! Marking as approved.`);
@@ -881,6 +891,13 @@ export const checkSourcingStatus = internalAction({
                                         clearTimeout(reQueryTimeout);
                                     }
                                     const reQueryData = await reQueryRes.json();
+
+                                    // Guard: result:false is an API error, not a clean miss
+                                    if (reQueryData.result === false) {
+                                        verificationIncomplete = true;
+                                        console.log(`Strategy 2 (re-query sourcing): CJ returned result:false — treating as incomplete (${reQueryData.message || 'no message'})`);
+                                    }
+
                                     const freshSourcing = Array.isArray(reQueryData.data)
                                         ? reQueryData.data[0]
                                         : reQueryData.data;
@@ -907,7 +924,11 @@ export const checkSourcingStatus = internalAction({
                                         }
                                         const verifyData2 = await verifyRes2.json();
 
-                                        if (verifyData2.result && verifyData2.data) {
+                                        // Guard: result:false is an API error, not a clean miss
+                                        if (verifyData2.result === false) {
+                                            verificationIncomplete = true;
+                                            console.log(`Strategy 2 (pid verify): CJ returned result:false — treating as incomplete (${verifyData2.message || 'no message'})`);
+                                        } else if (verifyData2.result && verifyData2.data) {
                                             productActuallyExists = true;
                                             console.log(`CJ Product confirmed via re-query for ${product.name}: cjProductId=${freshSourcing.cjProductId}`);
 
