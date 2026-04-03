@@ -860,10 +860,11 @@ export const checkSourcingStatus = internalAction({
                                         });
                                         approved++;
                                     }
-                                } catch (verifyError: any) {
+                                } catch (verifyError: unknown) {
                                     verificationIncomplete = true;
-                                    const isTimeout = verifyError?.name === 'AbortError';
-                                    console.log(`Strategy 1 (pid lookup) failed: ${isTimeout ? 'request timed out' : verifyError.message}`);
+                                    const isTimeout = verifyError instanceof Error && verifyError.name === 'AbortError';
+                                    const message = verifyError instanceof Error ? verifyError.message : String(verifyError);
+                                    console.log(`Strategy 1 (pid lookup) failed: ${isTimeout ? 'request timed out' : message}`);
                                 }
                             }
 
@@ -969,10 +970,11 @@ export const checkSourcingStatus = internalAction({
                                             approved++;
                                         }
                                     }
-                                } catch (reQueryError: any) {
+                                } catch (reQueryError: unknown) {
                                     verificationIncomplete = true;
-                                    const isTimeout = reQueryError?.name === 'AbortError';
-                                    console.log(`Strategy 2 (re-query sourcing) failed: ${isTimeout ? 'request timed out' : reQueryError.message}`);
+                                    const isTimeout = reQueryError instanceof Error && reQueryError.name === 'AbortError';
+                                    const message = reQueryError instanceof Error ? reQueryError.message : String(reQueryError);
+                                    console.log(`Strategy 2 (re-query sourcing) failed: ${isTimeout ? 'request timed out' : message}`);
                                 }
                             }
 
@@ -1003,8 +1005,9 @@ export const checkSourcingStatus = internalAction({
                 await ctx.runMutation(internal.cjHelpers.updateProductLastChecked, {
                     productId: product._id,
                 });
-            } catch (error: any) {
-                console.error(`Error checking sourcing for ${product.name}:`, error.message);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error(`Error checking sourcing for ${product.name}:`, message);
             }
 
             // Small delay to avoid rate limits
