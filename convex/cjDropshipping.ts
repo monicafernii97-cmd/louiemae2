@@ -637,6 +637,13 @@ export const checkSourcingStatus = internalAction({
                 const lastActivity = p.cjLastCheckedAt || p.cjSubmittedAt || '';
                 return lastActivity >= recheckCutoff;
             })
+            .sort((a, b) => {
+                // Sort by most recent activity descending so newer false rejections
+                // are rechecked first and aren't starved behind older ones.
+                const aLastActivity = a.cjLastCheckedAt || a.cjSubmittedAt || "";
+                const bLastActivity = b.cjLastCheckedAt || b.cjSubmittedAt || "";
+                return bLastActivity.localeCompare(aLastActivity);
+            })
             .slice(0, MAX_RECHECK_BATCH);
 
         if (allRejected.length > rejectedProducts.length) {
@@ -801,6 +808,7 @@ export const checkSourcingStatus = internalAction({
                             console.log(`CJ Sourcing status ${sourcing.sourceStatus} (${sourcing.sourceStatusStr}) for ${product.name} — verifying product existence before rejecting...`);
 
                             let productActuallyExists = false;
+                            let verificationIncomplete = false;
 
                             // Strategy 1: Use cjProductId from sourcing response if available
                             const pidToVerify = sourcing.cjProductId || sourcing.productId;
@@ -843,6 +851,7 @@ export const checkSourcingStatus = internalAction({
                                         approved++;
                                     }
                                 } catch (verifyError: any) {
+                                    verificationIncomplete = true;
                                     const isTimeout = verifyError?.name === 'AbortError';
                                     console.log(`Strategy 1 (pid lookup) failed: ${isTimeout ? 'request timed out' : verifyError.message}`);
                                 }
@@ -940,13 +949,15 @@ export const checkSourcingStatus = internalAction({
                                         }
                                     }
                                 } catch (reQueryError: any) {
+                                    verificationIncomplete = true;
                                     const isTimeout = reQueryError?.name === 'AbortError';
                                     console.log(`Strategy 2 (re-query sourcing) failed: ${isTimeout ? 'request timed out' : reQueryError.message}`);
                                 }
                             }
 
-                            if (!productActuallyExists) {
+                            if (!productActuallyExists && !verificationIncomplete) {
                                 // Genuinely rejected — product not found in CJ catalog after all strategies
+                                // and both verification checks completed cleanly (no timeouts/errors)
                                 await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
                                     productId: product._id,
                                     status: "rejected",
@@ -955,6 +966,10 @@ export const checkSourcingStatus = internalAction({
                                 });
                                 rejected++;
                                 console.log(`CJ Sourcing confirmed rejected for ${product.name}: ${sourcing.sourceStatusStr}`);
+                            } else if (!productActuallyExists && verificationIncomplete) {
+                                // Verification failed (timeout/network error) — do NOT reject.
+                                // Leave the product in its current state and let the next cron pass retry.
+                                console.log(`CJ Sourcing verification incomplete for ${product.name} — skipping rejection, will retry next cycle`);
                             }
                         }
                         // If still pending (status 1 or 2), leave it as is

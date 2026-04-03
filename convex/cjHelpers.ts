@@ -298,6 +298,9 @@ export const updateProductSourcingStatus = internalMutation({
         }
         if (args.status === "approved") {
             updateData.cjApprovedAt = new Date().toISOString();
+            // Clear any stale rejection metadata from a prior rejected state.
+            // Without this, a re-approved product retains the old error string.
+            updateData.cjSourcingError = undefined;
         }
 
         // Stage 2 pricing: recalculate selling price from confirmed CJ cost
