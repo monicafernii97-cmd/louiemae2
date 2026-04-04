@@ -308,14 +308,15 @@ export const handleSplitOrderTrackingUpdate = internalMutation({
         // Note: splitOrders is a nested array — no index possible, so scan is needed
         // Perf: if this latency grows, introduce a denormalized splitCjOrderId → parentOrderId table
         const scanStart = Date.now();
-        const allOrders = await ctx.db.query("orders").collect();
-        const order = allOrders.find(o =>
-            Array.isArray(o.splitOrders) &&
-            o.splitOrders.some((s: any) => s.cjOrderId === args.splitCjOrderId)
+        const ordersWithSplits = await ctx.db.query("orders")
+            .filter((q) => q.neq(q.field("splitOrders"), undefined))
+            .collect();
+        const order = ordersWithSplits.find(o =>
+            o.splitOrders!.some((s: any) => s.cjOrderId === args.splitCjOrderId)
         );
         const scanMs = Date.now() - scanStart;
-        if (scanMs > 500 || allOrders.length > 1000) {
-            console.warn(`CJ Split Tracking: Table scan took ${scanMs}ms over ${allOrders.length} orders (consider denormalized lookup)`);
+        if (scanMs > 500 || ordersWithSplits.length > 500) {
+            console.warn(`CJ Split Tracking: Table scan took ${scanMs}ms over ${ordersWithSplits.length} split-order parents (consider denormalized lookup)`);
         }
 
         if (!order || !order.splitOrders) {

@@ -316,7 +316,7 @@ export const sendOrderSplitNotification = internalAction({
                                         <span style="font-size: 40px;">📦📦</span>
                                     </div>
                                     <h2 style="color: #4A3B32; font-weight: normal; margin: 0;">
-                                        Shipping Update${customerName ? `, ${customerName}` : ''}
+                                        Shipping Update${customerName ? `, ${escapeHtml(customerName)}` : ''}
                                     </h2>
                                 </div>
                                 
