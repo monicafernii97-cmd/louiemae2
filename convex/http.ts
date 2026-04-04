@@ -433,37 +433,36 @@ async function handleCjOrderSplitWebhook(ctx: any, params: any) {
 
     console.log(`CJ ORDERSPLIT: Order ${originalOrderId} split into ${splitOrderList.length} shipments`);
 
-    try {
-        await ctx.runMutation(internal.cjHelpers.handleCjOrderSplitUpdate, {
-            originalCjOrderId: originalOrderId.toString(),
-            splitOrders: splitOrderList.map((split: any) => ({
-                cjOrderId: split.orderCode || split.orderId || '',
-                orderStatus: split.orderStatus ?? undefined,
-                splitAt: orderSplitTime || new Date().toISOString(),
-            })),
-        });
+    // Persist split data — let errors bubble so the webhook isn't marked as processed on failure
+    await ctx.runMutation(internal.cjHelpers.handleCjOrderSplitUpdate, {
+        originalCjOrderId: originalOrderId.toString(),
+        splitOrders: splitOrderList.map((split: any) => ({
+            cjOrderId: split.orderCode || split.orderId || '',
+            orderStatus: split.orderStatus ?? undefined,
+            splitAt: orderSplitTime || new Date().toISOString(),
+        })),
+    });
 
-        // Send customer notification about the split shipment
-        // (email is fire-and-forget — don't block the webhook response)
-        try {
-            const order = await ctx.runQuery(internal.cjHelpers.getOrderByCjOrderId, {
-                cjOrderId: originalOrderId.toString(),
+    // Send customer notification — best-effort, fire-and-forget
+    try {
+        const order = await ctx.runQuery(internal.cjHelpers.getOrderByCjOrderId, {
+            cjOrderId: originalOrderId.toString(),
+        });
+        if (order?.customerEmail) {
+            // Don't await — let the email send asynchronously
+            void ctx.runAction(internal.emails.sendOrderSplitNotification, {
+                customerEmail: order.customerEmail,
+                customerName: order.customerName || undefined,
+                orderId: order.stripeSessionId.slice(-12).toUpperCase(),
+                splitCount: splitOrderList.length,
+                splitOrderIds: splitOrderList.map((s: any) => s.orderCode || s.orderId || 'Unknown'),
+            }).catch((emailErr: any) => {
+                console.warn(`CJ ORDERSPLIT: Email notification failed (non-fatal): ${emailErr.message}`);
             });
-            if (order?.customerEmail) {
-                await ctx.runAction(internal.emails.sendOrderSplitNotification, {
-                    customerEmail: order.customerEmail,
-                    customerName: order.customerName || undefined,
-                    orderId: order.stripeSessionId.slice(-12).toUpperCase(),
-                    splitCount: splitOrderList.length,
-                    splitOrderIds: splitOrderList.map((s: any) => s.orderCode || s.orderId || 'Unknown'),
-                });
-            }
-        } catch (emailErr: any) {
-            // Non-fatal — don't fail the webhook over email
-            console.warn(`CJ ORDERSPLIT: Email notification failed (non-fatal): ${emailErr.message}`);
         }
-    } catch (error: any) {
-        console.error("Failed to process CJ ORDERSPLIT webhook:", error.message);
+    } catch (lookupErr: any) {
+        // Non-fatal — order lookup for email shouldn't block the webhook
+        console.warn(`CJ ORDERSPLIT: Order lookup for email failed (non-fatal): ${lookupErr.message}`);
     }
 }
 

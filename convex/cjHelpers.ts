@@ -222,17 +222,22 @@ export const handleCjLogisticsUpdate = internalMutation({
 
 /**
  * Query: Find order by CJ order ID (for email notification lookup)
+ * Uses the by_cj_order_id index for O(1) lookup.
  */
 export const getOrderByCjOrderId = internalQuery({
     args: { cjOrderId: v.string() },
     handler: async (ctx, args) => {
-        const allOrders = await ctx.db.query("orders").collect();
-        return allOrders.find(o => o.cjOrderId === args.cjOrderId) || null;
+        return await ctx.db
+            .query("orders")
+            .withIndex("by_cj_order_id", q => q.eq("cjOrderId", args.cjOrderId))
+            .first();
     },
 });
 
 /**
- * Mutation: Handle CJ order split — persist split order data on the parent order
+ * Mutation: Handle CJ order split — persist split order data on the parent order.
+ * Merges new entries with existing split data to avoid dropping tracking info
+ * that was already written by handleSplitOrderTrackingUpdate.
  */
 export const handleCjOrderSplitUpdate = internalMutation({
     args: {
@@ -244,33 +249,52 @@ export const handleCjOrderSplitUpdate = internalMutation({
         })),
     },
     handler: async (ctx, args) => {
-        const allOrders = await ctx.db.query("orders").collect();
-        const order = allOrders.find(o => o.cjOrderId === args.originalCjOrderId);
+        const order = await ctx.db
+            .query("orders")
+            .withIndex("by_cj_order_id", q => q.eq("cjOrderId", args.originalCjOrderId))
+            .first();
 
         if (!order) {
             console.error(`CJ ORDERSPLIT: Parent order not found for cjOrderId=${args.originalCjOrderId}`);
             return;
         }
 
-        // Build split orders array — each entry starts with no tracking (filled by LOGISTIC webhook later)
-        const splitOrders = args.splitOrders.map(s => ({
-            cjOrderId: s.cjOrderId,
-            orderStatus: s.orderStatus,
-            splitAt: s.splitAt,
-        }));
+        // Merge with existing split data to preserve tracking already written
+        const existingById = new Map(
+            (order.splitOrders ?? []).map(s => [s.cjOrderId, s])
+        );
+        for (const incoming of args.splitOrders) {
+            const existing = existingById.get(incoming.cjOrderId);
+            if (existing) {
+                // Preserve existing tracking fields, update status/splitAt
+                existingById.set(incoming.cjOrderId, {
+                    ...existing,
+                    orderStatus: incoming.orderStatus ?? existing.orderStatus,
+                    splitAt: incoming.splitAt,
+                });
+            } else {
+                existingById.set(incoming.cjOrderId, {
+                    cjOrderId: incoming.cjOrderId,
+                    orderStatus: incoming.orderStatus,
+                    splitAt: incoming.splitAt,
+                });
+            }
+        }
+
+        const mergedSplitOrders = [...existingById.values()];
 
         await ctx.db.patch(order._id, {
-            splitOrders,
+            splitOrders: mergedSplitOrders,
             updatedAt: new Date().toISOString(),
         });
 
-        console.log(`CJ ORDERSPLIT: Saved ${splitOrders.length} split orders on parent ${order._id}`);
+        console.log(`CJ ORDERSPLIT: Saved ${mergedSplitOrders.length} split orders on parent ${order._id}`);
     },
 });
 
 /**
- * Mutation: Update tracking info on a split sub-order
- * Called when a LOGISTIC webhook comes in for a split order's cjOrderId
+ * Mutation: Update tracking info on a split sub-order.
+ * Also syncs the parent order's shipment status based on all children.
  */
 export const handleSplitOrderTrackingUpdate = internalMutation({
     args: {
@@ -281,6 +305,7 @@ export const handleSplitOrderTrackingUpdate = internalMutation({
     },
     handler: async (ctx, args) => {
         // Find any order that has this splitCjOrderId in its splitOrders array
+        // Note: splitOrders is a nested array — no index possible, so scan is needed
         const allOrders = await ctx.db.query("orders").collect();
         const order = allOrders.find(o =>
             Array.isArray(o.splitOrders) &&
@@ -303,10 +328,27 @@ export const handleSplitOrderTrackingUpdate = internalMutation({
             };
         });
 
-        await ctx.db.patch(order._id, {
+        // Sync parent order status based on split children:
+        // - If ALL children have tracking → "shipped"
+        // - If ANY child has tracking → "shipped" (partial)
+        // - Never downgrade from "delivered"
+        const patchData: Record<string, any> = {
             splitOrders: updatedSplitOrders,
             updatedAt: new Date().toISOString(),
-        });
+        };
+
+        if (order.status !== "delivered" && order.cjStatus !== "delivered") {
+            const anyChildShipped = updatedSplitOrders.some((s: any) => s.trackingNumber);
+            if (anyChildShipped) {
+                patchData.cjStatus = "shipped";
+                patchData.status = "shipped";
+                if (!order.shippedAt) {
+                    patchData.shippedAt = new Date().toISOString();
+                }
+            }
+        }
+
+        await ctx.db.patch(order._id, patchData);
 
         console.log(`CJ Split Tracking: Updated split order ${args.splitCjOrderId} on parent ${order._id} with tracking ${args.trackingNumber}`);
     },

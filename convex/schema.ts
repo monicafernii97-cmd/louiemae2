@@ -190,7 +190,8 @@ export default defineSchema({
         updatedAt: v.string(),
     }).index("by_session", ["stripeSessionId"])
         .index("by_email", ["customerEmail"])
-        .index("by_cj_status", ["cjStatus"]),
+        .index("by_cj_status", ["cjStatus"])
+        .index("by_cj_order_id", ["cjOrderId"]),
 
     // AliExpress product cache - stores fetched products for faster access
     aliexpressCache: defineTable({

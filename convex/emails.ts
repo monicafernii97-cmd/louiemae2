@@ -277,6 +277,10 @@ export const sendOrderSplitNotification = internalAction({
         try {
             const { customerEmail, customerName, orderId, splitCount, splitOrderIds } = args;
 
+            // Escape HTML special characters to prevent injection from untrusted CJ data
+            const escapeHtml = (str: string): string =>
+                str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
             // Build the split packages list
             const packagesHtml = splitOrderIds.map((id, idx) => `
                 <tr>
@@ -284,7 +288,7 @@ export const sendOrderSplitNotification = internalAction({
                         <strong>Package ${idx + 1}</strong>
                     </td>
                     <td style="padding: 10px 12px; border-bottom: 1px solid #E8E3DD; text-align: right; color: #6B5D52; font-family: monospace; font-size: 12px;">
-                        ${id}
+                        ${escapeHtml(id)}
                     </td>
                 </tr>
             `).join('');

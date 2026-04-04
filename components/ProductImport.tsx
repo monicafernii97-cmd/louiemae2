@@ -365,7 +365,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     rating: product.averageRating,
                     salesCount: product.reviewCount,
                     sellerName: product.seller?.name,
-                    sourceProperties: (product as any).sourceProperties || undefined,
+                    sourceProperties: product.sourceProperties || undefined,
                 },
             };
 
@@ -402,6 +402,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 category: product.category || '',
                 collection: product.targetCollection || targetCollection,
                 keywords: extractKeywords(product.name + ' ' + (product.description || '')),
+                sourceMetadata: {
+                    variantNames: product.variants?.map(v => v.name).filter(Boolean),
+                    imageCount: product.images?.length,
+                    priceUsd: product.salePrice || product.price,
+                    rating: product.averageRating,
+                    salesCount: product.reviewCount,
+                    sellerName: product.seller?.name,
+                    sourceProperties: product.sourceProperties || undefined,
+                },
             };
 
             const enhancedName = await generateProductNameV2(context);
@@ -439,7 +448,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     rating: product.averageRating,
                     salesCount: product.reviewCount,
                     sellerName: product.seller?.name,
-                    sourceProperties: (product as any).sourceProperties || undefined,
+                    sourceProperties: product.sourceProperties || undefined,
                 },
             };
 
@@ -2140,7 +2149,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             rating: importableProduct.averageRating,
                             salesCount: importableProduct.reviewCount,
                             sellerName: importableProduct.seller?.name,
-                            sourceProperties: (importableProduct as any).sourceProperties || undefined,
+                            sourceProperties: importableProduct.sourceProperties || undefined,
                         },
                     };
 

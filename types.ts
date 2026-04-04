@@ -222,6 +222,8 @@ export interface SourceProduct extends Product {
   averageRating: number;
   productUrl: string;
   source?: ProductSource;
+  /** Structured product attributes extracted from OTAPI (material, season, style, etc.) */
+  sourceProperties?: Record<string, string>;
 }
 
 /** @deprecated Use SourceProduct instead */
