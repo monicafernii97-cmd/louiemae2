@@ -262,7 +262,6 @@ export const sendOrderSplitNotification = internalAction({
         customerEmail: v.string(),
         customerName: v.optional(v.string()),
         orderId: v.string(),
-        splitCount: v.number(),
         splitOrderIds: v.array(v.string()),
     },
     handler: async (ctx, args) => {

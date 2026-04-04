@@ -466,7 +466,6 @@ async function handleCjOrderSplitWebhook(ctx: any, params: any) {
                 customerEmail: order.customerEmail,
                 customerName: order.customerName || undefined,
                 orderId: order.stripeSessionId.slice(-12).toUpperCase(),
-                splitCount: splitOrderList.length,
                 splitOrderIds: splitOrderList.map((s: any) => s.orderCode || s.orderId || 'Unknown'),
             }).catch((emailErr: any) => {
                 console.warn(`CJ ORDERSPLIT: Email notification failed (non-fatal): ${emailErr.message}`);
