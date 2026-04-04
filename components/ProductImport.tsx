@@ -5,6 +5,7 @@ import { aliexpressService } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames, isLikelyFallback, isLikelyFallbackDescription } from '../services/geminiService';
 import { translateProductFields, detectChinese } from '../services/translateService';
+import { extractOtapiSourceProperties, cleanOtapiDescription } from '../lib/otapiHelpers';
 import { FadeIn } from './FadeIn';
 import { ProductImageGallery } from './ProductImageGallery';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
@@ -365,6 +366,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     rating: product.averageRating,
                     salesCount: product.reviewCount,
                     sellerName: product.seller?.name,
+                    sourceProperties: product.sourceProperties || undefined,
                 },
             };
 
@@ -401,6 +403,15 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                 category: product.category || '',
                 collection: product.targetCollection || targetCollection,
                 keywords: extractKeywords(product.name + ' ' + (product.description || '')),
+                sourceMetadata: {
+                    variantNames: product.variants?.map(v => v.name).filter(Boolean),
+                    imageCount: product.images?.length,
+                    priceUsd: product.salePrice || product.price,
+                    rating: product.averageRating,
+                    salesCount: product.reviewCount,
+                    sellerName: product.seller?.name,
+                    sourceProperties: product.sourceProperties || undefined,
+                },
             };
 
             const enhancedName = await generateProductNameV2(context);
@@ -438,6 +449,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     rating: product.averageRating,
                     salesCount: product.reviewCount,
                     sellerName: product.seller?.name,
+                    sourceProperties: product.sourceProperties || undefined,
                 },
             };
 
@@ -1950,6 +1962,12 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     return item.FeaturedValues.find((v: any) => v.Name === name)?.Value;
                 };
 
+                // Extract structured product attributes using shared helper
+                const urlSourceProperties = extractOtapiSourceProperties(item);
+
+                // Clean description using shared helper
+                const cleanDescription = cleanOtapiDescription(item);
+
                 // Extract variants from ConfiguredItems
                 const variants: any[] = [];
                 if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
@@ -1976,7 +1994,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     id: String(productId),
                     name: productName,
                     price: salePrice || origPrice,
-                    description: item.Description || 'Imported from 1688.com',
+                    description: cleanDescription || 'Imported from 1688.com',
                     images: images,
                     category: '',
                     sourcePriceCny: rawCnyPrice || undefined,
@@ -2001,7 +2019,9 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     customPrice: calculateFinalPrice(salePrice || origPrice),
                     // Marketing/description images from GetItemDescription
                     descriptionImages: ('descriptionImages' in result ? (result as any).descriptionImages : []) || [],
-                };
+                    // Structured product attributes for AI description generation
+                    sourceProperties: Object.keys(urlSourceProperties).length > 0 ? urlSourceProperties : undefined,
+                } as any;
             } else {
                 // Generic source (handles AliExpress, Amazon, and any other URLs)
                 console.log('[URL Import] Processing as generic product:', result.data);
@@ -2086,6 +2106,7 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                             rating: importableProduct.averageRating,
                             salesCount: importableProduct.reviewCount,
                             sellerName: importableProduct.seller?.name,
+                            sourceProperties: importableProduct.sourceProperties || undefined,
                         },
                     };
 

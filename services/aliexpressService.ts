@@ -176,7 +176,7 @@ export const aliexpressService = {
                     id: p.id,
                     name: p.title, // Product uses 'name', API returns 'title'
                     price: p.price,
-                    description: '', // Not provided by search API
+                    description: p.description || '', // Now populated from OTAPI item.Description
                     images: Array.isArray(p.images) && p.images.length > 0
                         ? p.images
                         : (p.image ? [p.image] : []),
@@ -194,6 +194,8 @@ export const aliexpressService = {
                     averageRating: p.rating || 0,
                     productUrl: p.url || '',
                     source: p.source || '1688',
+                    // Structured product attributes for AI description generation
+                    sourceProperties: p.sourceProperties || undefined,
                 } as SourceProduct)),
                 totalCount: data.totalCount || data.products?.length || 0,
                 currentPage: data.currentPage ?? page,

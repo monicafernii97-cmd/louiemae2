@@ -255,3 +255,114 @@ export const sendShippingNotification = internalAction({
         }
     },
 });
+
+// Internal action to notify customer when their order is split into multiple shipments
+export const sendOrderSplitNotification = internalAction({
+    args: {
+        customerEmail: v.string(),
+        customerName: v.optional(v.string()),
+        orderId: v.string(),
+        splitOrderIds: v.array(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const resendApiKey = process.env.RESEND_API_KEY;
+
+        if (!resendApiKey) {
+            return { success: false, error: "Email service not configured" };
+        }
+
+        const resend = new Resend(resendApiKey);
+
+        try {
+            const { customerEmail, customerName, orderId, splitOrderIds } = args;
+            // Derive count from actual IDs to avoid caller drift
+            const splitCount = splitOrderIds.length;
+            if (splitCount === 0) {
+                return { success: false, error: "No split packages provided" };
+            }
+
+            // Escape HTML special characters to prevent injection from untrusted CJ data
+            const escapeHtml = (str: string): string =>
+                str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+            // Build the split packages list
+            const packagesHtml = splitOrderIds.map((id, idx) => `
+                <tr>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #E8E3DD; color: #4A3B32;">
+                        <strong>Package ${idx + 1}</strong>
+                    </td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #E8E3DD; text-align: right; color: #6B5D52; font-family: monospace; font-size: 12px;">
+                        ${escapeHtml(id)}
+                    </td>
+                </tr>
+            `).join('');
+
+            const { data, error } = await resend.emails.send({
+                from: "Louie Mae <withlove@louiemae.com>",
+                to: customerEmail,
+                subject: `Shipping Update - Order ${orderId}`,
+                html: `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    </head>
+                    <body style="margin: 0; padding: 0; background-color: #F9F7F4; font-family: Georgia, serif;">
+                        <div style="max-width: 600px; margin: 0 auto; background: #FFFFFF;">
+                            <div style="background: #4A3B32; padding: 40px; text-align: center;">
+                                <h1 style="color: #F5F0EB; margin: 0; font-size: 28px; font-weight: normal; font-style: italic;">Louie Mae</h1>
+                                <p style="color: #C9A96E; margin: 10px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em;">Curated Living</p>
+                            </div>
+                            <div style="padding: 40px;">
+                                <div style="text-align: center; margin-bottom: 30px;">
+                                    <div style="width: 80px; height: 80px; background: #FFF3E0; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                                        <span style="font-size: 40px;">📦📦</span>
+                                    </div>
+                                    <h2 style="color: #4A3B32; font-weight: normal; margin: 0;">
+                                        Shipping Update${customerName ? `, ${escapeHtml(customerName)}` : ''}
+                                    </h2>
+                                </div>
+                                
+                                <p style="color: #6B5D52; line-height: 1.6; margin: 0 0 30px 0; text-align: center;">
+                                    Your order <strong>${orderId}</strong> is being shipped in <strong>${splitCount} separate packages</strong> 
+                                    to ensure the fastest possible delivery. You'll receive individual tracking numbers for each package as they ship.
+                                </p>
+
+                                <div style="background: #F9F7F4; padding: 25px; margin: 20px 0; border-radius: 8px;">
+                                    <h3 style="color: #4A3B32; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;">
+                                        Your Packages
+                                    </h3>
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        ${packagesHtml}
+                                    </table>
+                                </div>
+
+                                <p style="color: #9B8B7A; font-size: 12px; text-align: center; line-height: 1.6; margin-top: 30px;">
+                                    Tracking information will be sent for each package as it ships. This is completely normal and ensures your items arrive as quickly as possible.
+                                </p>
+                            </div>
+                            <div style="background: #F9F7F4; padding: 30px; text-align: center;">
+                                <p style="margin: 0 0 10px 0; color: #6B5D52; font-size: 14px;">Questions? Contact us at hello@louiemae.com</p>
+                                <p style="margin: 0; color: #9B8B7A; font-size: 12px;">© 2024 Louie Mae. All rights reserved.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `,
+            });
+
+            if (error) {
+                console.error("Order split notification error:", error);
+                return { success: false, error: error.message };
+            }
+
+            console.log(`Order split notification sent for order ${orderId} (${splitCount} packages)`);
+            return { success: true, emailId: data?.id };
+        } catch (error: unknown) {
+            console.error("Order split notification action error:", error);
+            const message = error instanceof Error ? error.message : String(error);
+            return { success: false, error: message };
+        }
+    },
+});

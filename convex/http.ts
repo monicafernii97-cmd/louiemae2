@@ -333,8 +333,9 @@ http.route({
                     break;
 
                 case "ORDERSPLIT":
-                    // Order was split into multiple shipments
-                    console.log("CJ Order Split:", params);
+                    // Order was split into multiple shipments by CJ
+                    console.log("CJ Order Split:", JSON.stringify(params));
+                    await handleCjOrderSplitWebhook(ctx, params);
                     break;
 
                 case "SOURCINGCREATE":
@@ -416,6 +417,66 @@ async function handleCjOrderWebhook(ctx: any, params: any, messageType: string) 
     }
 }
 
+// Handle CJ ORDERSPLIT webhook — order was split into multiple shipments
+async function handleCjOrderSplitWebhook(ctx: any, params: any) {
+    const { originalOrderId, splitOrderList, orderSplitTime } = params;
+
+    if (!originalOrderId) {
+        console.error("CJ ORDERSPLIT webhook missing originalOrderId");
+        return;
+    }
+
+    if (!Array.isArray(splitOrderList) || splitOrderList.length === 0) {
+        console.warn(`CJ ORDERSPLIT: No split orders provided for original order ${originalOrderId}`);
+        return;
+    }
+
+    console.log(`CJ ORDERSPLIT: Order ${originalOrderId} split into ${splitOrderList.length} shipments`);
+
+    // Persist split data — let errors bubble so the webhook isn't marked as processed on failure
+    const validSplitOrders = splitOrderList
+        .map((split: any) => ({
+            cjOrderId: split.orderCode || split.orderId || '',
+            orderStatus: split.orderStatus ?? undefined,
+            splitAt: orderSplitTime || new Date().toISOString(),
+        }))
+        .filter((s: any) => s.cjOrderId !== '');
+
+    if (validSplitOrders.length === 0) {
+        throw new Error(`CJ ORDERSPLIT: All ${splitOrderList.length} split children have missing order IDs — cannot persist`);
+    }
+
+    if (validSplitOrders.length < splitOrderList.length) {
+        console.warn(`CJ ORDERSPLIT: Dropped ${splitOrderList.length - validSplitOrders.length} children with blank cjOrderId`);
+    }
+
+    await ctx.runMutation(internal.cjHelpers.handleCjOrderSplitUpdate, {
+        originalCjOrderId: originalOrderId.toString(),
+        splitOrders: validSplitOrders,
+    });
+
+    // Send customer notification — best-effort, fire-and-forget
+    try {
+        const order = await ctx.runQuery(internal.cjHelpers.getOrderByCjOrderId, {
+            cjOrderId: originalOrderId.toString(),
+        });
+        if (order?.customerEmail) {
+            // Don't await — let the email send asynchronously
+            void ctx.runAction(internal.emails.sendOrderSplitNotification, {
+                customerEmail: order.customerEmail,
+                customerName: order.customerName || undefined,
+                orderId: order.stripeSessionId.slice(-12).toUpperCase(),
+                splitOrderIds: validSplitOrders.map(s => s.cjOrderId),
+            }).catch((emailErr: any) => {
+                console.warn(`CJ ORDERSPLIT: Email notification failed (non-fatal): ${emailErr.message}`);
+            });
+        }
+    } catch (lookupErr: any) {
+        // Non-fatal — order lookup for email shouldn't block the webhook
+        console.warn(`CJ ORDERSPLIT: Order lookup for email failed (non-fatal): ${lookupErr.message}`);
+    }
+}
+
 // Handle CJ Logistics/tracking webhook
 /** Handles CJ Dropshipping logistics/tracking webhook events. */
 async function handleCjLogisticsWebhook(ctx: any, params: any) {
@@ -431,6 +492,7 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
         cjStatus = "failed";
     }
 
+    // Try primary update (parent order)
     await ctx.runMutation(internal.cjHelpers.handleCjLogisticsUpdate, {
         cjOrderId: orderId?.toString(),
         trackingNumber: trackingNumber || undefined,
@@ -438,6 +500,19 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
         carrier: logisticName || undefined,
         cjStatus,
     });
+
+    // Also try updating split order tracking (if this orderId is a split child)
+    try {
+        await ctx.runMutation(internal.cjHelpers.handleSplitOrderTrackingUpdate, {
+            splitCjOrderId: orderId?.toString(),
+            trackingNumber: trackingNumber || undefined,
+            trackingUrl: trackingUrl || undefined,
+            carrier: logisticName || undefined,
+        });
+    } catch (splitErr: any) {
+        // Non-fatal — split order tracking is best-effort
+        console.warn(`CJ Logistics: Split order tracking update failed (non-fatal): ${splitErr.message}`);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -931,6 +1006,7 @@ http.route({
 interface NormalizedProduct {
     id: string;
     title: string;
+    description?: string;
     price: number;
     originalPrice?: number;
     image: string;
@@ -940,6 +1016,8 @@ interface NormalizedProduct {
     rating?: number;
     sales?: number;
     shipping?: string;
+    /** Structured product attributes extracted from OTAPI FeaturedValues / Properties. */
+    sourceProperties?: Record<string, string>;
     tierPricing?: Array<{ minQty: number; price: number }>;
     variants?: Array<{
         id: string;
@@ -951,7 +1029,7 @@ interface NormalizedProduct {
 }
 
 // Shared OTAPI helpers — canonical extraction logic lives in lib/otapiHelpers.ts
-import { getOtapiUsdPrice as getUsdPrice, getOtapiFeaturedValue as getFeaturedValue } from '../lib/otapiHelpers';
+import { getOtapiUsdPrice as getUsdPrice, getOtapiFeaturedValue as getFeaturedValue, extractOtapiSourceProperties, cleanOtapiDescription } from '../lib/otapiHelpers';
 
 // Normalize OTAPI 1688 search results to NormalizedProduct[]
 /** Result shape returned by normalizeOtapi1688. */
@@ -1022,6 +1100,12 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         const salesStr = getFeaturedValue(item, 'SalesInLast30Days') || getFeaturedValue(item, 'TotalSales');
         const sales = salesStr ? parseInt(salesStr, 10) : undefined;
 
+        // ── Extract structured product attributes for AI description generation ──
+        const sourceProperties = extractOtapiSourceProperties(item);
+
+        // Description: clean text from item.Description if available
+        const description = cleanOtapiDescription(item) || undefined;
+
         // URL
         const url = item.TaobaoItemUrl || item.ExternalItemUrl || '';
 
@@ -1063,6 +1147,7 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         return {
             id: item.Id || '',
             title: item.Title || 'Unknown Product',
+            description,
             price: price,
             originalPrice: promoPrice > 0 && regularPrice > promoPrice ? regularPrice : undefined,
             image: mainImage,
@@ -1071,6 +1156,7 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
             source: '1688' as const,
             rating: rating,
             sales: sales,
+            sourceProperties: Object.keys(sourceProperties).length > 0 ? sourceProperties : undefined,
             tierPricing: tierPricing.length > 0 ? tierPricing : undefined,
             variants: variants.length > 0 ? variants : undefined,
         };

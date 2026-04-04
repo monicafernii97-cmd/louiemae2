@@ -175,13 +175,23 @@ export default defineSchema({
         trackingNumber: v.optional(v.string()),
         trackingUrl: v.optional(v.string()),
         carrier: v.optional(v.string()), // Shipping carrier name
+        // CJ order split tracking — when CJ splits into multiple shipments
+        splitOrders: v.optional(v.array(v.object({
+            cjOrderId: v.string(),
+            orderStatus: v.optional(v.number()),
+            trackingNumber: v.optional(v.string()),
+            trackingUrl: v.optional(v.string()),
+            carrier: v.optional(v.string()),
+            splitAt: v.string(),
+        }))),
         shippedAt: v.optional(v.string()), // When the order was shipped
         estimatedDelivery: v.optional(v.string()), // Estimated delivery date
         createdAt: v.string(),
         updatedAt: v.string(),
     }).index("by_session", ["stripeSessionId"])
         .index("by_email", ["customerEmail"])
-        .index("by_cj_status", ["cjStatus"]),
+        .index("by_cj_status", ["cjStatus"])
+        .index("by_cj_order_id", ["cjOrderId"]),
 
     // AliExpress product cache - stores fetched products for faster access
     aliexpressCache: defineTable({
