@@ -275,7 +275,12 @@ export const sendOrderSplitNotification = internalAction({
         const resend = new Resend(resendApiKey);
 
         try {
-            const { customerEmail, customerName, orderId, splitCount, splitOrderIds } = args;
+            const { customerEmail, customerName, orderId, splitOrderIds } = args;
+            // Derive count from actual IDs to avoid caller drift
+            const splitCount = splitOrderIds.length;
+            if (splitCount === 0) {
+                return { success: false, error: "No split packages provided" };
+            }
 
             // Escape HTML special characters to prevent injection from untrusted CJ data
             const escapeHtml = (str: string): string =>
@@ -355,9 +360,10 @@ export const sendOrderSplitNotification = internalAction({
 
             console.log(`Order split notification sent for order ${orderId} (${splitCount} packages)`);
             return { success: true, emailId: data?.id };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Order split notification action error:", error);
-            return { success: false, error: error.message };
+            const message = error instanceof Error ? error.message : String(error);
+            return { success: false, error: message };
         }
     },
 });
