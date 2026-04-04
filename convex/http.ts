@@ -434,13 +434,25 @@ async function handleCjOrderSplitWebhook(ctx: any, params: any) {
     console.log(`CJ ORDERSPLIT: Order ${originalOrderId} split into ${splitOrderList.length} shipments`);
 
     // Persist split data — let errors bubble so the webhook isn't marked as processed on failure
-    await ctx.runMutation(internal.cjHelpers.handleCjOrderSplitUpdate, {
-        originalCjOrderId: originalOrderId.toString(),
-        splitOrders: splitOrderList.map((split: any) => ({
+    const validSplitOrders = splitOrderList
+        .map((split: any) => ({
             cjOrderId: split.orderCode || split.orderId || '',
             orderStatus: split.orderStatus ?? undefined,
             splitAt: orderSplitTime || new Date().toISOString(),
-        })),
+        }))
+        .filter((s: any) => s.cjOrderId !== '');
+
+    if (validSplitOrders.length === 0) {
+        throw new Error(`CJ ORDERSPLIT: All ${splitOrderList.length} split children have missing order IDs — cannot persist`);
+    }
+
+    if (validSplitOrders.length < splitOrderList.length) {
+        console.warn(`CJ ORDERSPLIT: Dropped ${splitOrderList.length - validSplitOrders.length} children with blank cjOrderId`);
+    }
+
+    await ctx.runMutation(internal.cjHelpers.handleCjOrderSplitUpdate, {
+        originalCjOrderId: originalOrderId.toString(),
+        splitOrders: validSplitOrders,
     });
 
     // Send customer notification — best-effort, fire-and-forget
@@ -1018,7 +1030,7 @@ interface NormalizedProduct {
 }
 
 // Shared OTAPI helpers — canonical extraction logic lives in lib/otapiHelpers.ts
-import { getOtapiUsdPrice as getUsdPrice, getOtapiFeaturedValue as getFeaturedValue } from '../lib/otapiHelpers';
+import { getOtapiUsdPrice as getUsdPrice, getOtapiFeaturedValue as getFeaturedValue, extractOtapiSourceProperties, cleanOtapiDescription } from '../lib/otapiHelpers';
 
 // Normalize OTAPI 1688 search results to NormalizedProduct[]
 /** Result shape returned by normalizeOtapi1688. */
@@ -1090,64 +1102,10 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         const sales = salesStr ? parseInt(salesStr, 10) : undefined;
 
         // ── Extract structured product attributes for AI description generation ──
-        const sourceProperties: Record<string, string> = {};
-
-        // FeaturedValues: OTAPI key-value pairs (material, style, season, etc.)
-        if (Array.isArray(item.FeaturedValues)) {
-            for (const fv of item.FeaturedValues) {
-                const name = fv?.Name;
-                const value = fv?.Value;
-                // Skip already-extracted rating/sales and empty values
-                if (!name || !value || name === 'rating' || name === 'SalesInLast30Days' || name === 'TotalSales') continue;
-                sourceProperties[name] = String(value);
-            }
-        }
-
-        // Properties / PropertyNames: structured attribute groups (fabric type, season, age range)
-        if (Array.isArray(item.Properties)) {
-            for (const prop of item.Properties) {
-                const propName = prop?.PropertyName || prop?.Name;
-                const propValue = prop?.Value || prop?.DisplayValue;
-                if (propName && propValue) {
-                    // Merge with existing or append
-                    const existing = sourceProperties[propName];
-                    sourceProperties[propName] = existing ? `${existing}, ${propValue}` : String(propValue);
-                }
-            }
-        }
-
-        // ConfiguredItems Configurators: variant attribute names (颜色=Color, 尺码=Size)
-        // Build a summary of available options without duplicating variant data
-        if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
-            const optionGroups = new Map<string, Set<string>>();
-            for (const cfg of item.ConfiguredItems) {
-                if (!Array.isArray(cfg.Configurators)) continue;
-                for (const c of cfg.Configurators) {
-                    const pName = c?.PropertyName || c?.Pid;
-                    const pValue = c?.Value || c?.Vid;
-                    if (!pName || !pValue) continue;
-                    if (!optionGroups.has(pName)) optionGroups.set(pName, new Set());
-                    optionGroups.get(pName)!.add(String(pValue));
-                }
-            }
-            for (const [groupName, values] of optionGroups) {
-                // Only add if not already captured and limit to 8 values for readability
-                if (!sourceProperties[groupName]) {
-                    const arr = [...values].slice(0, 8);
-                    sourceProperties[groupName] = arr.join(', ') + (values.size > 8 ? ` (+${values.size - 8} more)` : '');
-                }
-            }
-        }
+        const sourceProperties = extractOtapiSourceProperties(item);
 
         // Description: clean text from item.Description if available
-        let description: string | undefined;
-        if (typeof item.Description === 'string' && item.Description.length > 10) {
-            // Strip HTML tags for a clean text description, truncate to 1000 chars
-            description = item.Description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
-        } else if (typeof item.OriginalTitle === 'string' && item.OriginalTitle !== item.Title) {
-            // Use OriginalTitle (Chinese) as supplementary context if different from translated title
-            sourceProperties['OriginalTitle'] = item.OriginalTitle;
-        }
+        const description = cleanOtapiDescription(item) || undefined;
 
         // URL
         const url = item.TaobaoItemUrl || item.ExternalItemUrl || '';

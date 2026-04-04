@@ -5,6 +5,7 @@ import { aliexpressService } from '../services/aliexpressService';
 import { CollectionType, Product, CollectionConfig } from '../types';
 import { generateProductNameV2, generateProductDescriptionV2, extractKeywords, ProductContext, translateVariantNames, isLikelyFallback, isLikelyFallbackDescription } from '../services/geminiService';
 import { translateProductFields, detectChinese } from '../services/translateService';
+import { extractOtapiSourceProperties, cleanOtapiDescription } from '../lib/otapiHelpers';
 import { FadeIn } from './FadeIn';
 import { ProductImageGallery } from './ProductImageGallery';
 import { ProductCard, ImportableProduct } from './import/ProductCard';
@@ -1961,55 +1962,11 @@ export const ProductImport: React.FC<ProductImportProps> = ({ collections, onImp
                     return item.FeaturedValues.find((v: any) => v.Name === name)?.Value;
                 };
 
-                // ── Extract structured product attributes for AI grounding ──
-                const urlSourceProperties: Record<string, string> = {};
-                if (Array.isArray(item.FeaturedValues)) {
-                    for (const fv of item.FeaturedValues) {
-                        const fvName = fv?.Name;
-                        const fvValue = fv?.Value;
-                        if (!fvName || !fvValue || fvName === 'rating' || fvName === 'SalesInLast30Days' || fvName === 'TotalSales') continue;
-                        urlSourceProperties[fvName] = String(fvValue);
-                    }
-                }
-                if (Array.isArray(item.Properties)) {
-                    for (const prop of item.Properties) {
-                        const propName = prop?.PropertyName || prop?.Name;
-                        const propValue = prop?.Value || prop?.DisplayValue;
-                        if (propName && propValue) {
-                            const existing = urlSourceProperties[propName];
-                            urlSourceProperties[propName] = existing ? `${existing}, ${propValue}` : String(propValue);
-                        }
-                    }
-                }
-                // Variant option summary
-                if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
-                    const optionGroups = new Map<string, Set<string>>();
-                    for (const cfg of item.ConfiguredItems) {
-                        if (!Array.isArray(cfg.Configurators)) continue;
-                        for (const c of cfg.Configurators) {
-                            const pName = c?.PropertyName || c?.Pid;
-                            const pValue = c?.Value || c?.Vid;
-                            if (!pName || !pValue) continue;
-                            if (!optionGroups.has(pName)) optionGroups.set(pName, new Set());
-                            optionGroups.get(pName)!.add(String(pValue));
-                        }
-                    }
-                    for (const [groupName, values] of optionGroups) {
-                        if (!urlSourceProperties[groupName]) {
-                            const arr = [...values].slice(0, 8);
-                            urlSourceProperties[groupName] = arr.join(', ') + (values.size > 8 ? ` (+${values.size - 8} more)` : '');
-                        }
-                    }
-                }
-                if (typeof item.OriginalTitle === 'string' && item.OriginalTitle !== item.Title) {
-                    urlSourceProperties['OriginalTitle'] = item.OriginalTitle;
-                }
+                // Extract structured product attributes using shared helper
+                const urlSourceProperties = extractOtapiSourceProperties(item);
 
-                // Clean description — strip HTML if present
-                let cleanDescription = '';
-                if (typeof item.Description === 'string' && item.Description.length > 10) {
-                    cleanDescription = item.Description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
-                }
+                // Clean description using shared helper
+                const cleanDescription = cleanOtapiDescription(item);
 
                 // Extract variants from ConfiguredItems
                 const variants: any[] = [];

@@ -306,11 +306,17 @@ export const handleSplitOrderTrackingUpdate = internalMutation({
     handler: async (ctx, args) => {
         // Find any order that has this splitCjOrderId in its splitOrders array
         // Note: splitOrders is a nested array — no index possible, so scan is needed
+        // Perf: if this latency grows, introduce a denormalized splitCjOrderId → parentOrderId table
+        const scanStart = Date.now();
         const allOrders = await ctx.db.query("orders").collect();
         const order = allOrders.find(o =>
             Array.isArray(o.splitOrders) &&
             o.splitOrders.some((s: any) => s.cjOrderId === args.splitCjOrderId)
         );
+        const scanMs = Date.now() - scanStart;
+        if (scanMs > 500 || allOrders.length > 1000) {
+            console.warn(`CJ Split Tracking: Table scan took ${scanMs}ms over ${allOrders.length} orders (consider denormalized lookup)`);
+        }
 
         if (!order || !order.splitOrders) {
             // Not a split order — this is expected for most logistics updates

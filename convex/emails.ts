@@ -353,7 +353,7 @@ export const sendOrderSplitNotification = internalAction({
                 return { success: false, error: error.message };
             }
 
-            console.log(`Order split notification sent to ${customerEmail} for ${splitCount} packages`);
+            console.log(`Order split notification sent for order ${orderId} (${splitCount} packages)`);
             return { success: true, emailId: data?.id };
         } catch (error: any) {
             console.error("Order split notification action error:", error);
