@@ -333,8 +333,9 @@ http.route({
                     break;
 
                 case "ORDERSPLIT":
-                    // Order was split into multiple shipments
-                    console.log("CJ Order Split:", params);
+                    // Order was split into multiple shipments by CJ
+                    console.log("CJ Order Split:", JSON.stringify(params));
+                    await handleCjOrderSplitWebhook(ctx, params);
                     break;
 
                 case "SOURCINGCREATE":
@@ -416,6 +417,56 @@ async function handleCjOrderWebhook(ctx: any, params: any, messageType: string) 
     }
 }
 
+// Handle CJ ORDERSPLIT webhook — order was split into multiple shipments
+async function handleCjOrderSplitWebhook(ctx: any, params: any) {
+    const { originalOrderId, splitOrderList, orderSplitTime } = params;
+
+    if (!originalOrderId) {
+        console.error("CJ ORDERSPLIT webhook missing originalOrderId");
+        return;
+    }
+
+    if (!Array.isArray(splitOrderList) || splitOrderList.length === 0) {
+        console.warn(`CJ ORDERSPLIT: No split orders provided for original order ${originalOrderId}`);
+        return;
+    }
+
+    console.log(`CJ ORDERSPLIT: Order ${originalOrderId} split into ${splitOrderList.length} shipments`);
+
+    try {
+        await ctx.runMutation(internal.cjHelpers.handleCjOrderSplitUpdate, {
+            originalCjOrderId: originalOrderId.toString(),
+            splitOrders: splitOrderList.map((split: any) => ({
+                cjOrderId: split.orderCode || split.orderId || '',
+                orderStatus: split.orderStatus ?? undefined,
+                splitAt: orderSplitTime || new Date().toISOString(),
+            })),
+        });
+
+        // Send customer notification about the split shipment
+        // (email is fire-and-forget — don't block the webhook response)
+        try {
+            const order = await ctx.runQuery(internal.cjHelpers.getOrderByCjOrderId, {
+                cjOrderId: originalOrderId.toString(),
+            });
+            if (order?.customerEmail) {
+                await ctx.runAction(internal.emails.sendOrderSplitNotification, {
+                    customerEmail: order.customerEmail,
+                    customerName: order.customerName || undefined,
+                    orderId: order.stripeSessionId.slice(-12).toUpperCase(),
+                    splitCount: splitOrderList.length,
+                    splitOrderIds: splitOrderList.map((s: any) => s.orderCode || s.orderId || 'Unknown'),
+                });
+            }
+        } catch (emailErr: any) {
+            // Non-fatal — don't fail the webhook over email
+            console.warn(`CJ ORDERSPLIT: Email notification failed (non-fatal): ${emailErr.message}`);
+        }
+    } catch (error: any) {
+        console.error("Failed to process CJ ORDERSPLIT webhook:", error.message);
+    }
+}
+
 // Handle CJ Logistics/tracking webhook
 /** Handles CJ Dropshipping logistics/tracking webhook events. */
 async function handleCjLogisticsWebhook(ctx: any, params: any) {
@@ -431,6 +482,7 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
         cjStatus = "failed";
     }
 
+    // Try primary update (parent order)
     await ctx.runMutation(internal.cjHelpers.handleCjLogisticsUpdate, {
         cjOrderId: orderId?.toString(),
         trackingNumber: trackingNumber || undefined,
@@ -438,6 +490,19 @@ async function handleCjLogisticsWebhook(ctx: any, params: any) {
         carrier: logisticName || undefined,
         cjStatus,
     });
+
+    // Also try updating split order tracking (if this orderId is a split child)
+    try {
+        await ctx.runMutation(internal.cjHelpers.handleSplitOrderTrackingUpdate, {
+            splitCjOrderId: orderId?.toString(),
+            trackingNumber: trackingNumber || undefined,
+            trackingUrl: trackingUrl || undefined,
+            carrier: logisticName || undefined,
+        });
+    } catch (splitErr: any) {
+        // Non-fatal — split order tracking is best-effort
+        console.warn(`CJ Logistics: Split order tracking update failed (non-fatal): ${splitErr.message}`);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -931,6 +996,7 @@ http.route({
 interface NormalizedProduct {
     id: string;
     title: string;
+    description?: string;
     price: number;
     originalPrice?: number;
     image: string;
@@ -940,6 +1006,8 @@ interface NormalizedProduct {
     rating?: number;
     sales?: number;
     shipping?: string;
+    /** Structured product attributes extracted from OTAPI FeaturedValues / Properties. */
+    sourceProperties?: Record<string, string>;
     tierPricing?: Array<{ minQty: number; price: number }>;
     variants?: Array<{
         id: string;
@@ -1022,6 +1090,66 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         const salesStr = getFeaturedValue(item, 'SalesInLast30Days') || getFeaturedValue(item, 'TotalSales');
         const sales = salesStr ? parseInt(salesStr, 10) : undefined;
 
+        // ── Extract structured product attributes for AI description generation ──
+        const sourceProperties: Record<string, string> = {};
+
+        // FeaturedValues: OTAPI key-value pairs (material, style, season, etc.)
+        if (Array.isArray(item.FeaturedValues)) {
+            for (const fv of item.FeaturedValues) {
+                const name = fv?.Name;
+                const value = fv?.Value;
+                // Skip already-extracted rating/sales and empty values
+                if (!name || !value || name === 'rating' || name === 'SalesInLast30Days' || name === 'TotalSales') continue;
+                sourceProperties[name] = String(value);
+            }
+        }
+
+        // Properties / PropertyNames: structured attribute groups (fabric type, season, age range)
+        if (Array.isArray(item.Properties)) {
+            for (const prop of item.Properties) {
+                const propName = prop?.PropertyName || prop?.Name;
+                const propValue = prop?.Value || prop?.DisplayValue;
+                if (propName && propValue) {
+                    // Merge with existing or append
+                    const existing = sourceProperties[propName];
+                    sourceProperties[propName] = existing ? `${existing}, ${propValue}` : String(propValue);
+                }
+            }
+        }
+
+        // ConfiguredItems Configurators: variant attribute names (颜色=Color, 尺码=Size)
+        // Build a summary of available options without duplicating variant data
+        if (Array.isArray(item.ConfiguredItems) && item.ConfiguredItems.length > 0) {
+            const optionGroups = new Map<string, Set<string>>();
+            for (const cfg of item.ConfiguredItems) {
+                if (!Array.isArray(cfg.Configurators)) continue;
+                for (const c of cfg.Configurators) {
+                    const pName = c?.PropertyName || c?.Pid;
+                    const pValue = c?.Value || c?.Vid;
+                    if (!pName || !pValue) continue;
+                    if (!optionGroups.has(pName)) optionGroups.set(pName, new Set());
+                    optionGroups.get(pName)!.add(String(pValue));
+                }
+            }
+            for (const [groupName, values] of optionGroups) {
+                // Only add if not already captured and limit to 8 values for readability
+                if (!sourceProperties[groupName]) {
+                    const arr = [...values].slice(0, 8);
+                    sourceProperties[groupName] = arr.join(', ') + (values.size > 8 ? ` (+${values.size - 8} more)` : '');
+                }
+            }
+        }
+
+        // Description: clean text from item.Description if available
+        let description: string | undefined;
+        if (typeof item.Description === 'string' && item.Description.length > 10) {
+            // Strip HTML tags for a clean text description, truncate to 1000 chars
+            description = item.Description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
+        } else if (typeof item.OriginalTitle === 'string' && item.OriginalTitle !== item.Title) {
+            // Use OriginalTitle (Chinese) as supplementary context if different from translated title
+            sourceProperties['OriginalTitle'] = item.OriginalTitle;
+        }
+
         // URL
         const url = item.TaobaoItemUrl || item.ExternalItemUrl || '';
 
@@ -1063,6 +1191,7 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
         return {
             id: item.Id || '',
             title: item.Title || 'Unknown Product',
+            description,
             price: price,
             originalPrice: promoPrice > 0 && regularPrice > promoPrice ? regularPrice : undefined,
             image: mainImage,
@@ -1071,6 +1200,7 @@ function normalizeOtapi1688(data: any): OtapiNormalizedResult {
             source: '1688' as const,
             rating: rating,
             sales: sales,
+            sourceProperties: Object.keys(sourceProperties).length > 0 ? sourceProperties : undefined,
             tierPricing: tierPricing.length > 0 ? tierPricing : undefined,
             variants: variants.length > 0 ? variants : undefined,
         };

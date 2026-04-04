@@ -217,6 +217,102 @@ export const handleCjLogisticsUpdate = internalMutation({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ORDER SPLIT HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Query: Find order by CJ order ID (for email notification lookup)
+ */
+export const getOrderByCjOrderId = internalQuery({
+    args: { cjOrderId: v.string() },
+    handler: async (ctx, args) => {
+        const allOrders = await ctx.db.query("orders").collect();
+        return allOrders.find(o => o.cjOrderId === args.cjOrderId) || null;
+    },
+});
+
+/**
+ * Mutation: Handle CJ order split — persist split order data on the parent order
+ */
+export const handleCjOrderSplitUpdate = internalMutation({
+    args: {
+        originalCjOrderId: v.string(),
+        splitOrders: v.array(v.object({
+            cjOrderId: v.string(),
+            orderStatus: v.optional(v.number()),
+            splitAt: v.string(),
+        })),
+    },
+    handler: async (ctx, args) => {
+        const allOrders = await ctx.db.query("orders").collect();
+        const order = allOrders.find(o => o.cjOrderId === args.originalCjOrderId);
+
+        if (!order) {
+            console.error(`CJ ORDERSPLIT: Parent order not found for cjOrderId=${args.originalCjOrderId}`);
+            return;
+        }
+
+        // Build split orders array — each entry starts with no tracking (filled by LOGISTIC webhook later)
+        const splitOrders = args.splitOrders.map(s => ({
+            cjOrderId: s.cjOrderId,
+            orderStatus: s.orderStatus,
+            splitAt: s.splitAt,
+        }));
+
+        await ctx.db.patch(order._id, {
+            splitOrders,
+            updatedAt: new Date().toISOString(),
+        });
+
+        console.log(`CJ ORDERSPLIT: Saved ${splitOrders.length} split orders on parent ${order._id}`);
+    },
+});
+
+/**
+ * Mutation: Update tracking info on a split sub-order
+ * Called when a LOGISTIC webhook comes in for a split order's cjOrderId
+ */
+export const handleSplitOrderTrackingUpdate = internalMutation({
+    args: {
+        splitCjOrderId: v.string(),
+        trackingNumber: v.optional(v.string()),
+        trackingUrl: v.optional(v.string()),
+        carrier: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        // Find any order that has this splitCjOrderId in its splitOrders array
+        const allOrders = await ctx.db.query("orders").collect();
+        const order = allOrders.find(o =>
+            Array.isArray(o.splitOrders) &&
+            o.splitOrders.some((s: any) => s.cjOrderId === args.splitCjOrderId)
+        );
+
+        if (!order || !order.splitOrders) {
+            // Not a split order — this is expected for most logistics updates
+            return;
+        }
+
+        // Update the specific split order entry with tracking info
+        const updatedSplitOrders = order.splitOrders.map((s: any) => {
+            if (s.cjOrderId !== args.splitCjOrderId) return s;
+            return {
+                ...s,
+                trackingNumber: args.trackingNumber || s.trackingNumber,
+                trackingUrl: args.trackingUrl || s.trackingUrl,
+                carrier: args.carrier || s.carrier,
+            };
+        });
+
+        await ctx.db.patch(order._id, {
+            splitOrders: updatedSplitOrders,
+            updatedAt: new Date().toISOString(),
+        });
+
+        console.log(`CJ Split Tracking: Updated split order ${args.splitCjOrderId} on parent ${order._id} with tracking ${args.trackingNumber}`);
+    },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // PRODUCT SOURCING HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 

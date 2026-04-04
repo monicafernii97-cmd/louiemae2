@@ -794,6 +794,8 @@ export interface ProductContext {
     rating?: number;
     salesCount?: number;
     sellerName?: string;
+    /** Structured attributes from OTAPI (material, season, style, etc.) */
+    sourceProperties?: Record<string, string>;
   };
 }
 
@@ -1394,6 +1396,8 @@ export const generateProductDescriptionV2 = async (context: ProductContext): Pro
         rating: context.sourceMetadata.rating,
         salesCount: context.sourceMetadata.salesCount,
         seller: context.sourceMetadata.sellerName,
+        // Structured product attributes from OTAPI (material, season, style, etc.)
+        productAttributes: context.sourceMetadata.sourceProperties,
       }),
     };
 
