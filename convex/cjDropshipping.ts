@@ -914,90 +914,88 @@ export const checkSourcingStatus = internalAction({
                                     }
                                     const reQueryData = await reQueryRes.json();
 
-                                    // Guard: result:false is an API error, not a clean miss
+                                    // Guard: result:false is an API error, not a clean miss.
+                                    // Skip ALL downstream processing — data payload is unreliable.
                                     if (reQueryData.result === false) {
                                         verificationIncomplete = true;
                                         console.log(`Strategy 2 (re-query sourcing): CJ returned result:false — treating as incomplete (${reQueryData.message || 'no message'})`);
-                                    }
+                                    } else {
+                                        const freshSourcing = Array.isArray(reQueryData.data)
+                                            ? reQueryData.data[0]
+                                            : reQueryData.data;
 
-                                    const freshSourcing = Array.isArray(reQueryData.data)
-                                        ? reQueryData.data[0]
-                                        : reQueryData.data;
+                                        if (freshSourcing?.cjProductId) {
+                                            // CJ now has a product ID — verify it exists
+                                            const verify2Controller = new AbortController();
+                                            const verify2Timeout = setTimeout(() => verify2Controller.abort(), CJ_FETCH_TIMEOUT_MS);
+                                            let verifyRes2: Response;
+                                            try {
+                                                verifyRes2 = await fetch(
+                                                    `${CJ_API_BASE}/product/query?pid=${encodeURIComponent(freshSourcing.cjProductId)}`,
+                                                    {
+                                                        method: "GET",
+                                                        headers: {
+                                                            "Content-Type": "application/json",
+                                                            "CJ-Access-Token": token,
+                                                        },
+                                                        signal: verify2Controller.signal,
+                                                    }
+                                                );
+                                            } finally {
+                                                clearTimeout(verify2Timeout);
+                                            }
+                                            const verifyData2 = await verifyRes2.json();
 
-                                    if (freshSourcing?.cjProductId) {
-                                        // CJ now has a product ID — verify it exists
-                                        const verify2Controller = new AbortController();
-                                        const verify2Timeout = setTimeout(() => verify2Controller.abort(), CJ_FETCH_TIMEOUT_MS);
-                                        let verifyRes2: Response;
-                                        try {
-                                            verifyRes2 = await fetch(
-                                                `${CJ_API_BASE}/product/query?pid=${encodeURIComponent(freshSourcing.cjProductId)}`,
-                                                {
-                                                    method: "GET",
-                                                    headers: {
-                                                        "Content-Type": "application/json",
-                                                        "CJ-Access-Token": token,
-                                                    },
-                                                    signal: verify2Controller.signal,
-                                                }
-                                            );
-                                        } finally {
-                                            clearTimeout(verify2Timeout);
+                                            // Guard: result:false is an API error, not a clean miss
+                                            if (verifyData2.result === false) {
+                                                verificationIncomplete = true;
+                                                console.log(`Strategy 2 (pid verify): CJ returned result:false — treating as incomplete (${verifyData2.message || 'no message'})`);
+                                            } else if (verifyData2.result && verifyData2.data) {
+                                                productActuallyExists = true;
+                                                console.log(`CJ Product confirmed via re-query for ${product.name}: cjProductId=${freshSourcing.cjProductId}`);
+
+                                                // Match the correct variant by SKU from the fresh sourcing response.
+                                                const variants2 = verifyData2.data.variants || [];
+                                                const freshSku = freshSourcing.cjVariantSku;
+                                                const matchedVariant2 = freshSku
+                                                    ? variants2.find((v: any) => v.variantSku === freshSku)
+                                                    : null;
+                                                const resolvedVariant2 = matchedVariant2 || (variants2.length === 1 ? variants2[0] : null);
+
+                                                await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                                                    productId: product._id,
+                                                    status: "approved",
+                                                    cjProductId: freshSourcing.cjProductId,
+                                                    cjVariantId: resolvedVariant2?.vid,
+                                                    cjSku: resolvedVariant2?.variantSku || freshSourcing.cjVariantSku,
+                                                    expectedStatus: product.cjSourcingStatus,
+                                                });
+                                                approved++;
+                                            }
                                         }
-                                        const verifyData2 = await verifyRes2.json();
-
-                                        // Guard: result:false is an API error, not a clean miss
-                                        if (verifyData2.result === false) {
-                                            verificationIncomplete = true;
-                                            console.log(`Strategy 2 (pid verify): CJ returned result:false — treating as incomplete (${verifyData2.message || 'no message'})`);
-                                        } else if (verifyData2.result && verifyData2.data) {
-                                            productActuallyExists = true;
-                                            console.log(`CJ Product confirmed via re-query for ${product.name}: cjProductId=${freshSourcing.cjProductId}`);
-
-                                            // Match the correct variant by SKU from the fresh sourcing response.
-                                            const variants2 = verifyData2.data.variants || [];
-                                            const freshSku = freshSourcing.cjVariantSku;
-                                            const matchedVariant2 = freshSku
-                                                ? variants2.find((v: any) => v.variantSku === freshSku)
-                                                : null;
-                                            const resolvedVariant2 = matchedVariant2 || (variants2.length === 1 ? variants2[0] : null);
-
-                                            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
-                                                productId: product._id,
-                                                status: "approved",
-                                                cjProductId: freshSourcing.cjProductId,
-                                                cjVariantId: resolvedVariant2?.vid,
-                                                cjSku: resolvedVariant2?.variantSku || freshSourcing.cjVariantSku,
-                                                expectedStatus: product.cjSourcingStatus,
-                                            });
-                                            approved++;
+                                        // Also check if status changed to success between checks.
+                                        // INTENTIONAL: We trust CJ's sourceStatus + cjProductId here even if
+                                        // the catalog verification above failed (e.g., transient API error).
+                                        // CJ's own sourcing status is a reliable indicator that the product
+                                        // was sourced, and the catalog verify is a secondary confirmation.
+                                        if (!productActuallyExists && freshSourcing) {
+                                            const freshStatusIsSuccess =
+                                                freshSourcing.sourceStatus === "3" || freshSourcing.sourceStatus === 3 ||
+                                                freshSourcing.sourceStatus === "9" || freshSourcing.sourceStatus === 9;
+                                            if (freshStatusIsSuccess && freshSourcing.cjProductId) {
+                                                productActuallyExists = true;
+                                                console.log(`CJ Sourcing now shows success for ${product.name}: status=${freshSourcing.sourceStatus}`);
+                                                await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
+                                                    productId: product._id,
+                                                    status: "approved",
+                                                    cjProductId: freshSourcing.cjProductId,
+                                                    cjSku: freshSourcing.cjVariantSku,
+                                                    expectedStatus: product.cjSourcingStatus,
+                                                });
+                                                approved++;
+                                            }
                                         }
-                                    }
-                                    // Also check if status changed to success between checks.
-                                    // INTENTIONAL: We trust CJ's sourceStatus + cjProductId here even if
-                                    // the catalog verification above failed (e.g., transient API error).
-                                    // CJ's own sourcing status is a reliable indicator that the product
-                                    // was sourced, and the catalog verify is a secondary confirmation.
-                                    // This fallback only fires when the original sourcing response
-                                    // lacked a cjProductId but the re-query now provides one.
-                                    if (!productActuallyExists && freshSourcing) {
-                                        const freshStatusIsSuccess =
-                                            freshSourcing.sourceStatus === "3" || freshSourcing.sourceStatus === 3 ||
-                                            freshSourcing.sourceStatus === "9" || freshSourcing.sourceStatus === 9;
-                                        if (freshStatusIsSuccess && freshSourcing.cjProductId) {
-                                            productActuallyExists = true;
-                                            console.log(`CJ Sourcing now shows success for ${product.name}: status=${freshSourcing.sourceStatus}`);
-                                            await ctx.runMutation(internal.cjHelpers.updateProductSourcingStatus, {
-                                                productId: product._id,
-                                                status: "approved",
-                                                cjProductId: freshSourcing.cjProductId,
-                                                // variantId in sourcing response is our thirdVariantId, not CJ's vid
-                                                cjSku: freshSourcing.cjVariantSku,
-                                                expectedStatus: product.cjSourcingStatus,
-                                            });
-                                            approved++;
-                                        }
-                                    }
+                                    } // end else (result !== false)
                                 } catch (reQueryError: unknown) {
                                     verificationIncomplete = true;
                                     const isTimeout = reQueryError instanceof Error && reQueryError.name === 'AbortError';

@@ -352,27 +352,21 @@ export const getProductsPendingSourcing = internalQuery({
  * Only returns products with a cjSourcingId (so we can re-query CJ).
  */
 export const getRejectedProductsForRecheck = internalQuery({
-    args: {
-        // Optional limit to bound the read volume at the query level.
-        // The caller (checkSourcingStatus) applies further recency filtering and sorting.
-        limit: v.optional(v.number()),
-    },
-    handler: async (ctx, args) => {
-        // Use .take() to cap the Convex read volume so historical rejections
-        // don't cause unbounded collection as the table grows.
-        // Default cap of 100 is well above MAX_RECHECK_BATCH (20) to give
-        // the caller enough headroom for recency filtering + sorting.
-        const cap = args.limit ?? 100;
-
+    args: {},
+    handler: async (ctx) => {
+        // Returns all rejected products that have a cjSourcingId (i.e., were submitted to CJ).
+        // The caller (checkSourcingStatus cron) applies further recency filtering,
+        // cooldown, sorting, and slicing to MAX_RECHECK_BATCH.
+        // The SOURCINGCREATE webhook also uses this as a fallback to find matching products.
+        //
         // NOTE: .filter() on cjSourcingId runs post-index (in-memory), not at the
-        // index level. This is acceptable at current scale (cap=100). If the ratio
-        // of rejected products without cjSourcingId grows significantly, consider
-        // adding a compound index on (cjSourcingStatus, cjSourcingId).
+        // index level. Acceptable at current scale. If the ratio of rejected products
+        // without cjSourcingId grows significantly, consider a compound index.
         const rejected = await ctx.db
             .query("products")
             .withIndex("by_cj_sourcing_status", (q) => q.eq("cjSourcingStatus", "rejected"))
             .filter((q) => q.neq(q.field("cjSourcingId"), undefined))
-            .take(cap);
+            .collect();
 
         return rejected;
     },
