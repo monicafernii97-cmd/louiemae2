@@ -25,6 +25,7 @@ export const CJSettings: React.FC = () => {
     const [checkingSourcing, setCheckingSourcing] = useState(false);
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
     const [deletingId, setDeletingId] = useState<Id<"products"> | null>(null);
+    const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
     const [resubmittingId, setResubmittingId] = useState<Id<"products"> | null>(null);
     const [tokenStatus, setTokenStatus] = useState<{
         connected: boolean;
@@ -366,8 +367,15 @@ export const CJSettings: React.FC = () => {
                                                     <div className="flex items-start gap-4">
                                                         {/* Image Preview */}
                                                         <div className="h-16 w-16 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 overflow-hidden flex-shrink-0 relative shadow-inner">
-                                                            {product.images && product.images[0] ? (
-                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" />
+                                                            {product.images && product.images[0] && !failedImages.has(product._id) ? (
+                                                                <img
+                                                                    src={product.images[0]}
+                                                                    alt=""
+                                                                    className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity"
+                                                                    onError={() => {
+                                                                        setFailedImages(prev => new Set(prev).add(product._id));
+                                                                    }}
+                                                                />
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center text-cream/20">
                                                                     <Package className="w-6 h-6" />
@@ -531,8 +539,15 @@ export const CJSettings: React.FC = () => {
                                                     <div className="flex items-start gap-4 mb-4">
                                                         {/* Image Preview */}
                                                         <div className="h-16 w-16 rounded-xl bg-black/60 backdrop-blur-sm border border-white/10 overflow-hidden flex-shrink-0 relative shadow-inner">
-                                                            {product.images && product.images[0] ? (
-                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" />
+                                                            {product.images && product.images[0] && !failedImages.has(product._id) ? (
+                                                                <img
+                                                                    src={product.images[0]}
+                                                                    alt=""
+                                                                    className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity"
+                                                                    onError={() => {
+                                                                        setFailedImages(prev => new Set(prev).add(product._id));
+                                                                    }}
+                                                                />
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center text-red-400/50">
                                                                     <Package className="w-6 h-6" />
