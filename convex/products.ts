@@ -403,6 +403,11 @@ export const fixAstridDenimSet = mutation({
         cjSku: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to fix product data");
+        }
+
         const products = await ctx.db.query("products").collect();
         const astrid = products.find(p =>
             p.name.toLowerCase().includes("astrid") &&
