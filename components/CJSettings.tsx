@@ -367,7 +367,23 @@ export const CJSettings: React.FC = () => {
                                                         {/* Image Preview */}
                                                         <div className="h-16 w-16 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 overflow-hidden flex-shrink-0 relative shadow-inner">
                                                             {product.images && product.images[0] ? (
-                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" />
+                                                                <>
+                                                                <img
+                                                                    src={product.images[0]}
+                                                                    alt=""
+                                                                    className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity"
+                                                                    onError={(e) => {
+                                                                        // Replace broken image with fallback icon
+                                                                        const target = e.currentTarget;
+                                                                        target.style.display = 'none';
+                                                                        const fallback = target.nextElementSibling as HTMLElement;
+                                                                        if (fallback) fallback.style.display = 'flex';
+                                                                    }}
+                                                                />
+                                                                <div className="h-full w-full items-center justify-center text-cream/20" style={{ display: 'none' }}>
+                                                                    <Package className="w-6 h-6" />
+                                                                </div>
+                                                                </>
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center text-cream/20">
                                                                     <Package className="w-6 h-6" />
@@ -532,7 +548,23 @@ export const CJSettings: React.FC = () => {
                                                         {/* Image Preview */}
                                                         <div className="h-16 w-16 rounded-xl bg-black/60 backdrop-blur-sm border border-white/10 overflow-hidden flex-shrink-0 relative shadow-inner">
                                                             {product.images && product.images[0] ? (
-                                                                <img src={product.images[0]} alt="" className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" />
+                                                                <>
+                                                                <img
+                                                                    src={product.images[0]}
+                                                                    alt=""
+                                                                    className="h-full w-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity"
+                                                                    onError={(e) => {
+                                                                        // Replace broken image with fallback icon
+                                                                        const target = e.currentTarget;
+                                                                        target.style.display = 'none';
+                                                                        const fallback = target.nextElementSibling as HTMLElement;
+                                                                        if (fallback) fallback.style.display = 'flex';
+                                                                    }}
+                                                                />
+                                                                <div className="h-full w-full items-center justify-center text-red-400/50" style={{ display: 'none' }}>
+                                                                    <Package className="w-6 h-6" />
+                                                                </div>
+                                                                </>
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center text-red-400/50">
                                                                     <Package className="w-6 h-6" />
