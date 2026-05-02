@@ -409,24 +409,25 @@ export const fixAstridDenimSet = mutation({
         }
 
         const products = await ctx.db.query("products").collect();
-        const astrid = products.find(p =>
+        const matches = products.filter(p =>
             p.name.toLowerCase().includes("astrid") &&
             p.name.toLowerCase().includes("denim")
         );
-        if (!astrid) {
+        if (matches.length !== 1) {
             return {
                 success: false,
-                message: "Astrid Denim Set not found in database. Available products: " +
+                message: `Expected exactly one Astrid Denim match, found ${matches.length}. Available products: ` +
                     products.map(p => p.name).join(", "),
             };
         }
+        const [astrid] = matches;
 
-        // Use provided CJ details or placeholder values
-        const cjProductId = args.cjProductId || "REPLACE_WITH_CJ_PRODUCT_ID";
-        const cjVariantId = args.cjVariantId || "REPLACE_WITH_CJ_VARIANT_ID";
-        const cjSku = args.cjSku || "REPLACE_WITH_CJ_SKU";
+        // Validate all CJ fields are provided and non-empty
+        const cjProductId = args.cjProductId?.trim();
+        const cjVariantId = args.cjVariantId?.trim();
+        const cjSku = args.cjSku?.trim();
 
-        if (cjProductId.startsWith("REPLACE_")) {
+        if (!cjProductId || !cjVariantId || !cjSku) {
             return {
                 success: false,
                 message: `Found "${astrid.name}" (ID: ${astrid._id}). ` +
@@ -492,6 +493,14 @@ export const approveProductWithCjData = mutation({
             throw new Error(`Product ${args.productId} not found`);
         }
 
+        const hasCustomerVariants = (product.variants?.length ?? 0) > 0;
+        if (hasCustomerVariants && (!args.cjVariants || args.cjVariants.length === 0)) {
+            throw new Error("Approved products with customer variants must include cjVariants");
+        }
+        if (!hasCustomerVariants && !args.cjVariantId) {
+            throw new Error("Approved products without customer variants must include cjVariantId");
+        }
+
         const updateData: Record<string, any> = {
             cjSourcingStatus: "approved",
             cjProductId: args.cjProductId,
@@ -525,6 +534,11 @@ export const approveProductWithCjData = mutation({
 export const auditProductHealth = query({
     args: {},
     handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to audit product health");
+        }
+
         const allProducts = await ctx.db.query("products").collect();
 
         const issues: Array<{
