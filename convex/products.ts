@@ -380,3 +380,259 @@ export const fixBerrySweetCardigan = mutation({
     },
 });
 
+/**
+ * MIGRATION: Approve Astrid Denim Set with CJ variant data
+ * CJ confirmed sourcing approval via email — but the webhook/cron couldn't
+ * update the database because the Convex deployment was disabled.
+ *
+ * USAGE: Once you have the CJ product/variant details from the CJ dashboard,
+ * fill in the cjProductId, cjVariantId, cjSku, and cjVariants below,
+ * then call this mutation from the Convex dashboard.
+ *
+ * To find the CJ details:
+ *   1. Log into CJ dashboard → My Products → search "Astrid Denim" or the source URL
+ *   2. Copy the Product ID (pid), and for each variant: vid, sku, name, price
+ *   3. Update the placeholder values below
+ */
+export const fixAstridDenimSet = mutation({
+    args: {
+        // Pass CJ details as args so you can provide them from the dashboard
+        // without editing code. If empty, falls back to hardcoded placeholders.
+        cjProductId: v.optional(v.string()),
+        cjVariantId: v.optional(v.string()),
+        cjSku: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to fix product data");
+        }
+
+        const products = await ctx.db.query("products").collect();
+        const matches = products.filter(p =>
+            p.name.toLowerCase().includes("astrid") &&
+            p.name.toLowerCase().includes("denim")
+        );
+        if (matches.length !== 1) {
+            return {
+                success: false,
+                message: `Expected exactly one Astrid Denim match, found ${matches.length}. Available products: ` +
+                    products.map(p => p.name).join(", "),
+            };
+        }
+        const [astrid] = matches;
+
+        // Validate all CJ fields are provided and non-empty
+        const cjProductId = args.cjProductId?.trim();
+        const cjVariantId = args.cjVariantId?.trim();
+        const cjSku = args.cjSku?.trim();
+        const hasPlaceholder = [cjProductId, cjVariantId, cjSku].some(
+            value => value?.startsWith("REPLACE_")
+        );
+
+        if (!cjProductId || !cjVariantId || !cjSku || hasPlaceholder) {
+            return {
+                success: false,
+                message: `Found "${astrid.name}" (ID: ${astrid._id}). ` +
+                    `Current status: ${astrid.cjSourcingStatus || 'none'}, ` +
+                    `cjSourcingId: ${astrid.cjSourcingId || 'none'}, ` +
+                    `cjProductId: ${astrid.cjProductId || 'none'}. ` +
+                    `Please provide cjProductId, cjVariantId, and cjSku from the CJ dashboard.`,
+                productId: astrid._id,
+                currentStatus: astrid.cjSourcingStatus,
+                cjSourcingId: astrid.cjSourcingId,
+                images: astrid.images,
+            };
+        }
+
+        await ctx.db.patch(astrid._id, {
+            cjSourcingStatus: "approved",
+            cjProductId,
+            cjVariantId,
+            cjSku,
+            cjSourcingError: undefined,
+            cjApprovedAt: new Date().toISOString(),
+            inStock: true,
+        });
+
+        return {
+            success: true,
+            message: `"${astrid.name}" approved with CJ product ID ${cjProductId}`,
+            productId: astrid._id,
+            cjProductId,
+        };
+    },
+});
+
+/**
+ * ADMIN: Manually approve any product with CJ data
+ * Reusable mutation for when webhooks/crons miss an approval.
+ * Can optionally populate cjVariants array for the Variant Mapping UI.
+ */
+export const approveProductWithCjData = mutation({
+    args: {
+        productId: v.id("products"),
+        cjProductId: v.string(),
+        cjVariantId: v.optional(v.string()),
+        cjSku: v.optional(v.string()),
+        cjVariants: v.optional(v.array(v.object({
+            vid: v.string(),
+            sku: v.string(),
+            name: v.string(),
+            price: v.optional(v.number()),
+            image: v.optional(v.string()),
+        }))),
+        // Optionally fix broken images at the same time
+        newImages: v.optional(v.array(v.string())),
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to approve products");
+        }
+
+        const product = await ctx.db.get(args.productId);
+        if (!product) {
+            throw new Error(`Product ${args.productId} not found`);
+        }
+
+        const hasCustomerVariants = (product.variants?.length ?? 0) > 0;
+        const effectiveCjVariants = args.cjVariants ?? product.cjVariants;
+        const effectiveCjVariantId = args.cjVariantId ?? product.cjVariantId;
+
+        if (hasCustomerVariants && (!effectiveCjVariants || effectiveCjVariants.length === 0)) {
+            throw new Error("Approved products with customer variants must include cjVariants");
+        }
+        if (!hasCustomerVariants && !effectiveCjVariantId) {
+            throw new Error("Approved products without customer variants must include cjVariantId");
+        }
+
+        const updateData: Record<string, any> = {
+            cjSourcingStatus: "approved",
+            cjProductId: args.cjProductId,
+            cjSourcingError: undefined,
+            cjApprovedAt: new Date().toISOString(),
+            inStock: true,
+        };
+
+        if (args.cjVariantId) updateData.cjVariantId = args.cjVariantId;
+        if (args.cjSku) updateData.cjSku = args.cjSku;
+        if (args.cjVariants) updateData.cjVariants = args.cjVariants;
+        if (args.newImages) updateData.images = args.newImages;
+
+        await ctx.db.patch(args.productId, updateData);
+
+        return {
+            success: true,
+            message: `"${product.name}" manually approved`,
+            productId: args.productId,
+            cjProductId: args.cjProductId,
+            variantCount: args.cjVariants?.length || 0,
+            imageFixed: !!args.newImages,
+        };
+    },
+});
+
+/**
+ * DIAGNOSTIC: Audit all products for health issues
+ * Returns products with broken images, stuck sourcing, or missing CJ data
+ */
+export const auditProductHealth = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("You must be logged in to audit product health");
+        }
+
+        const allProducts = await ctx.db.query("products").collect();
+
+        const issues: Array<{
+            productId: string;
+            name: string;
+            problems: string[];
+            cjSourcingStatus?: string;
+            cjSourcingId?: string;
+            cjProductId?: string;
+            cjVariantId?: string;
+            imageCount: number;
+            firstImageUrl?: string;
+            hasVariants: boolean;
+            hasCjVariants: boolean;
+        }> = [];
+
+        for (const product of allProducts) {
+            const problems: string[] = [];
+
+            // Check for missing/broken images
+            if (!product.images || product.images.length === 0) {
+                problems.push("No images");
+            } else {
+                const firstImg = product.images[0];
+                if (firstImg.startsWith("//")) {
+                    problems.push("Protocol-relative image URL (missing https:)");
+                }
+                if (firstImg.includes("1688.com") || firstImg.includes("alicdn.com") || firstImg.includes("cbu01.alicdn")) {
+                    problems.push("Image hosted on 1688/AliExpress CDN (may expire)");
+                }
+                if (firstImg.includes("photo-1612196808214")) {
+                    problems.push("Known broken Unsplash URL");
+                }
+            }
+
+            // Check for stuck sourcing
+            if (product.cjSourcingStatus === "pending") {
+                const submittedAt = product.cjSubmittedAt ? new Date(product.cjSubmittedAt).getTime() : 0;
+                const hoursSinceSubmission = submittedAt ? (Date.now() - submittedAt) / (1000 * 60 * 60) : 0;
+                if (hoursSinceSubmission > 48) {
+                    problems.push(`Stuck pending for ${Math.round(hoursSinceSubmission)}h`);
+                }
+                if (!product.cjSourcingId) {
+                    problems.push("Pending but no cjSourcingId (never submitted to CJ)");
+                }
+            }
+
+            // Check for approved products missing CJ data
+            if (product.cjSourcingStatus === "approved") {
+                const hasCustomerVariants = (product.variants?.length ?? 0) > 0;
+
+                if (!product.cjProductId) problems.push("Approved but missing cjProductId");
+                if (!hasCustomerVariants && !product.cjVariantId) {
+                    problems.push("Approved but missing cjVariantId");
+                }
+                if (hasCustomerVariants && (!product.cjVariants || product.cjVariants.length === 0)) {
+                    problems.push("Approved but no CJ variants (won't appear in Variant Mapping)");
+                }
+                if (hasCustomerVariants) {
+                    const unlinked = product.variants.filter(v => !v.cjVariantId);
+                    if (unlinked.length > 0) {
+                        problems.push(`${unlinked.length}/${product.variants.length} customer variants not linked to CJ`);
+                    }
+                }
+            }
+
+            if (problems.length > 0) {
+                issues.push({
+                    productId: product._id,
+                    name: product.name,
+                    problems,
+                    cjSourcingStatus: product.cjSourcingStatus,
+                    cjSourcingId: product.cjSourcingId,
+                    cjProductId: product.cjProductId,
+                    cjVariantId: product.cjVariantId,
+                    imageCount: product.images?.length || 0,
+                    firstImageUrl: product.images?.[0],
+                    hasVariants: (product.variants?.length || 0) > 0,
+                    hasCjVariants: (product.cjVariants?.length || 0) > 0,
+                });
+            }
+        }
+
+        return {
+            totalProducts: allProducts.length,
+            productsWithIssues: issues.length,
+            issues,
+        };
+    },
+});
+
