@@ -426,8 +426,11 @@ export const fixAstridDenimSet = mutation({
         const cjProductId = args.cjProductId?.trim();
         const cjVariantId = args.cjVariantId?.trim();
         const cjSku = args.cjSku?.trim();
+        const hasPlaceholder = [cjProductId, cjVariantId, cjSku].some(
+            value => value?.startsWith("REPLACE_")
+        );
 
-        if (!cjProductId || !cjVariantId || !cjSku) {
+        if (!cjProductId || !cjVariantId || !cjSku || hasPlaceholder) {
             return {
                 success: false,
                 message: `Found "${astrid.name}" (ID: ${astrid._id}). ` +
@@ -494,10 +497,13 @@ export const approveProductWithCjData = mutation({
         }
 
         const hasCustomerVariants = (product.variants?.length ?? 0) > 0;
-        if (hasCustomerVariants && (!args.cjVariants || args.cjVariants.length === 0)) {
+        const effectiveCjVariants = args.cjVariants ?? product.cjVariants;
+        const effectiveCjVariantId = args.cjVariantId ?? product.cjVariantId;
+
+        if (hasCustomerVariants && (!effectiveCjVariants || effectiveCjVariants.length === 0)) {
             throw new Error("Approved products with customer variants must include cjVariants");
         }
-        if (!hasCustomerVariants && !args.cjVariantId) {
+        if (!hasCustomerVariants && !effectiveCjVariantId) {
             throw new Error("Approved products without customer variants must include cjVariantId");
         }
 
@@ -588,12 +594,16 @@ export const auditProductHealth = query({
 
             // Check for approved products missing CJ data
             if (product.cjSourcingStatus === "approved") {
+                const hasCustomerVariants = (product.variants?.length ?? 0) > 0;
+
                 if (!product.cjProductId) problems.push("Approved but missing cjProductId");
-                if (!product.cjVariantId) problems.push("Approved but missing cjVariantId");
-                if (!product.cjVariants || product.cjVariants.length === 0) {
+                if (!hasCustomerVariants && !product.cjVariantId) {
+                    problems.push("Approved but missing cjVariantId");
+                }
+                if (hasCustomerVariants && (!product.cjVariants || product.cjVariants.length === 0)) {
                     problems.push("Approved but no CJ variants (won't appear in Variant Mapping)");
                 }
-                if (product.variants && product.variants.length > 0) {
+                if (hasCustomerVariants) {
                     const unlinked = product.variants.filter(v => !v.cjVariantId);
                     if (unlinked.length > 0) {
                         problems.push(`${unlinked.length}/${product.variants.length} customer variants not linked to CJ`);
